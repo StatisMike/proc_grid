@@ -1,0 +1,14 @@
+[package]
+name = "grid_forge"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default-features = ["image"]
+image = ["gf_defs/image"]
+
+[dependencies]
+gf_defs = { path = "../gf_defs/" }
+gf_gen = { path = "../gf_gen/" }

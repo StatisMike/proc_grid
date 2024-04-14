@@ -1,0 +1,15 @@
+[workspace]
+resolver="2"
+
+members = [
+  # Main:
+  "grid_forge",
+
+  # Sub:
+  "gf_defs",
+  "gf_gen",
+
+  # Examples:
+  "examples/walker",
+  "examples/vis"
+]
