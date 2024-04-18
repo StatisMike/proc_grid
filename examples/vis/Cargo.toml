@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-grid_forge = { path = "../../grid_forge", features = ["image"] }
+grid_forge = { path = "../../grid_forge", features = ["vis"] }
 image = { version = "^0.25.1", features = ["jpeg"]}
 rand = { version = "^0.8.5" }
 rand_chacha = "*"

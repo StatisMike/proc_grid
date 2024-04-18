@@ -1,6 +1,6 @@
 use crate::GridPos2D;
 
-#[cfg(feature = "image")]
+#[cfg(feature = "vis")]
 pub mod vis;
 
 /// Trait that needs to be implemented for objects contained within the [GridMap2D](crate::grid::GridMap2D)

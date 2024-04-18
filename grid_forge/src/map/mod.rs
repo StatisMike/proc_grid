@@ -3,15 +3,11 @@ use std::collections::HashMap;
 use crate::tile::GridTile2D;
 use crate::{add_grid_positions, GridPos2D};
 
-use size::GridSize;
-
-pub mod size;
-
-#[cfg(feature = "image")]
+#[cfg(feature = "vis")]
 pub mod vis;
 
 #[repr(u8)]
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone, Copy, Hash)]
 pub enum GridDir {
     UP = 1,
     DOWN = 2,
@@ -20,8 +16,25 @@ pub enum GridDir {
 }
 
 impl GridDir {
-    pub const ALL: &[GridDir; 4] = &[GridDir::UP, GridDir::DOWN, GridDir::LEFT, GridDir::RIGHT];
+    /// All possible directions from tile to tile within a [GridMap2D].
+    pub const ALL: &'static [GridDir; 4] = &[GridDir::UP, GridDir::DOWN, GridDir::LEFT, GridDir::RIGHT];
 
+    /// Take a step in specified direction from position within the contains of specified [GridSize].
+    /// 
+    /// # Returns
+    /// - resulting [GridPos2D] after the step, or [None] if position is not valid within the specified size.
+    /// 
+    /// # Examples
+    /// ```
+    /// use grid_forge::map::GridDir;
+    /// use grid_forge::map::size::GridSize;
+    /// 
+    /// let size = GridSize::new(3, 3);
+    /// let position = (0, 1);
+    /// 
+    /// assert_eq!(Some((0,0)), GridDir::UP.march_step(&position, &size));
+    /// assert_eq!(None, GridDir::LEFT.march_step(&position, &size));
+    /// ```
     pub fn march_step(&self, from: &GridPos2D, size: &GridSize) -> Option<GridPos2D> {
         let (x_dif, y_dif) = match self {
             GridDir::UP => {
@@ -54,7 +67,98 @@ impl GridDir {
             (y_dif.wrapping_add_unsigned(from.1)) as u32,
         ))
     }
+
+    /// Get opposite direction.
+    /// 
+    /// # Examples
+    /// ```
+    /// use grid_forge::map::GridDir;
+    /// 
+    /// assert_eq!(GridDir::UP, GridDir::DOWN.opposite())
+    /// ```
+    pub fn opposite(&self) -> Self {
+        match self {
+            GridDir::UP => GridDir::DOWN,
+            GridDir::DOWN => GridDir::UP,
+            GridDir::LEFT => GridDir::RIGHT,
+            GridDir::RIGHT => GridDir::LEFT,
+        }
+    }
 }
+
+#[derive(Debug, Clone, Copy)]
+pub struct GridSize {
+    x: u32,
+    y: u32,
+    center: GridPos2D,
+}
+
+impl GridSize {
+    pub fn new(x: u32, y: u32) -> Self {
+        let center = Self::calc_center_approx(x, y);
+        Self { x, y, center }
+    }
+
+    pub fn x(&self) -> u32 {
+        self.x
+    }
+
+    pub fn y(&self) -> u32 {
+        self.y
+    }
+
+    pub fn center(&self) -> GridPos2D {
+        self.center
+    }
+
+    pub fn is_position_valid(&self, position: &GridPos2D) -> bool {
+        position.0 < self.x && position.1 < self.y
+    }
+
+    pub fn get_all_possible_positions(&self) -> Vec<GridPos2D> {
+        let mut out = Vec::new();
+
+        for x in 0..self.x {
+            for y in 0..self.y {
+                out.push((x, y));
+            }
+        }
+
+        out
+    }
+
+    /// Get Position distance from border
+    pub fn distance_from_border(&self, position: &GridPos2D) -> u32 {
+        *[
+            position.0,
+            self.x - position.0 - 1,
+            position.1,
+            self.y - position.1 - 1,
+        ]
+        .iter()
+        .min()
+        .unwrap()
+    }
+
+    /// Get Position distance from center.
+    pub fn distance_from_center(&self, position: &GridPos2D) -> u32 {
+        if self.center.0 < position.0 {
+            position.0 - self.center.0
+        } else {
+            self.center.0 - position.0
+        }
+        .min(if self.center.1 < position.1 {
+            position.1 - self.center.1
+        } else {
+            self.center.1 - position.1
+        })
+    }
+
+    fn calc_center_approx(x: u32, y: u32) -> GridPos2D {
+        (x / 2, y / 2)
+    }
+}
+
 
 /// Basic two-dimensional GridMap.
 ///
@@ -126,6 +230,13 @@ impl<T: GridTile2D> GridMap2D<T> {
         None
     }
 
+    pub fn get_mut_neighbour_at(&mut self, position: &GridPos2D, direction: &GridDir) -> Option<&mut T> {
+        if let Some(position) = direction.march_step(position, &self.size) {
+            return self.get_mut_tile_at_position(&position);
+        }
+        None
+    }
+
     /// Get positions of all tiles within the GridMap
     pub fn get_all_positions(&self) -> Vec<GridPos2D> {
         self.tiles.keys().copied().collect::<Vec<GridPos2D>>()
@@ -162,6 +273,13 @@ impl<T: GridTile2D> GridMap2D<T> {
         }
 
         out
+    }
+
+    /// Fills empty positions using constructor function.
+    pub fn fill_empty_using(&mut self, func: fn(GridPos2D) -> T) {
+        for position in self.get_all_empty_positions() {
+            self.insert_tile(func(position));
+        }
     }
 }
 

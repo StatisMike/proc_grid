@@ -1,16 +1,22 @@
 use std::{error::Error, fmt::Display};
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct BuilderError {
     missing_fields: Vec<&'static str>,
 }
 
 impl BuilderError {
-    pub fn add_missing_field(&mut self, field: &'static str) {
+    pub(crate) fn new() -> Self {
+        Self {
+            missing_fields: Vec::new(),
+        }
+    }
+
+    pub(crate) fn add_missing_field(&mut self, field: &'static str) {
         self.missing_fields.push(field);
     }
 
-    pub fn try_throw(self) -> Result<(), Self> {
+    pub(crate) fn try_throw(self) -> Result<(), Self> {
         if self.missing_fields.is_empty() {
             return Ok(());
         }

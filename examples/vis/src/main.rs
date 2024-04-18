@@ -4,11 +4,13 @@
 
 // Most examples use the `vis` feature.
 
+use grid_forge::{
+    map::{GridSize, vis::VisGrid2D, GridMap2D},
+    tile::{vis::VisTile2D, GridTile2D},
+    GridPos2D,
+};
 use image::Rgb;
 use rand::{Rng, SeedableRng};
-
-use grid_forge::prelude::*;
-use grid_forge::vis::*;
 
 // Enum holding the easily discernable colors for the resulting tiles.
 enum TileColor {
@@ -45,7 +47,7 @@ impl GridTile2D for TwoColoredTile {
 impl VisTile2D<Rgb<u8>> for TwoColoredTile {
     const PIXEL_SIZE: [u32; 2] = [8, 8];
 
-    fn vis_pixel(&self) -> Rgb<u8> {
+    fn vis_pixels(&self) -> Rgb<u8> {
         self.color.rgb()
     }
 }

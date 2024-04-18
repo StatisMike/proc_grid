@@ -6,9 +6,19 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default-features = ["image"]
-image = ["gf_defs/image"]
+default = ["vis", "gen"]
+vis = ["dep:image"]
+gen = ["dep:rand"]
 
 [dependencies]
-gf_defs = { path = "../gf_defs/" }
-gf_gen = { path = "../gf_gen/" }
+# image = { version = "0.25.1", optional = true }
+image = { version = "^0.25.1", optional = true, default-features = false }
+rand = { version = "^0.8.5", optional = true }
+
+[dev-dependencies]
+bencher = "*"
+
+[[bench]]
+path = "benches/walker.rs"
+name = "walker"
+harness = false

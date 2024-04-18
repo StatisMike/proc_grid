@@ -1,19 +1,12 @@
-pub mod prelude {
-    pub use gf_defs::{
-        add_grid_positions,
-        map::{size::GridSize, GridDir, GridMap2D},
-        tile::GridTile2D,
-        GridPos2D,
-    };
-}
+pub mod error;
+pub mod map;
+pub mod tile;
 
-pub mod vis {
-    pub use gf_defs::map::vis::*;
-    pub use gf_defs::tile::vis::*;
-}
+#[cfg(feature = "gen")]
+pub mod gen;
 
-pub mod gen {
-    pub mod walker {
-        pub use gf_gen::walker::*;
-    }
+pub type GridPos2D = (u32, u32);
+
+pub fn add_grid_positions(g1: GridPos2D, g2: GridPos2D) -> GridPos2D {
+    (g1.0 + g2.0, g1.1 + g2.1)
 }
