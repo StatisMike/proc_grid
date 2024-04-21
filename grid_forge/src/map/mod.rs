@@ -1,3 +1,4 @@
+use std::collections::hash_map::Iter;
 use std::collections::HashMap;
 
 use crate::tile::GridTile2D;
@@ -17,21 +18,22 @@ pub enum GridDir {
 
 impl GridDir {
     /// All possible directions from tile to tile within a [GridMap2D].
-    pub const ALL: &'static [GridDir; 4] = &[GridDir::UP, GridDir::DOWN, GridDir::LEFT, GridDir::RIGHT];
+    pub const ALL: &'static [GridDir; 4] =
+        &[GridDir::UP, GridDir::DOWN, GridDir::LEFT, GridDir::RIGHT];
 
     /// Take a step in specified direction from position within the contains of specified [GridSize].
-    /// 
+    ///
     /// # Returns
     /// - resulting [GridPos2D] after the step, or [None] if position is not valid within the specified size.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// use grid_forge::map::GridDir;
     /// use grid_forge::map::size::GridSize;
-    /// 
+    ///
     /// let size = GridSize::new(3, 3);
     /// let position = (0, 1);
-    /// 
+    ///
     /// assert_eq!(Some((0,0)), GridDir::UP.march_step(&position, &size));
     /// assert_eq!(None, GridDir::LEFT.march_step(&position, &size));
     /// ```
@@ -69,11 +71,11 @@ impl GridDir {
     }
 
     /// Get opposite direction.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// use grid_forge::map::GridDir;
-    /// 
+    ///
     /// assert_eq!(GridDir::UP, GridDir::DOWN.opposite())
     /// ```
     pub fn opposite(&self) -> Self {
@@ -159,7 +161,6 @@ impl GridSize {
     }
 }
 
-
 /// Basic two-dimensional GridMap.
 ///
 /// Grid Map holds data of all objects inside, with their [GridPosition2D] and [GridLayer] for easy access and additional
@@ -172,7 +173,7 @@ where
     T: GridTile2D,
 {
     pub(crate) size: GridSize,
-    tiles: HashMap<GridPos2D, T>,
+    pub (crate)tiles: HashMap<GridPos2D, T>,
 }
 
 impl<T: GridTile2D> GridMap2D<T> {
@@ -210,6 +211,10 @@ impl<T: GridTile2D> GridMap2D<T> {
         true
     }
 
+    pub fn remove_tile_at_position(&mut self, position: &GridPos2D) {
+        self.tiles.remove(position);
+    }
+
     pub fn size(&self) -> &GridSize {
         &self.size
     }
@@ -230,7 +235,11 @@ impl<T: GridTile2D> GridMap2D<T> {
         None
     }
 
-    pub fn get_mut_neighbour_at(&mut self, position: &GridPos2D, direction: &GridDir) -> Option<&mut T> {
+    pub fn get_mut_neighbour_at(
+        &mut self,
+        position: &GridPos2D,
+        direction: &GridDir,
+    ) -> Option<&mut T> {
         if let Some(position) = direction.march_step(position, &self.size) {
             return self.get_mut_tile_at_position(&position);
         }
@@ -261,6 +270,10 @@ impl<T: GridTile2D> GridMap2D<T> {
         }
 
         out
+    }
+
+    pub fn iter_tiles(&self) -> Vec<&T> {
+        self.tiles.values().collect::<Vec<&T>>()
     }
 
     /// Destroys the GridMap, returning all tiles with their position adjusted

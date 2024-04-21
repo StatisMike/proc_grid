@@ -7,6 +7,6 @@ edition = "2021"
 
 [dependencies]
 grid_forge = { path = "../../grid_forge", features = ["vis"] }
-image = { version = "^0.25.1", features = ["jpeg"]}
+image = { version = "^0.25.1", features = ["bmp"]}
 rand = { version = "^0.8.5" }
 rand_chacha = "*"

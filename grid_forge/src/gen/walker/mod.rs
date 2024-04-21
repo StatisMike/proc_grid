@@ -1,9 +1,12 @@
-use rand::{distributions::{Distribution, Uniform}, Rng};
+use rand::{
+    distributions::{Distribution, Uniform},
+    Rng,
+};
 use std::collections::HashSet;
 
 use crate::{
     error::BuilderError,
-    map::{GridSize, GridDir, GridMap2D},
+    map::{GridDir, GridMap2D, GridSize},
     tile::GridTile2D,
     GridPos2D,
 };
@@ -192,6 +195,9 @@ where
             return None;
         }
 
-        Some(rand::distributions::Uniform::new(self.min_step_size, self.max_step_size + 1))
+        Some(rand::distributions::Uniform::new(
+            self.min_step_size,
+            self.max_step_size + 1,
+        ))
     }
 }

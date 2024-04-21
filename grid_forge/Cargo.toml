@@ -11,7 +11,7 @@ vis = ["dep:image"]
 gen = ["dep:rand"]
 
 [dependencies]
-# image = { version = "0.25.1", optional = true }
+num-traits = "*"
 image = { version = "^0.25.1", optional = true, default-features = false }
 rand = { version = "^0.8.5", optional = true }
 

@@ -5,11 +5,11 @@
 // Most examples use the `vis` feature.
 
 use grid_forge::{
-    map::{GridSize, vis::VisGrid2D, GridMap2D},
+    map::{vis::VisGrid2D, GridMap2D, GridSize},
     tile::{vis::VisTile2D, GridTile2D},
     GridPos2D,
 };
-use image::Rgb;
+use image::{imageops, Rgb};
 use rand::{Rng, SeedableRng};
 
 // Enum holding the easily discernable colors for the resulting tiles.
@@ -44,11 +44,9 @@ impl GridTile2D for TwoColoredTile {
 }
 
 // Trait necessary
-impl VisTile2D<Rgb<u8>> for TwoColoredTile {
-    const PIXEL_SIZE: [u32; 2] = [8, 8];
-
-    fn vis_pixels(&self) -> Rgb<u8> {
-        self.color.rgb()
+impl VisTile2D<Rgb<u8>, 1, 1> for TwoColoredTile {
+    fn vis_pixels(&self) -> [[Rgb<u8>; 1]; 1] {
+        [[self.color.rgb()]]
     }
 }
 
@@ -79,5 +77,11 @@ fn main() {
 
     // Create image and save it in examples dir.
     let image = map.vis_grid_map();
-    image.save("examples/vis_example.jpg").unwrap();
+    let image = imageops::resize(
+        &image,
+        map.size().x() * 5,
+        map.size().y() * 5,
+        imageops::FilterType::Nearest,
+    );
+    image.save("examples/vis_example.bmp").unwrap();
 }

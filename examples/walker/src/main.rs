@@ -1,10 +1,10 @@
 use grid_forge::{
     gen::walker::GridWalker2DBuilder,
-    map::{GridSize, vis::VisGrid2D},
+    map::{vis::VisGrid2D, GridSize},
     tile::{vis::VisTile2D, GridTile2D},
     GridPos2D,
 };
-use image::Rgb;
+use image::{imageops::resize, Rgb};
 use rand::SeedableRng;
 
 #[derive(Clone, Hash)]
@@ -43,11 +43,9 @@ impl GridTile2D for TwoColoredTile {
     }
 }
 
-impl VisTile2D<Rgb<u8>> for TwoColoredTile {
-    const PIXEL_SIZE: [u32; 2] = [8, 8];
-
-    fn vis_pixels(&self) -> Rgb<u8> {
-        self.color.rgb()
+impl VisTile2D<Rgb<u8>, 1, 1> for TwoColoredTile {
+    fn vis_pixels(&self) -> [[Rgb<u8>; 1]; 1] {
+        [[self.color.rgb()]]
     }
 }
 
@@ -81,6 +79,12 @@ fn main() {
     map.fill_empty_using(|pos| TwoColoredTile::new(pos, TileColor::Gray));
 
     let image = map.vis_grid_map();
+    let image = resize(
+        &image,
+        map.size().x() * 5,
+        map.size().y() * 5,
+        image::imageops::FilterType::Nearest,
+    );
 
-    image.save("examples/walker_example.jpg").unwrap();
+    image.save("examples/walker_example.bmp").unwrap();
 }
