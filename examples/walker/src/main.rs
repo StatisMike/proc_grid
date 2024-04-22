@@ -1,10 +1,10 @@
 use grid_forge::{
     gen::walker::GridWalker2DBuilder,
     map::{vis::VisGrid2D, GridSize},
-    tile::{vis::VisTile2D, GridTile2D},
+    tile::{vis::{DefaultVisPixel, VisTile2D}, GridTile2D},
     GridPos2D,
 };
-use image::{imageops::resize, Rgb};
+use image::imageops::resize;
 use rand::SeedableRng;
 
 #[derive(Clone, Hash)]
@@ -14,10 +14,10 @@ enum TileColor {
 }
 
 impl TileColor {
-    fn rgb(&self) -> Rgb<u8> {
+    fn rgb(&self) -> DefaultVisPixel {
         match self {
-            TileColor::Gray => Rgb::<u8>::from([32, 32, 32]),
-            TileColor::Red => Rgb::<u8>::from([235, 32, 32]),
+            TileColor::Gray => DefaultVisPixel::from([32, 32, 32]),
+            TileColor::Red => DefaultVisPixel::from([235, 32, 32]),
         }
     }
 }
@@ -43,8 +43,8 @@ impl GridTile2D for TwoColoredTile {
     }
 }
 
-impl VisTile2D<Rgb<u8>, 1, 1> for TwoColoredTile {
-    fn vis_pixels(&self) -> [[Rgb<u8>; 1]; 1] {
+impl VisTile2D<DefaultVisPixel, 1, 1> for TwoColoredTile {
+    fn vis_pixels(&self) -> [[DefaultVisPixel; 1]; 1] {
         [[self.color.rgb()]]
     }
 }
@@ -86,5 +86,5 @@ fn main() {
         image::imageops::FilterType::Nearest,
     );
 
-    image.save("examples/walker_example.bmp").unwrap();
+    image.save("examples/walker_example.png").unwrap();
 }

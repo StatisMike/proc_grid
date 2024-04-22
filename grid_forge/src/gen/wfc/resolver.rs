@@ -1,4 +1,4 @@
-use std::{borrow::BorrowMut, cell::RefCell, collections::VecDeque};
+use std::{borrow::{Borrow, BorrowMut}, cell::RefCell, collections::VecDeque};
 
 use crate::{
     map::{GridDir, GridMap2D, GridSize},
@@ -59,6 +59,15 @@ impl WFCGenTile {
 
     pub fn is_collapsed(&self) -> bool {
         self.collapsed
+    }
+
+    pub fn collapse_if_last(&mut self) {
+        if self.collapsed {
+            return;
+        }
+        if self.options.len() == 1 {
+            self.collapse_if_last();
+        }
     }
 
     pub fn collapse(&mut self, option: u64) {
@@ -283,7 +292,7 @@ where
       let mut map = GridMap2D::new(*size);
 
       for (pos, wfc_tile) in self.wfc_grid.tiles.iter() {
-        map.insert_tile(builder.prepare_tile(*pos, wfc_tile.wfc_id));
+        map.insert_tile(builder.create_wfc_tile(*pos, wfc_tile.wfc_id));
       }
 
       map

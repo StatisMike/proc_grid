@@ -6,10 +6,10 @@
 
 use grid_forge::{
     map::{vis::VisGrid2D, GridMap2D, GridSize},
-    tile::{vis::VisTile2D, GridTile2D},
+    tile::{vis::{DefaultVisPixel, VisTile2D}, GridTile2D},
     GridPos2D,
 };
-use image::{imageops, Rgb};
+use image::imageops;
 use rand::{Rng, SeedableRng};
 
 // Enum holding the easily discernable colors for the resulting tiles.
@@ -19,10 +19,10 @@ enum TileColor {
 }
 
 impl TileColor {
-    fn rgb(&self) -> Rgb<u8> {
+    fn rgb(&self) -> DefaultVisPixel {
         match self {
-            TileColor::Blue => Rgb::<u8>::from([52, 119, 235]),
-            TileColor::Green => Rgb::<u8>::from([128, 235, 52]),
+            TileColor::Blue => DefaultVisPixel::from([52, 119, 235]),
+            TileColor::Green => DefaultVisPixel::from([128, 235, 52]),
         }
     }
 }
@@ -44,8 +44,8 @@ impl GridTile2D for TwoColoredTile {
 }
 
 // Trait necessary
-impl VisTile2D<Rgb<u8>, 1, 1> for TwoColoredTile {
-    fn vis_pixels(&self) -> [[Rgb<u8>; 1]; 1] {
+impl VisTile2D<DefaultVisPixel, 1, 1> for TwoColoredTile {
+    fn vis_pixels(&self) -> [[DefaultVisPixel; 1]; 1] {
         [[self.color.rgb()]]
     }
 }
@@ -83,5 +83,5 @@ fn main() {
         map.size().y() * 5,
         imageops::FilterType::Nearest,
     );
-    image.save("examples/vis_example.bmp").unwrap();
+    image.save("examples/vis_example.png").unwrap();
 }

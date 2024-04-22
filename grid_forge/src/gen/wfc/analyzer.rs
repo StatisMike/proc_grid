@@ -19,7 +19,7 @@ where
     // tile_funs: BTreeMap<u64, fn(GridPos2D) -> T>,
     freqs: BTreeMap<u64, u32>,
     tiles_count: u32,
-    neigbours: BTreeMap<u64, WFCNeighbours>,
+    pub(crate) neigbours: BTreeMap<u64, WFCNeighbours>,
     phantom: PhantomData<T>,
 }
 
