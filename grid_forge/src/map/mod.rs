@@ -173,7 +173,7 @@ where
     T: GridTile2D,
 {
     pub(crate) size: GridSize,
-    pub (crate)tiles: HashMap<GridPos2D, T>,
+    pub(crate) tiles: HashMap<GridPos2D, T>,
 }
 
 impl<T: GridTile2D> GridMap2D<T> {

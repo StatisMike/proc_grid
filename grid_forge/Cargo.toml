@@ -12,11 +12,11 @@ gen = ["dep:rand"]
 
 [dependencies]
 num-traits = "*"
-image = { version = "^0.25.1", optional = true, default-features = false }
-rand = { version = "^0.8.5", optional = true }
+image = { version = "0.25.*", optional = true, default-features = false }
+rand = { version = "0.8.*", optional = true }
 
 [dev-dependencies]
-bencher = "*"
+bencher = "0.1.*"
 
 [[bench]]
 path = "benches/walker.rs"

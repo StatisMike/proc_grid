@@ -1,49 +1,42 @@
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    marker::PhantomData,
-};
+use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{
+    gen::{
+        adjacency::{AdjacencyRules, IdentifiableTile},
+        frequency::FrequencyRules,
+    },
     map::{GridDir, GridMap2D},
     GridPos2D,
 };
 
-use super::{pattern::WFCNeighbours, WFCTile};
-
 #[derive(Default, Debug, Clone)]
 pub struct WFCAnalyzer<T>
 where
-    T: WFCTile,
+    T: IdentifiableTile,
 {
     tiles: BTreeSet<u64>,
-    // tile_funs: BTreeMap<u64, fn(GridPos2D) -> T>,
-    freqs: BTreeMap<u64, u32>,
-    tiles_count: u32,
-    pub(crate) neigbours: BTreeMap<u64, WFCNeighbours>,
-    phantom: PhantomData<T>,
+    frequency_rules: FrequencyRules<T>,
+    pub(crate) adjacency_rules: AdjacencyRules<T>,
 }
 
 impl<T> WFCAnalyzer<T>
 where
-    T: WFCTile,
+    T: IdentifiableTile,
 {
     pub fn new() -> Self {
         Self {
             tiles: BTreeSet::new(),
-            // tile_funs: BTreeMap::new(),
-            freqs: BTreeMap::new(),
-            tiles_count: 0,
-            neigbours: BTreeMap::new(),
-            phantom: PhantomData::<T>,
+            frequency_rules: FrequencyRules::default(),
+            adjacency_rules: AdjacencyRules::default(),
         }
     }
 
-    pub fn is_valid_at_dir(&self, option: u64, neighbour_option: u64, dir: &GridDir) -> bool {
-      let neighbours = self.neigbours
-      .get(&option)
-      .unwrap();
-    
-      neighbours.is_valid_at_dir(dir, neighbour_option)
+    pub fn adjacency(&self) -> &AdjacencyRules<T> {
+        &self.adjacency_rules
+    }
+
+    pub fn frequency(&self) -> &FrequencyRules<T> {
+        &self.frequency_rules
     }
 
     pub fn tiles(&self) -> Vec<u64> {
@@ -57,37 +50,15 @@ where
         }
     }
 
-    pub fn probs(&self) -> WFCTileProbs {
-        WFCTileProbs::new(&self.freqs, self.tiles_count)
-    }
-
     fn analyze_tile_at_pos(&mut self, map: &GridMap2D<T>, pos: GridPos2D) {
         if let Some(tile) = map.get_tile_at_position(&pos) {
-            let id = tile.wfc_id();
+            self.frequency_rules.count_tile(tile);
 
             for dir in GridDir::ALL {
                 if let Some(neighbour) = map.get_neighbour_at(&pos, dir) {
-                    if let Some(neighbours) = self.neigbours.get_mut(&id) {
-                        neighbours.insert_at_dir(dir, neighbour.wfc_id());
-                    } else {
-                        let mut neighbours = WFCNeighbours::default();
-                        neighbours.insert_at_dir(dir, neighbour.wfc_id());
-                        self.neigbours.insert(id, neighbours);
-                    }
+                    self.adjacency_rules.add_adjacency(tile, neighbour, *dir)
                 }
             }
-
-            if let Some(freqs) = self.freqs.get_mut(&id) {
-                *freqs += 1;
-            } else {
-                self.freqs.insert(id, 1);
-            }
-
-            if !self.tiles.contains(&id) {
-                self.tiles.insert(id);
-            }
-
-            self.tiles_count += 1;
         }
     }
 }
@@ -143,7 +114,7 @@ impl WFCTileProbs {
 pub(crate) mod test {
     use super::WFCAnalyzer;
     use crate::{
-        gen::wfc::WFCTile,
+        gen::{adjacency::IdentifiableTile, wfc::WFCTile},
         map::{GridMap2D, GridSize},
         tile::GridTile2D,
         GridPos2D,
@@ -174,8 +145,8 @@ pub(crate) mod test {
         }
     }
 
-    impl WFCTile for TT {
-        fn wfc_id(&self) -> u64 {
+    impl IdentifiableTile for TT {
+        fn get_tile_id(&self) -> u64 {
             self.wfc_id
         }
     }
@@ -253,40 +224,38 @@ pub(crate) mod test {
         consumer.analyze(&map);
 
         assert_eq!(4, consumer.tiles.len());
-
-        assert_eq!(map.size().x() * map.size().y(), consumer.tiles_count);
     }
 
-    #[test]
-    fn can_generate_probs() {
-        let map = get_test_map();
+    //     #[test]
+    //     fn can_generate_probs() {
+    //         let map = get_test_map();
 
-        let mut consumer = WFCAnalyzer::<TT>::new();
-        consumer.analyze(&map);
+    //         let mut consumer = WFCAnalyzer::<TT>::new();
+    //         consumer.analyze(&map);
 
-        let probs = consumer.probs();
+    //         let probs = consumer.probs();
 
-        let mut tiles_by_probs = Vec::new();
+    //         let mut tiles_by_probs = Vec::new();
 
-        for (id, prob) in probs.inner.iter() {
-            tiles_by_probs.push((*id, *prob));
-        }
+    //         for (id, prob) in probs.inner.iter() {
+    //             tiles_by_probs.push((*id, *prob));
+    //         }
 
-        tiles_by_probs.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
+    //         tiles_by_probs.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
 
-        let higher_entrophy = probs.total_entropy(&[
-            tiles_by_probs.first().unwrap().0,
-            tiles_by_probs.get(1).unwrap().0,
-        ]);
-        let lower_entrophy = probs.total_entropy(&[
-            tiles_by_probs.first().unwrap().0,
-            tiles_by_probs.last().unwrap().0,
-        ]);
+    //         let higher_entrophy = probs.total_entropy(&[
+    //             tiles_by_probs.first().unwrap().0,
+    //             tiles_by_probs.get(1).unwrap().0,
+    //         ]);
+    //         let lower_entrophy = probs.total_entropy(&[
+    //             tiles_by_probs.first().unwrap().0,
+    //             tiles_by_probs.last().unwrap().0,
+    //         ]);
 
-        assert!(higher_entrophy > lower_entrophy);
+    //         assert!(higher_entrophy > lower_entrophy);
 
-        let one_el_entrophy = probs.total_entropy(&[0]);
+    //         let one_el_entrophy = probs.total_entropy(&[0]);
 
-        assert_eq!(0., one_el_entrophy);
-    }
+    //         assert_eq!(0., one_el_entrophy);
+    //     }
 }

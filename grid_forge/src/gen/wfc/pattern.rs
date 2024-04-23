@@ -53,9 +53,7 @@ impl WFCNeighbours {
     }
 
     pub fn is_valid_at_dir(&self, dir: &GridDir, option: u64) -> bool {
-        let options_at_dir = self.inner
-            .get(dir)
-            .expect("no valid tiles at direction");
+        let options_at_dir = self.inner.get(dir).expect("no valid tiles at direction");
         options_at_dir.contains(&option)
     }
 }

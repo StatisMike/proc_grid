@@ -1,13 +1,24 @@
-use std::{borrow::{Borrow, BorrowMut}, cell::RefCell, collections::VecDeque};
+use std::{
+    borrow::{Borrow, BorrowMut},
+    cell::RefCell,
+    collections::{BTreeMap, VecDeque},
+};
 
 use crate::{
+    gen::{
+        adjacency::{AdjacencyRules, IdentifiableTile},
+        frequency::FrequencyRules,
+        utils::EntrophyQueue,
+    },
     map::{GridDir, GridMap2D, GridSize},
     tile::GridTile2D,
     GridPos2D,
 };
 
 use super::{
-    analyzer::{WFCAnalyzer, WFCTileProbs}, builder::WFCTileBuilder, WFCTile
+    analyzer::{WFCAnalyzer, WFCTileProbs},
+    builder::WFCTileBuilder,
+    WFCTile,
 };
 
 use rand::{
@@ -18,10 +29,12 @@ use rand::{
 #[derive(Clone)]
 pub(crate) struct WFCGenTile {
     pos: GridPos2D,
-    wfc_id: u64,
-    options: Vec<u64>,
+    tile_id: u64,
+    options_with_weights: BTreeMap<u64, u32>,
+    weight_sum: u32,
+    weight_log_sum: f32,
     collapsed: bool,
-    entrophy: f32,
+    entrophy_noise: f32,
 }
 
 impl GridTile2D for WFCGenTile {
@@ -35,25 +48,46 @@ impl GridTile2D for WFCGenTile {
 }
 
 impl WFCGenTile {
-    pub fn new(pos: GridPos2D, options: Vec<u64>) -> Self {
-        Self {
-            pos,
-            wfc_id: 0,
-            options,
-            collapsed: false,
-            entrophy: 0.,
+    fn calc_entrophy(&self) -> f32 {
+        (self.weight_sum as f32).log2() - self.weight_log_sum / (self.weight_sum as f32)
+            + self.entrophy_noise
+    }
+
+    fn calc_entrophy_ext(weight_sum: u32, weight_log_sum: f32) -> f32 {
+        (weight_sum as f32).log2() - weight_log_sum / (weight_sum as f32)
+    }
+
+    pub fn remove_option(&mut self, tile_id: u64) {
+        if let Some(weight) = self.options_with_weights.remove(&tile_id) {
+            self.weight_sum -= weight;
+            self.weight_log_sum -= (weight as f32) * (weight as f32).log2()
         }
     }
 
-    pub fn add_option(&mut self, wfc_id: u64) {
-        if !self.options.contains(&wfc_id) {
-            self.options.push(wfc_id)
+    pub fn collapse<R: Rng>(&mut self, rng: &mut R) -> bool {
+        if self.collapsed || self.options_with_weights.is_empty() {
+            return false;
         }
-    }
+        let mut current_sum = 0;
+        let mut chosen_option = Option::<u64>::None;
+        let random = rng.gen_range(0..=self.weight_sum);
 
-    pub fn remove_option(&mut self, wfc_id: u64) {
-        if let Some(idx) = self.options.iter().position(|x| x == &wfc_id) {
-            self.options.remove(idx);
+        for (option_id, option_weight) in self.options_with_weights.iter() {
+            current_sum += option_weight;
+            if random <= current_sum {
+                chosen_option = Some(*option_id);
+                break;
+            }
+        }
+
+        if let Some(option) = chosen_option {
+            self.tile_id = option;
+            self.collapsed = true;
+            self.options_with_weights.clear();
+            // println!("collapsed tile at: {:?} with option: {option}", self.pos);
+            true
+        } else {
+            unreachable!("should be always possible to collapse!")
         }
     }
 
@@ -61,240 +95,212 @@ impl WFCGenTile {
         self.collapsed
     }
 
-    pub fn collapse_if_last(&mut self) {
-        if self.collapsed {
-            return;
+    pub fn resolve_options_neighbour_collapsed<T: IdentifiableTile>(
+        &mut self,
+        adjacency: &AdjacencyRules<T>,
+        dir: GridDir,
+        neighbour_tile_id: u64,
+    ) -> bool {
+        let mut to_remove = Vec::new();
+        for option in self.options_with_weights.keys() {
+            if !adjacency.is_valid_raw(*option, neighbour_tile_id, dir) {
+                to_remove.push(*option);
+            }
         }
-        if self.options.len() == 1 {
-            self.collapse_if_last();
+        let changed = !to_remove.is_empty();
+        for tile_id in to_remove {
+            self.remove_option(tile_id);
         }
+        changed
     }
 
-    pub fn collapse(&mut self, option: u64) {
-        self.wfc_id = option;
-        self.options.clear();
-        self.collapsed = true;
-        println!("collapsed: {:?} into: {}", self.pos, option);
-    }
-
-    pub fn collapse_last(&mut self) -> bool {
-        if let Some(option) = self.options.last() {
-            self.wfc_id = *option;
-            self.options.clear();
-            self.collapsed = true;
-            return true;
+    pub fn resolve_options_neighbour_uncollapsed<T: IdentifiableTile>(
+        &mut self,
+        adjacency: &AdjacencyRules<T>,
+        dir: GridDir,
+        neighbour_options: &[u64],
+    ) -> bool {
+        let mut to_remove = Vec::new();
+        for option in self.options_with_weights.keys() {
+            if neighbour_options
+                .iter()
+                .all(|neighbour_option| !adjacency.is_valid_raw(*option, *neighbour_option, dir))
+            {
+                to_remove.push(*option);
+            }
         }
-        false
-    }
-
-    pub fn try_collapse(&mut self) -> bool {
-        if self.options.len() == 1 {
-            self.wfc_id = self.options[0];
-            self.options.clear();
-            self.collapsed = true;
-            true
-        } else {
-            false
+        let changed = !to_remove.is_empty();
+        for tile_id in to_remove {
+            self.remove_option(tile_id);
         }
+        // println!("{:?}", self.options_with_weights);
+        changed
     }
 }
 
 pub struct WFCResolver<T>
 where
-    T: WFCTile,
+    T: IdentifiableTile,
 {
     pub(crate) wfc_grid: GridMap2D<WFCGenTile>,
-    analyzer: WFCAnalyzer<T>,
-    probs: WFCTileProbs,
-    all_positions: Vec<GridPos2D>,
-    dist: Uniform<f32>,
-    changed: RefCell<VecDeque<GridPos2D>>,
+    adjacency_rules: AdjacencyRules<T>,
+    frequency_rules: FrequencyRules<T>,
+    entrophy_queue: EntrophyQueue,
+    changed: VecDeque<GridPos2D>,
 }
 
 impl<T> WFCResolver<T>
 where
-    T: WFCTile,
+    T: IdentifiableTile,
 {
-    pub fn new(size: GridSize, analyzer: WFCAnalyzer<T>) -> Self {
-        let mut wfc_grid = GridMap2D::new(size);
-        let probs = analyzer.probs();
+    pub fn new(size: GridSize, analyzer: &WFCAnalyzer<T>) -> Self {
+        let adjacency_rules = analyzer.adjacency().clone();
+        let frequency_rules = analyzer.frequency().clone();
 
-        let options = probs.tiles_by_prob();
+        frequency_rules.debug_print();
 
-        let dist = Uniform::new(0., 1.);
-
-        let all_positions = size.get_all_possible_positions();
-        for position in all_positions.iter() {
-            wfc_grid.insert_tile(WFCGenTile::new(*position, options.clone()));
+        Self {
+            wfc_grid: GridMap2D::new(size),
+            adjacency_rules,
+            frequency_rules,
+            changed: VecDeque::new(),
+            entrophy_queue: EntrophyQueue::default(),
         }
-
-        let mut instance = Self {
-            wfc_grid,
-            analyzer,
-            probs,
-            all_positions: all_positions.clone(),
-            dist,
-            changed: RefCell::new(VecDeque::new()),
-        };
-
-        for position in all_positions.iter() {
-            instance.update_entrophy_at_pos(*position);
-        }
-        instance
     }
 
-    pub fn n_resolved(&self) -> usize
+    pub fn populate_map_all<R>(&mut self, rng: &mut R)
+    where
+        R: Rng,
     {
-      self.wfc_grid.tiles.iter().filter(|(_, t)| t.collapsed).count()
+        let all_positions = self.wfc_grid.size().get_all_possible_positions();
+        self.populate_map(rng, &all_positions);
+    }
+
+    pub fn populate_map<R>(&mut self, rng: &mut R, positions: &[GridPos2D])
+    where
+        R: Rng,
+    {
+        let all_weights = self.frequency_rules.get_all_weights_cloned();
+        let weight_sum = all_weights.values().sum::<u32>();
+        let weight_log_sum = all_weights
+            .values()
+            .map(|v| (*v as f32) * (*v as f32).log2())
+            .sum::<f32>();
+
+        println!("{weight_sum}");
+
+        let entrophy_noise_dist = Uniform::<f32>::new(0., 0.0001);
+        let entrophy_wo_noise = WFCGenTile::calc_entrophy_ext(weight_sum, weight_log_sum);
+
+        for position in positions {
+            let entrophy_noise = entrophy_noise_dist.sample(rng);
+            let tile = WFCGenTile {
+                pos: *position,
+                tile_id: 0,
+                options_with_weights: all_weights.clone(),
+                weight_sum,
+                weight_log_sum,
+                collapsed: false,
+                entrophy_noise,
+            };
+            self.wfc_grid.insert_tile(tile);
+            self.entrophy_queue
+                .insert(*position, entrophy_wo_noise + entrophy_noise);
+        }
+    }
+
+    pub fn n_resolved(&self) -> usize {
+        self.wfc_grid
+            .tiles
+            .iter()
+            .filter(|(_, t)| t.collapsed)
+            .count()
+    }
+
+    pub fn n_all(&self) -> usize {
+        self.wfc_grid.tiles.len()
+    }
+
+    pub fn process_collapse<R: Rng>(&mut self, rng: &mut R) -> bool {
+        if let Some(pos) = self.entrophy_queue.pop_next() {
+            if let Some(tile) = self.wfc_grid.get_mut_tile_at_position(&pos) {
+                if tile.collapse(rng) {
+                    self.changed.push_back(pos);
+                }
+            }
+            true
+        } else {
+            false
+        }
     }
 
     pub fn process<R: Rng>(&mut self, rng: &mut R) -> bool {
-        if let Some(pos) = self.select_lowest_entrophy_pos() {
-            self.collapse_tile_at_pos(pos, rng)
-                .unwrap_or_else(|_| panic!("couldn't collapse tile at {pos:?}"));
-
-            let mut changed = self.changed.borrow_mut().pop_front();
-
-            while let Some(pos_changed) = changed {
-                self.resolve_tile_options_at_pos(pos_changed);
-                changed = self.changed.borrow_mut().pop_front();
-            }
-            return true;
-        }
-
-        false
+        let can_continue = self.process_collapse(rng);
+        self.propagate();
+        can_continue
     }
 
-    fn resolve_tile_options_at_pos(&mut self, pos: GridPos2D) {
-        let tile = self.wfc_grid.get_tile_at_position(&pos).unwrap();
-        let mut to_remove = Vec::new();
-
-        println!("Resolving options at pos: {pos:?}. Options: {:?}", tile.options);
-
-        // retrieve options to remove.
-        for dir in GridDir::ALL {
-            if let Some(neighbour) = self.wfc_grid.get_neighbour_at(&tile.grid_position(), dir) {
-                for neighbour_option in neighbour.options.iter() {
-                  // When tile is collapsed, analyze its collapsed wfcID
-                  if tile.collapsed {
-                    if !self.analyzer.is_valid_at_dir(
-                      *neighbour_option,
-                      tile.wfc_id,
-                      &dir.opposite(),
-                  ) {
-                      to_remove.push((neighbour.grid_position(), *neighbour_option));
-                  }
-                  // When not, analyze the options it can take
-                  } else {
-                    let mut any_valid = false;
-                    for tile_option in tile.options.iter() {
-                      if self.analyzer.is_valid_at_dir(*neighbour_option, *tile_option, &dir.opposite()) {
-                        any_valid = true;
-                      }
+    pub fn propagate(&mut self) {
+        while let Some(changed_pos) = self.changed.pop_front() {
+            if let Some(tile) = self.wfc_grid.get_tile_at_position(&changed_pos) {
+                if tile.collapsed {
+                    let tile_id = tile.tile_id;
+                    for direction in GridDir::ALL {
+                        if let Some(neighbour) =
+                            self.wfc_grid.get_mut_neighbour_at(&changed_pos, direction)
+                        {
+                            if neighbour.resolve_options_neighbour_collapsed(
+                                &self.adjacency_rules,
+                                direction.opposite(),
+                                tile_id,
+                            ) {
+                                self.entrophy_queue
+                                    .insert(neighbour.pos, neighbour.calc_entrophy());
+                                self.changed.push_back(neighbour.pos);
+                            }
+                        }
                     }
-                    if !any_valid {
-                      to_remove.push((neighbour.grid_position(), *neighbour_option))
+                } else {
+                    let tile_options = tile
+                        .options_with_weights
+                        .keys()
+                        .copied()
+                        .collect::<Vec<_>>();
+                    for direction in GridDir::ALL {
+                        if let Some(neighbour) =
+                            self.wfc_grid.get_mut_neighbour_at(&changed_pos, direction)
+                        {
+                            if neighbour.resolve_options_neighbour_uncollapsed(
+                                &self.adjacency_rules,
+                                direction.opposite(),
+                                &tile_options,
+                            ) {
+                                self.entrophy_queue
+                                    .insert(neighbour.pos, neighbour.calc_entrophy());
+                                self.changed.push_back(neighbour.pos);
+                            }
+                        }
                     }
-                  }
                 }
             }
         }
-
-        // remove unfitting options and update entrophy.
-        while let Some((pos, option_id)) = to_remove.pop() {
-            if !self.changed.borrow().contains(&pos){
-              self.changed.borrow_mut().push_back(pos);
-            }
-            self.wfc_grid
-                .get_mut_tile_at_position(&pos)
-                .unwrap()
-                .remove_option(option_id);
-            self.update_entrophy_at_pos(pos);
-        }
-    }
-
-    fn update_entrophy_at_pos(&mut self, pos: GridPos2D) {
-        let tile = self.wfc_grid.get_mut_tile_at_position(&pos).unwrap();
-
-        if tile.collapsed {
-            return;
-        }
-
-        tile.entrophy = self.probs.total_entropy(&tile.options);
-    }
-
-    fn get_entrophy_at_pos(&self, pos: GridPos2D) -> Option<f32> {
-      if let Some(tile) = self.wfc_grid.get_tile_at_position(&pos) {
-        if tile.collapsed {
-          return None;
-        }
-        Some(tile.entrophy)
-      } else {
-        None
-      }
-    }
-
-    fn collapse_tile_at_pos<R: Rng>(&mut self, pos: GridPos2D, rng: &mut R) -> Result<(), ()> {
-        let tile = self.wfc_grid.get_mut_tile_at_position(&pos).unwrap();
-
-        if tile.try_collapse() {
-          if !self.changed.borrow().contains(&pos){
-            self.changed.borrow_mut().push_back(pos);
-          }
-            return Ok(());
-        }
-
-        let random = self.dist.sample(rng);
-
-        for option in tile.options.iter() {
-          let prob = self.probs.wfc_prob(*option).unwrap(); 
-            if prob > random {
-                tile.collapse(*option);
-                if !self.changed.borrow().contains(&pos){
-                  self.changed.borrow_mut().push_back(pos);
-                }
-                return Ok(());
-            }
-        }
-
-        if let Some(option) = tile.options.last() {
-          tile.collapse(*option);
-          if !self.changed.borrow().contains(&pos){
-            self.changed.borrow_mut().push_back(pos);
-          }
-        } else {
-          self.wfc_grid.remove_tile_at_position(&pos);
-        }
-
-        Ok(())
-    }
-
-    fn select_lowest_entrophy_pos(&self) -> Option<GridPos2D> {
-        let mut entrophies = self
-            .all_positions
-            .iter()
-            .filter_map(|pos| {
-                self.get_entrophy_at_pos(*pos)
-                    .map(|entrophy| (pos, entrophy))
-            })
-            .collect::<Vec<_>>();
-
-        entrophies.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
-
-        entrophies.first().map(|e| e.0).copied()
     }
 
     pub fn build_grid<B>(&self, builder: &B) -> GridMap2D<T>
-    where B: WFCTileBuilder<T>
+    where
+        B: WFCTileBuilder<T>,
     {
-      let size = self.wfc_grid.size();
+        let size = self.wfc_grid.size();
 
-      let mut map = GridMap2D::new(*size);
+        let mut map = GridMap2D::new(*size);
 
-      for (pos, wfc_tile) in self.wfc_grid.tiles.iter() {
-        map.insert_tile(builder.create_wfc_tile(*pos, wfc_tile.wfc_id));
-      }
+        for (pos, wfc_tile) in self.wfc_grid.tiles.iter() {
+            if !wfc_tile.collapsed {
+                continue;
+            }
+            map.insert_tile(builder.create_wfc_tile(*pos, wfc_tile.tile_id));
+        }
 
-      map
+        map
     }
 }

@@ -6,6 +6,7 @@ use std::{
 use image::{ImageBuffer, Pixel};
 
 use crate::{
+    gen::adjacency::IdentifiableTile,
     map::{GridMap2D, GridSize},
     tile::{
         vis::{DefaultPixel, VisTile2D},
@@ -14,8 +15,6 @@ use crate::{
     GridPos2D,
 };
 
-use super::{resolver::WFCResolver, WFCTile};
-
 #[derive(Clone, Copy, Debug)]
 pub struct WFCVisTile<P, const WIDTH: usize, const HEIGHT: usize>
 where
@@ -23,7 +22,7 @@ where
 {
     pos: GridPos2D,
     pixels: [[P; WIDTH]; HEIGHT],
-    wfc_id: Option<u64>,
+    tile_id: Option<u64>,
 }
 
 impl<P, const WIDTH: usize, const HEIGHT: usize> GridTile2D for WFCVisTile<P, WIDTH, HEIGHT>
@@ -39,13 +38,13 @@ where
     }
 }
 
-impl<P, const WIDTH: usize, const HEIGHT: usize> WFCTile for WFCVisTile<P, WIDTH, HEIGHT>
+impl<P, const WIDTH: usize, const HEIGHT: usize> IdentifiableTile for WFCVisTile<P, WIDTH, HEIGHT>
 where
     P: Pixel,
 {
-    fn wfc_id(&self) -> u64 {
-        self.wfc_id
-            .expect("can't access `wfc_id` before initialization")
+    fn get_tile_id(&self) -> u64 {
+        self.tile_id
+            .expect("can't access `tile_id` before initialization")
     }
 }
 
@@ -70,8 +69,8 @@ where
 
         let mut pixels = [[P::pix_def(); WIDTH]; HEIGHT];
 
-        for (x, row) in pixels.iter_mut().enumerate() {
-            for (y, pix) in row.iter_mut().enumerate() {
+        for (y, row) in pixels.iter_mut().enumerate() {
+            for (x, pix) in row.iter_mut().enumerate() {
                 *pix = *image.get_pixel(x as u32, y as u32);
             }
         }
@@ -81,7 +80,7 @@ where
         Ok(Self {
             pos: (0, 0),
             pixels,
-            wfc_id,
+            tile_id: wfc_id,
         })
     }
 
@@ -93,8 +92,8 @@ where
 
         let mut pixels = [[P::pix_def(); WIDTH]; HEIGHT];
 
-        for (x_pix, row) in pixels.iter_mut().enumerate() {
-            for (y_pix, pix) in row.iter_mut().enumerate() {
+        for (y_pix, row) in pixels.iter_mut().enumerate() {
+            for (x_pix, pix) in row.iter_mut().enumerate() {
                 *pix = *image.get_pixel(init_x + x_pix as u32, init_y + y_pix as u32);
             }
         }
@@ -104,7 +103,7 @@ where
         Ok(Self {
             pos,
             pixels,
-            wfc_id,
+            tile_id: wfc_id,
         })
     }
 
@@ -118,7 +117,7 @@ where
 pub trait WFCVisGrid2D<T, P, const WIDTH: usize, const HEIGHT: usize>
 where
     Self: Sized,
-    T: GridTile2D + VisTile2D<P, WIDTH, HEIGHT> + WFCTile,
+    T: GridTile2D + VisTile2D<P, WIDTH, HEIGHT> + IdentifiableTile,
     P: Pixel + 'static,
 {
     fn from_image(
@@ -150,7 +149,7 @@ where
 
 // impl<T> WFCResolver<T>
 // where
-//     T: WFCTile,
+//     T: IdentifiableTile,
 // {
 //     pub fn get_image(&self)
 //     {

@@ -1,7 +1,10 @@
 use grid_forge::{
     gen::walker::GridWalker2DBuilder,
     map::{vis::VisGrid2D, GridSize},
-    tile::{vis::{DefaultVisPixel, VisTile2D}, GridTile2D},
+    tile::{
+        vis::{DefaultVisPixel, VisTile2D},
+        GridTile2D,
+    },
     GridPos2D,
 };
 use image::imageops::resize;

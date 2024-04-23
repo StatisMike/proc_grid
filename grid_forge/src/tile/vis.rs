@@ -63,3 +63,72 @@ where
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use image::{GenericImageView, ImageBuffer, Pixel};
+
+    use crate::{tile::GridTile2D, GridPos2D};
+
+    use super::{DefaultVisPixel, VisTile2D};
+
+    struct TestTile {
+        pos: GridPos2D,
+        pixels: [[DefaultVisPixel; 3]; 3]
+    }
+
+    impl TestTile {
+        fn get_test() -> Self {
+            TestTile {
+                pos: (0,0),
+                pixels: [
+                    [
+                        DefaultVisPixel::from([0, 0, 0]),
+                        DefaultVisPixel::from([10, 10, 10]),
+                        DefaultVisPixel::from([20, 20, 20]),   
+                    ],
+                    [
+                        DefaultVisPixel::from([30, 30, 30]),
+                        DefaultVisPixel::from([40, 40, 40]),
+                        DefaultVisPixel::from([50, 50, 50]),   
+                    ],
+                    [
+                        DefaultVisPixel::from([60, 60, 60]),
+                        DefaultVisPixel::from([70, 70, 70]),
+                        DefaultVisPixel::from([80, 80, 80]),   
+                    ]
+                ]
+            }
+        }
+    }
+
+    impl GridTile2D for TestTile {
+        fn grid_position(&self) -> GridPos2D {
+            self.pos
+        }
+    
+        fn set_grid_position(&mut self, position: GridPos2D) {
+            self.pos = position;
+        }
+    }
+
+    impl VisTile2D<DefaultVisPixel, 3, 3> for TestTile {
+        fn vis_pixels(&self) -> [[DefaultVisPixel; 3]; 3] {
+            self.pixels
+        }
+    }
+
+    #[test]
+    fn buffer_same_as_pix() {
+        let tile = TestTile::get_test();
+
+        let mut buffer = ImageBuffer::new(3, 3);
+        tile.vis_to_buffer(&mut buffer);
+
+        for y in 0..3 {
+            for x in 0..3 {
+                assert_eq!(tile.pixels[y][x], buffer.get_pixel(x as u32, y as u32).to_rgb());
+            }
+        }
+    }
+}

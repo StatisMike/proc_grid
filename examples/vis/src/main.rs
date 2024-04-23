@@ -2,11 +2,14 @@
 // This is very useful in development state, as before creating maps out of final desired GridTile it is best to test
 // out the algorithms used, but is rarely useful in final build.
 
-// Most examples use the `vis` feature.
+// Most examples use the `vis` feature to present visual representation of GridMap2D.
 
 use grid_forge::{
     map::{vis::VisGrid2D, GridMap2D, GridSize},
-    tile::{vis::{DefaultVisPixel, VisTile2D}, GridTile2D},
+    tile::{
+        vis::{DefaultVisPixel, VisTile2D},
+        GridTile2D,
+    },
     GridPos2D,
 };
 use image::imageops;
