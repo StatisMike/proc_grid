@@ -1,33 +1,19 @@
-use std::{
-    borrow::{Borrow, BorrowMut},
-    cell::RefCell,
-    collections::{BTreeMap, VecDeque},
-};
+use std::collections::{BTreeMap, VecDeque};
 
-use crate::{
-    gen::{
-        adjacency::{AdjacencyRules, IdentifiableTile},
-        frequency::FrequencyRules,
-        utils::EntrophyQueue,
-    },
-    map::{GridDir, GridMap2D, GridSize},
-    tile::GridTile2D,
-    GridPos2D,
-};
+use crate::gen::adjacency::{AdjacencyAnalyzer, AdjacencyRules, IdentifiableTile};
+use crate::gen::frequency::FrequencyRules;
+use crate::gen::utils::EntrophyQueue;
+use crate::map::{GridDir, GridMap2D, GridSize};
+use crate::tile::GridTile2D;
+use crate::GridPos2D;
 
-use super::{
-    analyzer::{WFCAnalyzer, WFCTileProbs},
-    builder::WFCTileBuilder,
-    WFCTile,
-};
+use super::builder::WFCTileBuilder;
 
-use rand::{
-    distributions::{Distribution, Uniform},
-    Rng,
-};
+use rand::distributions::{Distribution, Uniform};
+use rand::Rng;
 
-#[derive(Clone)]
-pub(crate) struct WFCGenTile {
+#[derive(Clone, Debug)]
+pub struct WFCGenTile {
     pos: GridPos2D,
     tile_id: u64,
     options_with_weights: BTreeMap<u64, u32>,
@@ -57,14 +43,14 @@ impl WFCGenTile {
         (weight_sum as f32).log2() - weight_log_sum / (weight_sum as f32)
     }
 
-    pub fn remove_option(&mut self, tile_id: u64) {
+    fn remove_option(&mut self, tile_id: u64) {
         if let Some(weight) = self.options_with_weights.remove(&tile_id) {
             self.weight_sum -= weight;
             self.weight_log_sum -= (weight as f32) * (weight as f32).log2()
         }
     }
 
-    pub fn collapse<R: Rng>(&mut self, rng: &mut R) -> bool {
+    fn collapse<R: Rng>(&mut self, rng: &mut R) -> bool {
         if self.collapsed || self.options_with_weights.is_empty() {
             return false;
         }
@@ -91,11 +77,7 @@ impl WFCGenTile {
         }
     }
 
-    pub fn is_collapsed(&self) -> bool {
-        self.collapsed
-    }
-
-    pub fn resolve_options_neighbour_collapsed<T: IdentifiableTile>(
+    fn resolve_options_neighbour_collapsed<T: IdentifiableTile>(
         &mut self,
         adjacency: &AdjacencyRules<T>,
         dir: GridDir,
@@ -114,7 +96,7 @@ impl WFCGenTile {
         changed
     }
 
-    pub fn resolve_options_neighbour_uncollapsed<T: IdentifiableTile>(
+    fn resolve_options_neighbour_uncollapsed<T: IdentifiableTile>(
         &mut self,
         adjacency: &AdjacencyRules<T>,
         dir: GridDir,
@@ -153,11 +135,12 @@ impl<T> WFCResolver<T>
 where
     T: IdentifiableTile,
 {
-    pub fn new(size: GridSize, analyzer: &WFCAnalyzer<T>) -> Self {
+    pub fn new<A>(size: GridSize, analyzer: &A) -> Self
+    where
+        A: AdjacencyAnalyzer<T>,
+    {
         let adjacency_rules = analyzer.adjacency().clone();
         let frequency_rules = analyzer.frequency().clone();
-
-        frequency_rules.debug_print();
 
         Self {
             wfc_grid: GridMap2D::new(size),
@@ -217,14 +200,22 @@ where
             .count()
     }
 
+    pub fn n_with_opts(&self) -> usize {
+        self.wfc_grid
+            .tiles
+            .iter()
+            .filter(|(_, t)| !t.collapsed && !t.options_with_weights.is_empty())
+            .count()
+    }
+
     pub fn n_all(&self) -> usize {
         self.wfc_grid.tiles.len()
     }
 
-    pub fn process_collapse<R: Rng>(&mut self, rng: &mut R) -> bool {
+    fn process_collapse<R: Rng>(&mut self, rng: &mut R) -> bool {
         if let Some(pos) = self.entrophy_queue.pop_next() {
             if let Some(tile) = self.wfc_grid.get_mut_tile_at_position(&pos) {
-                if tile.collapse(rng) {
+                if tile.collapse(rng) && !self.changed.contains(&pos) {
                     self.changed.push_back(pos);
                 }
             }
@@ -236,47 +227,54 @@ where
 
     pub fn process<R: Rng>(&mut self, rng: &mut R) -> bool {
         let can_continue = self.process_collapse(rng);
-        self.propagate();
+        while let Some(changed_pos) = self.changed.pop_front() {
+            self.propagate(changed_pos);
+        }
+
         can_continue
     }
 
-    pub fn propagate(&mut self) {
-        while let Some(changed_pos) = self.changed.pop_front() {
-            if let Some(tile) = self.wfc_grid.get_tile_at_position(&changed_pos) {
-                if tile.collapsed {
-                    let tile_id = tile.tile_id;
-                    for direction in GridDir::ALL {
-                        if let Some(neighbour) =
-                            self.wfc_grid.get_mut_neighbour_at(&changed_pos, direction)
-                        {
-                            if neighbour.resolve_options_neighbour_collapsed(
-                                &self.adjacency_rules,
-                                direction.opposite(),
-                                tile_id,
-                            ) {
-                                self.entrophy_queue
-                                    .insert(neighbour.pos, neighbour.calc_entrophy());
+    fn propagate(&mut self, pos: GridPos2D) {
+        if let Some(tile) = self.wfc_grid.get_tile_at_position(&pos) {
+            if tile.collapsed {
+                let tile_id = tile.tile_id;
+                for direction in GridDir::ALL {
+                    if let Some(neighbour) = self.wfc_grid.get_mut_neighbour_at(&pos, direction) {
+                        if neighbour.pos == (8, 13) {
+                            println!("Got it!");
+                        }
+                        if neighbour.resolve_options_neighbour_collapsed(
+                            &self.adjacency_rules,
+                            direction.opposite(),
+                            tile_id,
+                        ) {
+                            self.entrophy_queue
+                                .insert(neighbour.pos, neighbour.calc_entrophy());
+                            if !self.changed.contains(&neighbour.pos) {
                                 self.changed.push_back(neighbour.pos);
                             }
                         }
                     }
-                } else {
-                    let tile_options = tile
-                        .options_with_weights
-                        .keys()
-                        .copied()
-                        .collect::<Vec<_>>();
-                    for direction in GridDir::ALL {
-                        if let Some(neighbour) =
-                            self.wfc_grid.get_mut_neighbour_at(&changed_pos, direction)
-                        {
-                            if neighbour.resolve_options_neighbour_uncollapsed(
-                                &self.adjacency_rules,
-                                direction.opposite(),
-                                &tile_options,
-                            ) {
-                                self.entrophy_queue
-                                    .insert(neighbour.pos, neighbour.calc_entrophy());
+                }
+            } else {
+                let tile_options = tile
+                    .options_with_weights
+                    .keys()
+                    .copied()
+                    .collect::<Vec<_>>();
+                for direction in GridDir::ALL {
+                    if let Some(neighbour) = self.wfc_grid.get_mut_neighbour_at(&pos, direction) {
+                        if neighbour.pos == (8, 13) {
+                            println!("Got it!");
+                        }
+                        if neighbour.resolve_options_neighbour_uncollapsed(
+                            &self.adjacency_rules,
+                            direction.opposite(),
+                            &tile_options,
+                        ) {
+                            self.entrophy_queue
+                                .insert(neighbour.pos, neighbour.calc_entrophy());
+                            if !self.changed.contains(&neighbour.pos) {
                                 self.changed.push_back(neighbour.pos);
                             }
                         }

@@ -6,9 +6,11 @@ use std::{
 };
 
 use crate::{
-    map::GridDir,
+    map::{GridDir, GridMap2D},
     tile::{GridTile2D, GridTileData, WithGridTileData},
 };
+
+use super::frequency::FrequencyRules;
 
 /// Its implementation makes the specific tile identifiable and discernable from other tile instances in regards to tile
 /// type. For the generative algorithms using this trait to match and select tiles, general rules of the tile identity
@@ -59,6 +61,16 @@ where
 //   }
 // }
 
+pub trait AdjacencyAnalyzer<T>
+where
+    T: IdentifiableTile,
+{
+    fn adjacency(&self) -> &AdjacencyRules<T>;
+    fn frequency(&self) -> &FrequencyRules<T>;
+    fn tiles(&self) -> Vec<u64>;
+    fn analyze(&mut self, map: &GridMap2D<T>);
+}
+
 #[derive(Debug)]
 pub struct AdjacencyRules<T>
 where
@@ -102,7 +114,7 @@ where
 
     pub fn debug_print(&self) {
         for (tile_id, rules) in self.inner.iter() {
-            println!("Id: {tile_id}; Rules: {rules:?}");
+            println!("Id: {tile_id}; Rules: {rules:?}")
         }
     }
 

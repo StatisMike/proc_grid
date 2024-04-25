@@ -74,30 +74,30 @@ mod tests {
 
     struct TestTile {
         pos: GridPos2D,
-        pixels: [[DefaultVisPixel; 3]; 3]
+        pixels: [[DefaultVisPixel; 3]; 3],
     }
 
     impl TestTile {
         fn get_test() -> Self {
             TestTile {
-                pos: (0,0),
+                pos: (0, 0),
                 pixels: [
                     [
                         DefaultVisPixel::from([0, 0, 0]),
                         DefaultVisPixel::from([10, 10, 10]),
-                        DefaultVisPixel::from([20, 20, 20]),   
+                        DefaultVisPixel::from([20, 20, 20]),
                     ],
                     [
                         DefaultVisPixel::from([30, 30, 30]),
                         DefaultVisPixel::from([40, 40, 40]),
-                        DefaultVisPixel::from([50, 50, 50]),   
+                        DefaultVisPixel::from([50, 50, 50]),
                     ],
                     [
                         DefaultVisPixel::from([60, 60, 60]),
                         DefaultVisPixel::from([70, 70, 70]),
-                        DefaultVisPixel::from([80, 80, 80]),   
-                    ]
-                ]
+                        DefaultVisPixel::from([80, 80, 80]),
+                    ],
+                ],
             }
         }
     }
@@ -106,7 +106,7 @@ mod tests {
         fn grid_position(&self) -> GridPos2D {
             self.pos
         }
-    
+
         fn set_grid_position(&mut self, position: GridPos2D) {
             self.pos = position;
         }
@@ -127,7 +127,10 @@ mod tests {
 
         for y in 0..3 {
             for x in 0..3 {
-                assert_eq!(tile.pixels[y][x], buffer.get_pixel(x as u32, y as u32).to_rgb());
+                assert_eq!(
+                    tile.pixels[y][x],
+                    buffer.get_pixel(x as u32, y as u32).to_rgb()
+                );
             }
         }
     }

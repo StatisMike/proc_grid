@@ -9,4 +9,4 @@ edition = "2021"
 grid_forge = { path = "../../grid_forge", features = ["gen", "vis"] }
 image = { version = "^0.25.1", features = ["png"]}
 rand = { version = "^0.8.5" }
-rand_chacha = "*"
+rand_chacha = "0.3.*"

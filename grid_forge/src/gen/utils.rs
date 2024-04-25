@@ -26,10 +26,13 @@ impl PartialOrd for EntrophyItem {
 
 impl Ord for EntrophyItem {
     fn cmp(&self, other: &Self) -> Ordering {
-        if let Some(order) = self.entrophy.partial_cmp(&other.entrophy) {
-            return order;
+        match self.entrophy.partial_cmp(&other.entrophy) {
+            Some(Ordering::Equal) | None => match self.pos.0.cmp(&other.pos.0) {
+                Ordering::Equal => self.pos.1.cmp(&other.pos.1),
+                order => order,
+            },
+            Some(order) => order,
         }
-        Ordering::Less
     }
 }
 
@@ -48,11 +51,10 @@ impl Default for EntrophyQueue {
 }
 
 impl EntrophyQueue {
-    pub fn is_empty(&self) -> bool
-    {
+    pub fn is_empty(&self) -> bool {
         self.by_entrophy.is_empty()
     }
-    
+
     pub fn insert(&mut self, pos: GridPos2D, entrophy: f32) {
         if let Some(existing_entrophy) = self.by_pos.remove(&pos) {
             self.by_entrophy.remove(&EntrophyItem {
