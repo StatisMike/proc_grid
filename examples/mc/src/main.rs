@@ -1,9 +1,13 @@
 use grid_forge::{
-    gen::{adjacency::AdjacencyAnalyzer, ms::MSAnalyzer, wfc::{
-        builder::WFCCloneBuilder,
-        resolver::WFCResolver,
-        vis::{WFCVisGrid2D, WFCVisTile},
-    }},
+    gen::{
+        adjacency::AdjacencyAnalyzer,
+        ms::MSAnalyzer,
+        wfc::{
+            builder::WFCCloneBuilder,
+            resolver::WFCResolver,
+            vis::{WFCVisGrid2D, WFCVisTile},
+        },
+    },
     map::{vis::VisGrid2D, GridMap2D, GridSize},
     tile::vis::DefaultVisPixel,
 };
@@ -20,16 +24,16 @@ fn main() {
 
     // Load samples as grid maps.
     let seas_img = image::open("examples/assets/samples/seas.png")
-    // let seas_img = image::open("../assets/samples/seas.png")
+        // let seas_img = image::open("../assets/samples/seas.png")
         .unwrap()
         .into_rgb8();
-    
+
     let seas_grid = MyGrid::from_image(&seas_img).unwrap();
     // Add tiles to the builder.
     builder.add_tiles(seas_grid.iter_tiles(), false);
 
     let roads_img = image::open("examples/assets/samples/roads.png")
-    // let roads_img = image::open("../assets/samples/roads.png")
+        // let roads_img = image::open("../assets/samples/roads.png")
         .unwrap()
         .into_rgb8();
     let roads_grid = MyGrid::from_image(&roads_img).unwrap();
@@ -54,7 +58,7 @@ fn main() {
     let mut rng = rand_chacha::ChaChaRng::from_seed(seed);
 
     // Create new grid via WFC Resolver.
-    let size = GridSize::new(15, 15);
+    let size = GridSize::new(30, 30);
     let mut resolver = WFCResolver::new(size, &analyzer);
     resolver.populate_map_all(&mut rng);
 
@@ -74,7 +78,5 @@ fn main() {
 
     let new_map = resolver.build_grid(&builder);
 
-    new_map.vis_grid_map()
-    .save("model_synthesis.png")
-    .unwrap();
+    new_map.vis_grid_map().save("examples/model_synthesis.png").unwrap();
 }

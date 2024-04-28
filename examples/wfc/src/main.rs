@@ -57,7 +57,7 @@ fn main() {
     let mut rng = rand_chacha::ChaChaRng::from_seed(seed);
 
     // Create new grid via WFC Resolver.
-    let size = GridSize::new(15, 15);
+    let size = GridSize::new(10, 10);
     let mut resolver = WFCResolver::new(size, &analyzer);
     resolver.populate_map_all(&mut rng);
 
@@ -83,6 +83,6 @@ fn main() {
         480,
         image::imageops::FilterType::Nearest,
     )
-    .save("wfc.png")
+    .save("examples/wfc.png")
     .unwrap();
 }

@@ -4,7 +4,6 @@ use crate::tile::GridTile2D;
 
 pub mod analyzer;
 pub mod builder;
-pub mod pattern;
 pub mod resolver;
 
 #[cfg(feature = "vis")]

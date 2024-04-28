@@ -3,17 +3,15 @@ use std::{collections::BTreeMap, marker::PhantomData};
 use crate::tile::identifiable::IdentifiableTile;
 use crate::GridPos2D;
 
-use super::analyzer::WFCAnalyzer;
-
 #[derive(Debug, Clone)]
-pub struct WFCCloneBuilder<T>
+pub struct IdentTileCloneBuilder<T>
 where
     T: IdentifiableTile + Clone,
 {
     tiles: BTreeMap<u64, T>,
 }
 
-impl<T> Default for WFCCloneBuilder<T>
+impl<T> Default for IdentTileCloneBuilder<T>
 where
     T: IdentifiableTile + Clone,
 {
@@ -24,7 +22,7 @@ where
     }
 }
 
-impl<T> WFCCloneBuilder<T>
+impl<T> IdentTileCloneBuilder<T>
 where
     T: IdentifiableTile + Clone,
 {
@@ -38,11 +36,11 @@ where
     }
 }
 
-impl<T> WFCTileBuilder<T> for WFCCloneBuilder<T>
+impl<T> IdentTileBuilder<T> for IdentTileCloneBuilder<T>
 where
     T: IdentifiableTile + Clone,
 {
-    fn create_wfc_tile(&self, pos: GridPos2D, tile_id: u64) -> T {
+    fn create_identifiable_tile(&self, pos: GridPos2D, tile_id: u64) -> T {
         let mut tile = self
             .tiles
             .get(&tile_id)
@@ -52,9 +50,8 @@ where
         tile
     }
 
-    fn missing_tile_creators(&self, analyzer: &WFCAnalyzer<T>) -> Vec<u64> {
-        analyzer
-            .tiles()
+    fn missing_tile_creators(&self, tile_ids: &[u64]) -> Vec<u64> {
+        tile_ids
             .iter()
             .filter(|wfc_id| !self.tiles.contains_key(wfc_id))
             .copied()
@@ -63,14 +60,14 @@ where
 }
 
 #[derive(Debug, Clone)]
-pub struct WFCFunBuilder<T>
+pub struct IdentTileFunBuilder<T>
 where
     T: IdentifiableTile,
 {
     funs: BTreeMap<u64, fn(GridPos2D, u64) -> T>,
 }
 
-impl<T> Default for WFCFunBuilder<T>
+impl<T> Default for IdentTileFunBuilder<T>
 where
     T: IdentifiableTile,
 {
@@ -81,11 +78,11 @@ where
     }
 }
 
-impl<T> WFCTileBuilder<T> for WFCFunBuilder<T>
+impl<T> IdentTileBuilder<T> for IdentTileFunBuilder<T>
 where
     T: IdentifiableTile,
 {
-    fn create_wfc_tile(&self, pos: GridPos2D, tile_id: u64) -> T {
+    fn create_identifiable_tile(&self, pos: GridPos2D, tile_id: u64) -> T {
         let fun = self
             .funs
             .get(&tile_id)
@@ -94,9 +91,8 @@ where
         fun(pos, tile_id)
     }
 
-    fn missing_tile_creators(&self, analyzer: &WFCAnalyzer<T>) -> Vec<u64> {
-        analyzer
-            .tiles()
+    fn missing_tile_creators(&self, tile_ids: &[u64]) -> Vec<u64> {
+        tile_ids
             .iter()
             .filter(|tile_id| !self.funs.contains_key(tile_id))
             .copied()
@@ -104,45 +100,45 @@ where
     }
 }
 
-pub trait WFCConstructTile
+pub trait ConstructableViaIdentifierTile
 where
     Self: IdentifiableTile,
 {
     fn tile_new(pos: GridPos2D, wfc_id: u64) -> Self;
 }
 
-/// [WFCTileBuilder] which creates new tiles with given `wfc_id` based on the tile implementation of
-/// [WFCConstructTile]. No need to add any tile creators.
+/// [`IdentTileBuilder`] which creates new tiles with given identifier based on the tile implementation of
+/// [`ConstructableViaIdentifierTile`]. No need to add any tile creators.
 #[derive(Debug, Clone)]
-pub struct WFCFromTraitBuilder<T>
+pub struct IdentTileTraitBuilder<T>
 where
-    T: WFCConstructTile,
+    T: ConstructableViaIdentifierTile,
 {
     phantom: PhantomData<T>,
 }
 
-impl<T> WFCTileBuilder<T> for WFCFromTraitBuilder<T>
+impl<T> IdentTileBuilder<T> for IdentTileTraitBuilder<T>
 where
-    T: WFCConstructTile,
+    T: ConstructableViaIdentifierTile,
 {
-    fn create_wfc_tile(&self, pos: GridPos2D, wfc_id: u64) -> T {
+    fn create_identifiable_tile(&self, pos: GridPos2D, wfc_id: u64) -> T {
         T::tile_new(pos, wfc_id)
     }
 
-    fn missing_tile_creators(&self, _analyzer: &WFCAnalyzer<T>) -> Vec<u64> {
+    fn missing_tile_creators(&self, _tile_ids: &[u64]) -> Vec<u64> {
         Vec::new()
     }
 }
 
-/// Trait shared by objects, which given the grid position and `wfc_id` of given [WFCTile]-implementing struct
-/// can create correct instance of the object.
-pub trait WFCTileBuilder<T>
+/// Trait shared by objects, which given the grid position and tile identifier of given [`IdentifiableTile`]-implementing
+/// struct can create correct instance of the tile.
+pub trait IdentTileBuilder<T>
 where
     T: IdentifiableTile,
 {
-    /// Creates tile with given `wfc_id` at given grid position.
-    fn create_wfc_tile(&self, pos: GridPos2D, wfc_id: u64) -> T;
+    /// Creates tile with given tile identifier at given grid position.
+    fn create_identifiable_tile(&self, pos: GridPos2D, tile_id: u64) -> T;
 
     /// Returns vector of missing tile creators (if any).
-    fn missing_tile_creators(&self, analyzer: &WFCAnalyzer<T>) -> Vec<u64>;
+    fn missing_tile_creators(&self, tile_ids: &[u64]) -> Vec<u64>;
 }

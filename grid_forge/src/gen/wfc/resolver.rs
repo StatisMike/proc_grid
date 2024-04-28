@@ -1,10 +1,10 @@
 use std::collections::{BTreeMap, VecDeque};
 
-use crate::gen::adjacency::{AdjacencyAnalyzer, AdjacencyRules, IdentifiableTile};
+use crate::gen::adjacency::{AdjacencyAnalyzer, AdjacencyRules};
 use crate::gen::frequency::FrequencyRules;
 use crate::gen::utils::EntrophyQueue;
 use crate::map::{GridDir, GridMap2D, GridSize};
-use crate::tile::GridTile2D;
+use crate::tile::{GridTile2D, identifiable::IdentifiableTile};
 use crate::GridPos2D;
 
 use super::builder::WFCTileBuilder;

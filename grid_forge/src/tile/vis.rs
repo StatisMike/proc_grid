@@ -1,18 +1,24 @@
+use std::hash::Hash;
+
 use image::{ImageBuffer, Luma, LumaA, Pixel, Rgb, Rgba};
 
 use super::GridTile2D;
 
 pub type DefaultVisPixel = Rgb<u8>;
 
-pub trait DefaultPixel {
-    fn pix_def() -> Self;
+pub trait DefaultPixel
+where
+    Self: Pixel + Hash + PartialEq,
+{
+    fn pix_default() -> Self;
 }
 
 impl<T> DefaultPixel for Rgb<T>
 where
     T: image::Primitive,
+    Self: Pixel + Hash + PartialEq,
 {
-    fn pix_def() -> Self {
+    fn pix_default() -> Self {
         Rgb([T::DEFAULT_MIN_VALUE; 3])
     }
 }
@@ -20,8 +26,9 @@ where
 impl<T> DefaultPixel for Rgba<T>
 where
     T: image::Primitive,
+    Self: Pixel + Hash + PartialEq,
 {
-    fn pix_def() -> Self {
+    fn pix_default() -> Self {
         Rgba([T::DEFAULT_MIN_VALUE; 4])
     }
 }
@@ -29,8 +36,9 @@ where
 impl<T> DefaultPixel for Luma<T>
 where
     T: image::Primitive,
+    Self: Pixel + Hash + PartialEq,
 {
-    fn pix_def() -> Self {
+    fn pix_default() -> Self {
         Luma([T::DEFAULT_MIN_VALUE])
     }
 }
@@ -38,8 +46,9 @@ where
 impl<T> DefaultPixel for LumaA<T>
 where
     T: image::Primitive,
+    Self: Pixel + Hash + PartialEq,
 {
-    fn pix_def() -> Self {
+    fn pix_default() -> Self {
         LumaA([T::DEFAULT_MIN_VALUE; 2])
     }
 }
@@ -66,7 +75,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use image::{GenericImageView, ImageBuffer, Pixel};
+    use image::{ImageBuffer, Pixel};
 
     use crate::{tile::GridTile2D, GridPos2D};
 
