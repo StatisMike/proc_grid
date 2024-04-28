@@ -4,8 +4,11 @@ use image::{ImageBuffer, Pixel};
 
 use crate::{tile::vis::DefaultPixel, GridPos2D};
 
+use self::error::VisError;
+
 pub mod collection;
-pub mod loader;
+pub mod error;
+pub mod ops;
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct EmptyTile<P, const WIDTH: usize, const HEIGHT: usize>
@@ -34,7 +37,7 @@ pub(crate) fn write_tile<P, const WIDTH: usize, const HEIGHT: usize>(
     image_buffer: &mut ImageBuffer<P, Vec<P::Subpixel>>,
     pos: GridPos2D,
     pixels: &[[P; WIDTH]; HEIGHT],
-) -> Result<(), VisIoError>
+) -> Result<(), VisError<WIDTH, HEIGHT>>
 where
     P: Pixel,
 {
@@ -49,10 +52,11 @@ where
             {
                 *img_pix = *pixel;
             } else {
-                return Err(VisIoError {
-                    tile_pos: pos,
-                    pixel_pos: (x_pos + x as u32, y_pos + y as u32),
-                });
+                return Err(VisError::new_io(
+                    false,
+                    pos,
+                    (x_pos + x as u32, y_pos + y as u32),
+                ));
             }
         }
     }
@@ -64,7 +68,7 @@ pub(crate) fn read_tile<P, const WIDTH: usize, const HEIGHT: usize>(
     pixels: &mut [[P; WIDTH]; HEIGHT],
     image_buffer: &ImageBuffer<P, Vec<P::Subpixel>>,
     pos: GridPos2D,
-) -> Result<(), VisIoError>
+) -> Result<(), VisError<WIDTH, HEIGHT>>
 where
     P: Pixel,
 {
@@ -79,20 +83,15 @@ where
             {
                 *pixel = *tile_pix;
             } else {
-                return Err(VisIoError {
-                    tile_pos: pos,
-                    pixel_pos: (x_pos + x as u32, y_pos + y as u32),
-                });
+                return Err(VisError::new_io(
+                    true,
+                    pos,
+                    (x_pos + x as u32, y_pos + y as u32),
+                ));
             }
         }
     }
     Ok(())
-}
-
-#[derive(Debug)]
-pub(crate) struct VisIoError {
-    pub tile_pos: GridPos2D,
-    pub pixel_pos: (u32, u32),
 }
 
 #[cfg(test)]

@@ -5,7 +5,7 @@ use std::{
 
 use crate::{
     map::{GridDir, GridMap2D},
-    tile::{GridTile2D, identifiable::IdentifiableTile},
+    tile::{identifiable::IdentifiableTile, GridTile2D},
 };
 
 use super::frequency::FrequencyRules;

@@ -5,7 +5,7 @@ use crate::gen::frequency::FrequencyRules;
 use crate::gen::utils::EntrophyQueue;
 use crate::map::{GridDir, GridMap2D, GridSize};
 use crate::tile::identifiable::builder::IdentTileBuilder;
-use crate::tile::{GridTile2D, identifiable::IdentifiableTile};
+use crate::tile::{identifiable::IdentifiableTile, GridTile2D};
 use crate::GridPos2D;
 
 use super::builder::WFCTileBuilder;

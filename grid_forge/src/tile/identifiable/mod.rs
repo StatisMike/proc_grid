@@ -1,5 +1,5 @@
-use crate::GridPos2D;
 use self::builder::ConstructableViaIdentifierTile;
+use crate::GridPos2D;
 
 use super::GridTile2D;
 
@@ -23,8 +23,8 @@ where
 /// Basic tile struct that implements [`IdentifiableTile`], holding only the most basic information.
 #[derive(Clone, Copy, Debug)]
 pub struct BasicIdentifiableTile2D {
-  pos: GridPos2D,
-  tile_id: u64,
+    pos: GridPos2D,
+    tile_id: u64,
 }
 
 impl GridTile2D for BasicIdentifiableTile2D {
@@ -44,7 +44,7 @@ impl IdentifiableTile for BasicIdentifiableTile2D {
 }
 
 impl ConstructableViaIdentifierTile for BasicIdentifiableTile2D {
-  fn tile_new(pos: GridPos2D, tile_id: u64) -> Self {
-      Self { pos, tile_id }
-  }
+    fn tile_new(pos: GridPos2D, tile_id: u64) -> Self {
+        Self { pos, tile_id }
+    }
 }

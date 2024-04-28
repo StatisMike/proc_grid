@@ -1,27 +1,26 @@
 use grid_forge::{
-    gen::{
-        adjacency::AdjacencyAnalyzer,
-        ms::MSAnalyzer,
-        wfc::resolver::WFCResolver,
-        
-    },
+    gen::{adjacency::AdjacencyAnalyzer, ms::MSAnalyzer, wfc::resolver::WFCResolver},
     map::GridSize,
-    tile::{identifiable::{builder::IdentTileTraitBuilder, BasicIdentifiableTile2D}, vis::DefaultVisPixel}, vis::{collection::VisCollection, loader::VisIdentifiableLoader},
+    tile::{
+        identifiable::{builder::IdentTileTraitBuilder, BasicIdentifiableTile2D},
+        vis::DefaultVisPixel,
+    },
+    vis::{
+        collection::VisCollection,
+        ops::{init_map_image_buffer, load_gridmap_identifiable_auto, write_gridmap_identifiable},
+    },
 };
 use rand::SeedableRng;
 
 fn main() {
     // Initialize builder, which will take care of putting new tiles on specific places.
-    // As `BasicIdentifiableTile` implements `ConstructableViaIdentifierTile`, the `IdentTileTraitBuilder` can be used. 
+    // As `BasicIdentifiableTile` implements `ConstructableViaIdentifierTile`, the `IdentTileTraitBuilder` can be used.
     let builder = IdentTileTraitBuilder::<BasicIdentifiableTile2D>::default();
 
     // Initialize pixel collection, to retrieve pixels for each identifiable tile.
     // Tile visual information need to be provided as const generic arguments there: its `Pixel` type, width and height
     // of each tile as number of pixels in source image.
-    let collection = VisCollection::<BasicIdentifiableTile2D, DefaultVisPixel, 4, 4>::default();
-
-    // Both collection and builder needs to be passed into loader. 
-    let mut loader = VisIdentifiableLoader::new(collection, builder);
+    let mut collection = VisCollection::<BasicIdentifiableTile2D, DefaultVisPixel, 4, 4>::default();
 
     // Load samples as grid maps.
     let seas_img = image::open("examples/assets/samples/seas.png")
@@ -29,16 +28,13 @@ fn main() {
         .unwrap()
         .into_rgb8();
 
-    let seas_grid = loader.analyze_grid_image(&seas_img).unwrap();
+    let seas_grid = load_gridmap_identifiable_auto(&seas_img, &mut collection, &builder).unwrap();
 
     let roads_img = image::open("examples/assets/samples/roads.png")
         // let roads_img = image::open("../assets/samples/roads.png")
         .unwrap()
         .into_rgb8();
-    let roads_grid = loader.analyze_grid_image(&roads_img).unwrap();
-
-    // After loading the maps, we can retrieve the builder and collection for further reuse.
-    let (collection, builder) = loader.into_inner();
+    let roads_grid = load_gridmap_identifiable_auto(&roads_img, &mut collection, &builder).unwrap();
 
     // Construct Model Synthesis analyzer and provide the maps for analyzing.
     let mut analyzer = MSAnalyzer::default();
@@ -78,8 +74,8 @@ fn main() {
 
     let new_map = resolver.build_grid(&builder);
 
-    let mut out_buffer = collection.init_map_image_buffer(&size);
-    collection.draw_map(&new_map, &mut out_buffer).unwrap();
+    let mut out_buffer = init_map_image_buffer::<DefaultVisPixel, 4, 4>(&size);
+    write_gridmap_identifiable(&mut out_buffer, &new_map, &collection).unwrap();
 
     out_buffer.save("examples/model_synthesis.png").unwrap();
 }

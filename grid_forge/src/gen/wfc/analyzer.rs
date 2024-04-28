@@ -86,7 +86,7 @@ pub(crate) mod test {
     use crate::{
         gen::{adjacency::AdjacencyAnalyzer, wfc::analyzer::WFCAnalyzer},
         map::{GridMap2D, GridSize},
-        tile::{GridTile2D, identifiable::IdentifiableTile},
+        tile::{identifiable::IdentifiableTile, GridTile2D},
         GridPos2D,
     };
 

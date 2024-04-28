@@ -1,39 +1,43 @@
 use grid_forge::{
     gen::{
         adjacency::AdjacencyAnalyzer,
-        wfc::{
-            analyzer::WFCAnalyzer,
-            resolver::WFCResolver,
-        },
+        wfc::{analyzer::WFCAnalyzer, resolver::WFCResolver},
     },
     map::GridSize,
-    tile::{identifiable::{builder::IdentTileTraitBuilder, BasicIdentifiableTile2D}, vis::DefaultVisPixel}, vis::{collection::VisCollection, loader::VisIdentifiableLoader},
+    tile::{
+        identifiable::{builder::IdentTileTraitBuilder, BasicIdentifiableTile2D},
+        vis::DefaultVisPixel,
+    },
+    vis::{
+        collection::VisCollection,
+        ops::{init_map_image_buffer, load_gridmap_identifiable_auto, write_gridmap_identifiable},
+    },
 };
 use rand::SeedableRng;
 
 fn main() {
     // Initialize builder, which will take care of putting new tiles on specific places.
-    // As `WFCVisTile` is basic and implements `Clone`, the `WFCCloneBuilder` can be used. In other scenarios, the
-    // `WFCFunBuilder` needs to be used.
+    // As `BasicIdentifiableTile` implements `ConstructableViaIdentifierTile`, the `IdentTileTraitBuilder` can be used.
     let builder = IdentTileTraitBuilder::<BasicIdentifiableTile2D>::default();
-    let collection = VisCollection::<BasicIdentifiableTile2D, DefaultVisPixel, 4, 4>::default();
 
-    let mut loader = VisIdentifiableLoader::new(collection, builder);
+    // Initialize pixel collection, to retrieve pixels for each identifiable tile.
+    // Tile visual information need to be provided as const generic arguments there: its `Pixel` type, width and height
+    // of each tile as number of pixels in source image.
+    let mut collection = VisCollection::<BasicIdentifiableTile2D, DefaultVisPixel, 4, 4>::default();
 
     // Load samples as grid maps.
-    // let seas_img = image::open("../assets/samples/seas.png").unwrap().into_rgb8();
     let seas_img = image::open("examples/assets/samples/seas.png")
+        // let seas_img = image::open("../assets/samples/seas.png")
         .unwrap()
         .into_rgb8();
-    let seas_grid = loader.analyze_grid_image(&seas_img).unwrap();
 
-    // let roads_img = image::open("../assets/samples/roads.png").unwrap().into_rgb8();
+    let seas_grid = load_gridmap_identifiable_auto(&seas_img, &mut collection, &builder).unwrap();
+
     let roads_img = image::open("examples/assets/samples/roads.png")
+        // let roads_img = image::open("../assets/samples/roads.png")
         .unwrap()
         .into_rgb8();
-    let roads_grid = loader.analyze_grid_image(&roads_img).unwrap();
-
-    let (collection, builder) = loader.into_inner();
+    let roads_grid = load_gridmap_identifiable_auto(&roads_img, &mut collection, &builder).unwrap();
 
     // Construct WFC Analyzer and provide the maps for analyzing.
     let mut analyzer = WFCAnalyzer::default();
@@ -73,9 +77,8 @@ fn main() {
 
     let new_map = resolver.build_grid(&builder);
 
-    let mut out_buffer = collection.init_map_image_buffer(&size);
+    let mut out_buffer = init_map_image_buffer::<DefaultVisPixel, 4, 4>(&size);
+    write_gridmap_identifiable(&mut out_buffer, &new_map, &collection).unwrap();
 
-    collection.draw_map(&new_map, &mut out_buffer).unwrap();
-    
-    out_buffer.save("examples/wfc.png").unwrap();
+    out_buffer.save("examples/model_synthesis.png").unwrap();
 }

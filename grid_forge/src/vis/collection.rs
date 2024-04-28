@@ -1,7 +1,5 @@
 use std::{
     collections::{hash_map::Entry, HashMap},
-    error::Error,
-    fmt::Display,
     marker::PhantomData,
 };
 
@@ -10,23 +8,26 @@ use image::{ImageBuffer, Pixel};
 use crate::{
     map::{GridMap2D, GridSize},
     tile::{
-        identifiable::IdentifiableTile, vis::{DefaultPixel, VisTile2D}
+        identifiable::IdentifiableTile,
+        vis::{DefaultPixel, VisTile2D},
     },
     GridPos2D,
 };
 
-use super::{read_tile, write_tile, EmptyTile};
+use super::{error::VisError, ops::create_tile_id_from_pixels, read_tile, write_tile, EmptyTile};
 
 pub enum VisCollectionOutcome<P, const WIDTH: usize, const HEIGHT: usize>
-where P: DefaultPixel
+where
+    P: DefaultPixel,
 {
     Empty,
     Added,
     Existing,
-    Replaced([[P; WIDTH]; HEIGHT])
+    Replaced([[P; WIDTH]; HEIGHT]),
 }
 
-pub type VisCollectionResult<P, const WIDTH: usize, const HEIGHT: usize> = Result<VisCollectionOutcome<P, WIDTH, HEIGHT>, VisError>;
+pub type VisCollectionResult<P, const WIDTH: usize, const HEIGHT: usize> =
+    Result<VisCollectionOutcome<P, WIDTH, HEIGHT>, VisError<WIDTH, HEIGHT>>;
 
 #[derive(Debug, Clone)]
 pub struct VisCollection<T, P, const WIDTH: usize, const HEIGHT: usize>
@@ -34,8 +35,14 @@ where
     T: IdentifiableTile,
     P: Pixel + DefaultPixel,
 {
+    /// Contains provided or created `type_id` alongside the pixels of given tile.
     inner: HashMap<u64, [[P; WIDTH]; HEIGHT]>,
+    /// Lookup table for created `type_id` alongside the value for the key. For safety in situations
+    /// where there was provided `type_id` differing for the one that is created from pixels.
+    rev: HashMap<u64, u64>,
+    /// Optional specification for pixels which should be omitted during load.
     empty: Option<EmptyTile<P, WIDTH, HEIGHT>>,
+    /// Marker for analyzed tile struct type.
     tile: PhantomData<T>,
 }
 
@@ -47,6 +54,7 @@ where
     fn default() -> Self {
         Self {
             inner: Default::default(),
+            rev: Default::default(),
             empty: None,
             tile: PhantomData::<T>,
         }
@@ -85,6 +93,7 @@ where
         tile: &V,
     ) -> VisCollectionOutcome<P, WIDTH, HEIGHT> {
         let inner = &mut self.inner;
+        let rev = &mut self.rev;
         if let Entry::Vacant(e) = inner.entry(tile.get_tile_id()) {
             let pix = tile.vis_pixels();
             if Self::check_empty_id(&self.empty, tile.get_tile_id())
@@ -93,6 +102,10 @@ where
                 return VisCollectionOutcome::Empty;
             }
             e.insert(pix);
+            let to_remove = rev.insert(create_tile_id_from_pixels(&pix), tile.get_tile_id());
+            if let Some(derived_id) = to_remove {
+                rev.remove(&derived_id);
+            }
             return VisCollectionOutcome::Added;
         }
         VisCollectionOutcome::Existing
@@ -114,6 +127,8 @@ where
         let pix = tile.vis_pixels();
         if !Self::check_empty_id(&self.empty, tile_id) && !Self::check_empty_pix(&self.empty, &pix)
         {
+            self.rev
+                .insert(create_tile_id_from_pixels(&pix), tile.get_tile_id());
             match self.inner.insert(tile_id, pix) {
                 Some(pixels) => VisCollectionOutcome::Replaced(pixels),
                 None => VisCollectionOutcome::Added,
@@ -150,6 +165,8 @@ where
             }
             let pixels = Self::read_pixels_for_tile_at_pos(buffer, tile.grid_position())?;
             e.insert(pixels);
+            self.rev
+                .insert(create_tile_id_from_pixels(&pixels), tile.get_tile_id());
             return Ok(VisCollectionOutcome::Added);
         }
         Ok(VisCollectionOutcome::Existing)
@@ -159,11 +176,13 @@ where
         &mut self,
         tile: &T,
         buffer: &ImageBuffer<P, Vec<P::Subpixel>>,
-    ) -> VisCollectionResult<P, WIDTH, HEIGHT>  {
+    ) -> VisCollectionResult<P, WIDTH, HEIGHT> {
         if Self::check_empty_id(&self.empty, tile.get_tile_id()) {
             return Ok(VisCollectionOutcome::Empty);
         }
         let pixels = Self::read_pixels_for_tile_at_pos(buffer, tile.grid_position())?;
+        self.rev
+            .insert(create_tile_id_from_pixels(&pixels), tile.get_tile_id());
         Ok(self.set_tile_pixels_manual(tile.get_tile_id(), pixels))
     }
 
@@ -171,7 +190,7 @@ where
         &mut self,
         grid_map: &GridMap2D<T>,
         buffer: &ImageBuffer<P, Vec<P::Subpixel>>,
-    ) -> Result<(), VisError> {
+    ) -> Result<(), VisError<WIDTH, HEIGHT>> {
         for position in grid_map.get_all_positions() {
             if let Some(tile) = grid_map.get_tile_at_position(&position) {
                 self.add_tile_pixels(tile, buffer)?;
@@ -180,12 +199,18 @@ where
         Ok(())
     }
 
-    pub fn add_tile_pixels_manual(&mut self, tile_id: u64, pixels: [[P; WIDTH]; HEIGHT]) -> VisCollectionOutcome<P, WIDTH, HEIGHT> {
+    pub fn add_tile_pixels_manual(
+        &mut self,
+        tile_id: u64,
+        pixels: [[P; WIDTH]; HEIGHT],
+    ) -> VisCollectionOutcome<P, WIDTH, HEIGHT> {
         if let Entry::Vacant(e) = self.inner.entry(tile_id) {
             if Self::check_empty_pix(&self.empty, &pixels) {
                 return VisCollectionOutcome::Empty;
             }
             e.insert(pixels);
+            self.rev
+                .insert(create_tile_id_from_pixels(&pixels), tile_id);
             return VisCollectionOutcome::Added;
         }
         VisCollectionOutcome::Existing
@@ -195,10 +220,12 @@ where
         &mut self,
         tile_id: u64,
         pixels: [[P; WIDTH]; HEIGHT],
-    ) -> VisCollectionOutcome<P, WIDTH, HEIGHT>  {
+    ) -> VisCollectionOutcome<P, WIDTH, HEIGHT> {
         if Self::check_empty_pix(&self.empty, &pixels) {
             return VisCollectionOutcome::Empty;
         }
+        self.rev
+            .insert(create_tile_id_from_pixels(&pixels), tile_id);
         match self.inner.insert(tile_id, pixels) {
             Some(pixels) => VisCollectionOutcome::Replaced(pixels),
             None => VisCollectionOutcome::Added,
@@ -206,26 +233,31 @@ where
     }
 
     //----- Output -----//
+    pub fn get_tile_id_by_pixels(&self, pixels: &[[P; WIDTH]; HEIGHT]) -> Option<&u64> {
+        self.rev.get(&create_tile_id_from_pixels(pixels))
+    }
+
+    pub fn is_empty(&self, check_pixels: &[[P; WIDTH]; HEIGHT]) -> bool {
+        if let Some(EmptyTile { tile_id: _, pixels }) = self.empty {
+            &pixels == check_pixels
+        } else {
+            false
+        }
+    }
 
     pub fn draw_tile(
         &self,
         tile: &T,
         buffer: &mut ImageBuffer<P, Vec<P::Subpixel>>,
-    ) -> Result<(), VisError> {
+    ) -> Result<(), VisError<WIDTH, HEIGHT>> {
         if let Some(pixels) = self.inner.get(&tile.get_tile_id()) {
-            if let Err(err) = write_tile(buffer, tile.grid_position(), pixels) {
-                return Err(VisError::Write {
-                    tile_pos: err.tile_pos,
-                    pixel_pos: err.pixel_pos,
-                });
-            }
+            write_tile(buffer, tile.grid_position(), pixels)?;
             return Ok(());
         }
-        Err(VisError::NoPixelsError(tile.get_tile_id()))
+        Err(VisError::new_nopix(tile.get_tile_id()))
     }
 
     pub fn init_map_image_buffer(&self, grid_size: &GridSize) -> ImageBuffer<P, Vec<P::Subpixel>> {
-
         ImageBuffer::new(grid_size.x() * WIDTH as u32, grid_size.y() * HEIGHT as u32)
     }
 
@@ -233,7 +265,7 @@ where
         &self,
         grid_map: &GridMap2D<T>,
         buffer: &mut ImageBuffer<P, Vec<P::Subpixel>>,
-    ) -> Result<(), VisError> {
+    ) -> Result<(), VisError<WIDTH, HEIGHT>> {
         for position in grid_map.get_all_positions() {
             if let Some(tile) = grid_map.get_tile_at_position(&position) {
                 self.draw_tile(tile, buffer)?;
@@ -243,17 +275,12 @@ where
     }
 
     // ------ Private ------ //
-    fn read_pixels_for_tile_at_pos(
+    pub(crate) fn read_pixels_for_tile_at_pos(
         buffer: &ImageBuffer<P, Vec<P::Subpixel>>,
         pos: GridPos2D,
-    ) -> Result<[[P; WIDTH]; HEIGHT], VisError> {
+    ) -> Result<[[P; WIDTH]; HEIGHT], VisError<WIDTH, HEIGHT>> {
         let mut pixels = [[P::pix_default(); WIDTH]; HEIGHT];
-        if let Err(err) = read_tile(&mut pixels, buffer, pos) {
-            return Err(VisError::Read {
-                tile_pos: err.tile_pos,
-                pixel_pos: err.pixel_pos,
-            });
-        }
+        read_tile(&mut pixels, buffer, pos)?;
         Ok(pixels)
     }
 
@@ -274,38 +301,3 @@ where
         false
     }
 }
-
-// ---------- Errors ---------- //
-#[derive(Debug)]
-pub enum VisError {
-    NoPixelsError(u64),
-    Read {
-        tile_pos: GridPos2D,
-        pixel_pos: (u32, u32),
-    },
-    Write {
-        tile_pos: GridPos2D,
-        pixel_pos: (u32, u32),
-    },
-}
-
-impl Display for VisError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::NoPixelsError(tile_id) => write!(
-                    f,
-                    "cannot draw tile: no pixels for tile of id: {tile_id} is present"
-                ),
-            Self::Read {
-                tile_pos,
-                pixel_pos,
-            } => write!(f, "cannot read tile pixels: image buffer is out of bounds for tile on position: {tile_pos:?}, with pixel: {pixel_pos:?}"),
-            Self::Write {
-                tile_pos,
-                pixel_pos,
-            } => write!(f, "cannot draw tile: image buffer is out of bounds for tile on position: {tile_pos:?}, with pixel: {pixel_pos:?}"),
-        }
-    }
-}
-
-impl Error for VisError {}

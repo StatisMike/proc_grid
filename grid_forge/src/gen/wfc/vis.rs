@@ -8,8 +8,9 @@ use image::{ImageBuffer, Pixel};
 use crate::{
     map::{GridMap2D, GridSize},
     tile::{
+        identifiable::IdentifiableTile,
         vis::{DefaultPixel, VisTile2D},
-        GridTile2D, identifiable::IdentifiableTile,
+        GridTile2D,
     },
     GridPos2D,
 };

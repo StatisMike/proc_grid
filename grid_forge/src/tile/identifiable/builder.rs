@@ -117,16 +117,16 @@ where
     phantom: PhantomData<T>,
 }
 
-impl <T>Default for IdentTileTraitBuilder<T>
-where 
-    T: ConstructableViaIdentifierTile
-    {
-     fn default() -> Self {
-         Self {
-            phantom: PhantomData::<T>
-         }
-     }   
+impl<T> Default for IdentTileTraitBuilder<T>
+where
+    T: ConstructableViaIdentifierTile,
+{
+    fn default() -> Self {
+        Self {
+            phantom: PhantomData::<T>,
+        }
     }
+}
 
 impl<T> IdentTileBuilder<T> for IdentTileTraitBuilder<T>
 where
