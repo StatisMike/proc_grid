@@ -1,8 +1,9 @@
 use std::collections::BTreeSet;
 
-use crate::gen::adjacency::{AdjacencyAnalyzer, AdjacencyRules, IdentifiableTile};
+use crate::gen::adjacency::{AdjacencyAnalyzer, AdjacencyRules};
 use crate::gen::frequency::FrequencyRules;
 use crate::map::{GridDir, GridMap2D};
+use crate::tile::identifiable::IdentifiableTile;
 use crate::GridPos2D;
 
 pub struct WFCAnalyzer<T>
@@ -83,12 +84,9 @@ where
 #[cfg(test)]
 pub(crate) mod test {
     use crate::{
-        gen::{
-            adjacency::{AdjacencyAnalyzer, IdentifiableTile},
-            wfc::analyzer::WFCAnalyzer,
-        },
+        gen::{adjacency::AdjacencyAnalyzer, wfc::analyzer::WFCAnalyzer},
         map::{GridMap2D, GridSize},
-        tile::GridTile2D,
+        tile::{identifiable::IdentifiableTile, GridTile2D},
         GridPos2D,
     };
 

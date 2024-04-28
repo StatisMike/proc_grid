@@ -5,12 +5,10 @@
 // Most examples use the `vis` feature to present visual representation of GridMap2D.
 
 use grid_forge::{
-    map::{vis::VisGrid2D, GridMap2D, GridSize},
-    tile::{
+    map::{GridMap2D, GridSize}, tile::{
         vis::{DefaultVisPixel, VisTile2D},
         GridTile2D,
-    },
-    GridPos2D,
+    }, vis::ops::{init_map_image_buffer, write_gridmap_vis}, GridPos2D
 };
 use image::imageops;
 use rand::{Rng, SeedableRng};
@@ -65,7 +63,8 @@ fn main() {
     let mut rng = rand_chacha::ChaChaRng::from_seed(seed);
 
     // Create an empty GridMap...
-    let mut map = GridMap2D::<TwoColoredTile>::new(GridSize::new(100, 100));
+    let size = GridSize::new(100, 100);
+    let mut map = GridMap2D::<TwoColoredTile>::new(size);
 
     // and fill it with colors at random.
     for pos in map.size().get_all_possible_positions() {
@@ -79,7 +78,8 @@ fn main() {
     }
 
     // Create image and save it in examples dir.
-    let image = map.vis_grid_map();
+    let mut image = init_map_image_buffer::<DefaultVisPixel, 1, 1>(&size);
+    write_gridmap_vis(&mut image, &map).unwrap();
     let image = imageops::resize(
         &image,
         map.size().x() * 5,

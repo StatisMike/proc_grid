@@ -3,7 +3,7 @@ use std::{
     marker::PhantomData,
 };
 
-use super::adjacency::IdentifiableTile;
+use crate::tile::identifiable::IdentifiableTile;
 
 #[derive(Debug)]
 pub struct FrequencyRules<T>

@@ -6,9 +6,9 @@ use std::{
 use image::{ImageBuffer, Pixel};
 
 use crate::{
-    gen::adjacency::IdentifiableTile,
     map::{GridMap2D, GridSize},
     tile::{
+        identifiable::IdentifiableTile,
         vis::{DefaultPixel, VisTile2D},
         GridTile2D,
     },
@@ -67,7 +67,7 @@ where
     ) -> Result<Self, VisAnalyzeError<WIDTH, HEIGHT>> {
         check_tile_vis_size(image)?;
 
-        let mut pixels = [[P::pix_def(); WIDTH]; HEIGHT];
+        let mut pixels = [[P::pix_default(); WIDTH]; HEIGHT];
 
         for (y, row) in pixels.iter_mut().enumerate() {
             for (x, pix) in row.iter_mut().enumerate() {
@@ -90,7 +90,7 @@ where
     ) -> Result<Self, VisAnalyzeError<WIDTH, HEIGHT>> {
         let (init_x, init_y) = (pos.0 * WIDTH as u32, pos.1 * HEIGHT as u32);
 
-        let mut pixels = [[P::pix_def(); WIDTH]; HEIGHT];
+        let mut pixels = [[P::pix_default(); WIDTH]; HEIGHT];
 
         for (y_pix, row) in pixels.iter_mut().enumerate() {
             for (x_pix, pix) in row.iter_mut().enumerate() {

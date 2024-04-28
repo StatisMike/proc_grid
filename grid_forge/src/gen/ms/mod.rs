@@ -5,11 +5,12 @@ use std::{
 
 use crate::{
     map::{GridDir, GridMap2D},
+    tile::identifiable::IdentifiableTile,
     GridPos2D,
 };
 
 use super::{
-    adjacency::{AdjacencyAnalyzer, AdjacencyRules, IdentifiableTile},
+    adjacency::{AdjacencyAnalyzer, AdjacencyRules},
     frequency::FrequencyRules,
 };
 
@@ -46,7 +47,7 @@ where
     T: IdentifiableTile,
 {
     fn analyze(&mut self, map: &GridMap2D<T>) {
-      self.adjacency_rules = AdjacencyRules::default();
+        self.adjacency_rules = AdjacencyRules::default();
         for position in map.get_all_positions() {
             self.analyze_tile_at_pos(map, position);
         }
@@ -86,66 +87,79 @@ where
     }
 
     fn generate_adjacency_rules(&mut self) {
-      let border_ids = self.border_types.keys().copied().collect::<Vec<_>>();
+        let border_ids = self.border_types.keys().copied().collect::<Vec<_>>();
 
-      for border_id in border_ids.iter() {
-          let borders = self.border_types.get(border_id).unwrap().clone();
-          let left_borders = borders
-              .iter()
-              .filter_map(|(tile, dir)| {
-                  if *dir == GridDir::LEFT {
-                      Some(*tile)
-                  } else {
-                      None
-                  }
-              })
-              .collect::<Vec<_>>();
-          let right_borders = borders
-              .iter()
-              .filter_map(|(tile, dir)| {
-                  if *dir == GridDir::RIGHT {
-                      Some(*tile)
-                  } else {
-                      None
-                  }
-              })
-              .collect::<Vec<_>>();
+        for border_id in border_ids.iter() {
+            let borders = self.border_types.get(border_id).unwrap().clone();
+            let left_borders = borders
+                .iter()
+                .filter_map(|(tile, dir)| {
+                    if *dir == GridDir::LEFT {
+                        Some(*tile)
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<_>>();
+            let right_borders = borders
+                .iter()
+                .filter_map(|(tile, dir)| {
+                    if *dir == GridDir::RIGHT {
+                        Some(*tile)
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<_>>();
 
-          for tile_first in left_borders.iter() {
-              for tile_second in right_borders.iter() {
-                  self.adjacency_rules.add_adjacency_raw(*tile_first, *tile_second, GridDir::LEFT);
-                  self.adjacency_rules.add_adjacency_raw(*tile_second, *tile_first, GridDir::RIGHT);
-              }
-          }
+            for tile_first in left_borders.iter() {
+                for tile_second in right_borders.iter() {
+                    self.adjacency_rules.add_adjacency_raw(
+                        *tile_first,
+                        *tile_second,
+                        GridDir::LEFT,
+                    );
+                    self.adjacency_rules.add_adjacency_raw(
+                        *tile_second,
+                        *tile_first,
+                        GridDir::RIGHT,
+                    );
+                }
+            }
 
-          let up_borders = borders
-              .iter()
-              .filter_map(|(tile, dir)| {
-                  if *dir == GridDir::UP {
-                      Some(*tile)
-                  } else {
-                      None
-                  }
-              })
-              .collect::<Vec<_>>();
-          let down_borders = borders
-              .iter()
-              .filter_map(|(tile, dir)| {
-                  if *dir == GridDir::DOWN {
-                      Some(*tile)
-                  } else {
-                      None
-                  }
-              })
-              .collect::<Vec<_>>();
+            let up_borders = borders
+                .iter()
+                .filter_map(|(tile, dir)| {
+                    if *dir == GridDir::UP {
+                        Some(*tile)
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<_>>();
+            let down_borders = borders
+                .iter()
+                .filter_map(|(tile, dir)| {
+                    if *dir == GridDir::DOWN {
+                        Some(*tile)
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<_>>();
 
-          for tile_first in up_borders.iter() {
-              for tile_second in down_borders.iter() {
-                  self.adjacency_rules.add_adjacency_raw(*tile_first, *tile_second, GridDir::UP);
-                  self.adjacency_rules.add_adjacency_raw(*tile_second, *tile_first, GridDir::DOWN);
-              }
-          }
-      }
+            for tile_first in up_borders.iter() {
+                for tile_second in down_borders.iter() {
+                    self.adjacency_rules
+                        .add_adjacency_raw(*tile_first, *tile_second, GridDir::UP);
+                    self.adjacency_rules.add_adjacency_raw(
+                        *tile_second,
+                        *tile_first,
+                        GridDir::DOWN,
+                    );
+                }
+            }
+        }
     }
 
     pub(crate) fn add_adjacency_raw(
@@ -169,7 +183,7 @@ where
                 self.set_border_id(id_border, tile_id, direction);
             }
             (Some(id_border), None) => {
-                self.set_border_id(id_border, tile_id, &direction.opposite());
+                self.set_border_id(id_border, adjacent_id, &direction.opposite());
             }
             (Some(id_left), Some(id_right)) => {
                 if id_left == id_right {

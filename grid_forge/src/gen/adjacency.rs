@@ -1,65 +1,14 @@
 use std::{
     collections::{BTreeSet, HashMap},
-    hash::{DefaultHasher, Hash, Hasher},
     marker::PhantomData,
-    ops::Index,
 };
 
 use crate::{
     map::{GridDir, GridMap2D},
-    tile::{GridTile2D, GridTileData, WithGridTileData},
+    tile::{identifiable::IdentifiableTile, GridTile2D},
 };
 
 use super::frequency::FrequencyRules;
-
-/// Its implementation makes the specific tile identifiable and discernable from other tile instances in regards to tile
-/// type. For the generative algorithms using this trait to match and select tiles, general rules of the tile identity
-/// when implementing this trait manually should be:
-///
-/// - its position **should not be ever taken into account**. Tile of these same type could be placed on different positions
-/// on the GridMap.
-/// - other properties of the tile (such as visual representation) *can* be taken into account depending on your specific
-/// needs.
-///
-/// # Default implementation
-/// If tile implements [WithGridTileData](crate::tile::WithGridTileData) and its [GridTileData](crate::tile::GridTileData)
-/// implements [Hash](std::hash::Hash), the value of the hash will be used as the `tile_id`. It isn't very efficient, as
-/// the value is not cached - it will be recalculated every time it will be referenced. As such, it is advisable to be
-/// implemented by the tile struct declarer.
-///
-/// That said, for smaller GridMaps its speed should be enough.
-///
-/// Used in algorithms:
-/// - Wafe Function Collapse ([WFC](crate::gen::wfc))
-pub trait IdentifiableTile
-where
-    Self: GridTile2D,
-{
-    fn get_tile_id(&self) -> u64;
-}
-
-// impl<T, Data> IdentifiableTile for T
-// where T: GridTile2D + IdentifiableTileWithData<Data>,
-// Data: GridTileData + Hash {
-//     fn get_tile_id(&self) -> u64 {
-//         self.get_data_hash()
-//     }
-// }
-
-// // Trait for tiles with associated data
-// pub trait IdentifiableTileWithData<Data>
-// where
-//   Self: WithGridTileData<Data>,
-//   Data: GridTileData + Hash
-// {
-//   type Data: GridTileData + Hash;
-
-//   fn get_data_hash(&self) -> u64 {
-//     let mut hasher = DefaultHasher::default();
-//     self.tile_data().hash(&mut hasher);
-//     hasher.finish()
-//   }
-// }
 
 pub trait AdjacencyAnalyzer<T>
 where
