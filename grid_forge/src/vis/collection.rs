@@ -8,10 +8,9 @@ use std::{
 use image::{ImageBuffer, Pixel};
 
 use crate::{
-    map::GridMap2D,
+    map::{GridMap2D, GridSize},
     tile::{
-        vis::{DefaultPixel, VisTile2D},
-        identifiable::IdentifiableTile,
+        identifiable::IdentifiableTile, vis::{DefaultPixel, VisTile2D}
     },
     GridPos2D,
 };
@@ -223,6 +222,11 @@ where
             return Ok(());
         }
         Err(VisError::NoPixelsError(tile.get_tile_id()))
+    }
+
+    pub fn init_map_image_buffer(&self, grid_size: &GridSize) -> ImageBuffer<P, Vec<P::Subpixel>> {
+
+        ImageBuffer::new(grid_size.x() * WIDTH as u32, grid_size.y() * HEIGHT as u32)
     }
 
     pub fn draw_map(

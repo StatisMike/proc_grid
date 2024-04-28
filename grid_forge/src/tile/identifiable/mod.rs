@@ -1,4 +1,6 @@
 use crate::GridPos2D;
+use self::builder::ConstructableViaIdentifierTile;
+
 use super::GridTile2D;
 
 pub mod builder;
@@ -16,14 +18,6 @@ where
     Self: GridTile2D,
 {
     fn get_tile_id(&self) -> u64;
-}
-
-/// Its implementation provides a way to construct new tile instance based on its GridPosition and tile ID.
-pub trait ConstructableViaIdentiferTile
-where
-    Self: IdentifiableTile,
-{
-    fn tile_new(pos: GridPos2D, tile_id: u64) -> Self;
 }
 
 /// Basic tile struct that implements [`IdentifiableTile`], holding only the most basic information.
@@ -49,7 +43,7 @@ impl IdentifiableTile for BasicIdentifiableTile2D {
     }
 }
 
-impl ConstructableViaIdentiferTile for BasicIdentifiableTile2D {
+impl ConstructableViaIdentifierTile for BasicIdentifiableTile2D {
   fn tile_new(pos: GridPos2D, tile_id: u64) -> Self {
       Self { pos, tile_id }
   }

@@ -4,6 +4,7 @@ use crate::gen::adjacency::{AdjacencyAnalyzer, AdjacencyRules};
 use crate::gen::frequency::FrequencyRules;
 use crate::gen::utils::EntrophyQueue;
 use crate::map::{GridDir, GridMap2D, GridSize};
+use crate::tile::identifiable::builder::IdentTileBuilder;
 use crate::tile::{GridTile2D, identifiable::IdentifiableTile};
 use crate::GridPos2D;
 
@@ -286,7 +287,7 @@ where
 
     pub fn build_grid<B>(&self, builder: &B) -> GridMap2D<T>
     where
-        B: WFCTileBuilder<T>,
+        B: IdentTileBuilder<T>,
     {
         let size = self.wfc_grid.size();
 
@@ -296,7 +297,7 @@ where
             if !wfc_tile.collapsed {
                 continue;
             }
-            map.insert_tile(builder.create_wfc_tile(*pos, wfc_tile.tile_id));
+            map.insert_tile(builder.create_identifiable_tile(*pos, wfc_tile.tile_id));
         }
 
         map

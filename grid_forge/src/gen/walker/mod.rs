@@ -47,13 +47,21 @@ where
             self.step_size
         };
 
+        let mut current_pos = self.current_pos;
+        let mut walked = Vec::new();
+
         for _ in 1..step_size {
-            if let Some(pos) = GridDir::ALL[idx].march_step(&self.current_pos, &self.size) {
-                self.current_pos = pos;
-                self.walked.insert(pos);
+            if let Some(pos) = GridDir::ALL[idx].march_step(&current_pos, &self.size) {
+                current_pos = pos;
+                walked.push(pos);
             } else {
                 return false;
             }
+        }
+
+        self.current_pos = current_pos;
+        for walked_pos in walked.iter() {
+            self.walked.insert(*walked_pos);
         }
         true
     }

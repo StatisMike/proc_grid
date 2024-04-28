@@ -3,41 +3,37 @@ use grid_forge::{
         adjacency::AdjacencyAnalyzer,
         wfc::{
             analyzer::WFCAnalyzer,
-            builder::WFCCloneBuilder,
             resolver::WFCResolver,
-            vis::{WFCVisGrid2D, WFCVisTile},
         },
     },
-    map::{vis::VisGrid2D, GridMap2D, GridSize},
-    tile::vis::DefaultVisPixel,
+    map::GridSize,
+    tile::{identifiable::{builder::IdentTileTraitBuilder, BasicIdentifiableTile2D}, vis::DefaultVisPixel}, vis::{collection::VisCollection, loader::VisIdentifiableLoader},
 };
 use rand::SeedableRng;
-
-type MyTile = WFCVisTile<DefaultVisPixel, 4, 4>;
-type MyGrid = GridMap2D<MyTile>;
 
 fn main() {
     // Initialize builder, which will take care of putting new tiles on specific places.
     // As `WFCVisTile` is basic and implements `Clone`, the `WFCCloneBuilder` can be used. In other scenarios, the
     // `WFCFunBuilder` needs to be used.
-    let mut builder = WFCCloneBuilder::default();
+    let builder = IdentTileTraitBuilder::<BasicIdentifiableTile2D>::default();
+    let collection = VisCollection::<BasicIdentifiableTile2D, DefaultVisPixel, 4, 4>::default();
+
+    let mut loader = VisIdentifiableLoader::new(collection, builder);
 
     // Load samples as grid maps.
     // let seas_img = image::open("../assets/samples/seas.png").unwrap().into_rgb8();
     let seas_img = image::open("examples/assets/samples/seas.png")
         .unwrap()
         .into_rgb8();
-    let seas_grid = MyGrid::from_image(&seas_img).unwrap();
-    // Add tiles to the builder.
-    builder.add_tiles(seas_grid.iter_tiles(), false);
+    let seas_grid = loader.analyze_grid_image(&seas_img).unwrap();
 
     // let roads_img = image::open("../assets/samples/roads.png").unwrap().into_rgb8();
     let roads_img = image::open("examples/assets/samples/roads.png")
         .unwrap()
         .into_rgb8();
-    let roads_grid = MyGrid::from_image(&roads_img).unwrap();
-    // Add tiles to the builder.
-    builder.add_tiles(roads_grid.iter_tiles(), false);
+    let roads_grid = loader.analyze_grid_image(&roads_img).unwrap();
+
+    let (collection, builder) = loader.into_inner();
 
     // Construct WFC Analyzer and provide the maps for analyzing.
     let mut analyzer = WFCAnalyzer::default();
@@ -46,7 +42,7 @@ fn main() {
 
     // Seed for reproductability.
     // let mut seed: [u8; 32] = [1; 32];
-    let mut seed: [u8; 32] = [142; 32];
+    let mut seed: [u8; 32] = [0; 32];
 
     for (i, byte) in "wfc_example".as_bytes().iter().enumerate() {
         if i < 31 {
@@ -77,12 +73,9 @@ fn main() {
 
     let new_map = resolver.build_grid(&builder);
 
-    image::imageops::resize(
-        &new_map.vis_grid_map(),
-        480,
-        480,
-        image::imageops::FilterType::Nearest,
-    )
-    .save("examples/wfc.png")
-    .unwrap();
+    let mut out_buffer = collection.init_map_image_buffer(&size);
+
+    collection.draw_map(&new_map, &mut out_buffer).unwrap();
+    
+    out_buffer.save("examples/wfc.png").unwrap();
 }

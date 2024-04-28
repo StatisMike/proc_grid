@@ -27,6 +27,11 @@ where
     Self { collection, builder }
   }
 
+  pub fn into_inner(self) -> (VisCollection<T, P, WIDTH, HEIGHT>, B)
+  {
+    (self.collection, self.builder)
+  }
+
   pub fn analyze_grid_image(&mut self, image: &ImageBuffer<P, Vec<P::Subpixel>>) -> Result<GridMap2D<T>, VisLoadError<WIDTH, HEIGHT>>
   {
     let size = check_grid_vis_size(image)?;
