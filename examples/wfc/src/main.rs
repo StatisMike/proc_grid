@@ -26,14 +26,14 @@ fn main() {
     let mut collection = VisCollection::<BasicIdentifiableTile2D, DefaultVisPixel, 4, 4>::default();
 
     // Load samples as grid maps.
-    let seas_img = image::open("examples/assets/samples/seas.png")
+    let seas_img = image::open("assets/samples/seas.png")
         // let seas_img = image::open("../assets/samples/seas.png")
         .unwrap()
         .into_rgb8();
 
     let seas_grid = load_gridmap_identifiable_auto(&seas_img, &mut collection, &builder).unwrap();
 
-    let roads_img = image::open("examples/assets/samples/roads.png")
+    let roads_img = image::open("assets/samples/roads.png")
         // let roads_img = image::open("../assets/samples/roads.png")
         .unwrap()
         .into_rgb8();

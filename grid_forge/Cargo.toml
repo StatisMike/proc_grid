@@ -17,8 +17,19 @@ rand = { version = "0.8.*", optional = true }
 
 [dev-dependencies]
 bencher = "0.1.*"
+rand_chacha = "0.3.*"
 
 [[bench]]
 path = "benches/walker.rs"
 name = "walker"
+harness = false
+
+[[bench]]
+path = "benches/vis_io.rs"
+name = "vis_io"
+harness = false
+
+[[bench]]
+path = "benches/collapsible_initial.rs"
+name = "collapsible_initial"
 harness = false
