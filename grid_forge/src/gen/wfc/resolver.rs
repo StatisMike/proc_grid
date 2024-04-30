@@ -171,8 +171,6 @@ where
             .map(|v| (*v as f32) * (*v as f32).log2())
             .sum::<f32>();
 
-        println!("{weight_sum}");
-
         let entrophy_noise_dist = Uniform::<f32>::new(0., 0.0001);
         let entrophy_wo_noise = WFCGenTile::calc_entrophy_ext(weight_sum, weight_log_sum);
 
@@ -241,9 +239,6 @@ where
                 let tile_id = tile.tile_id;
                 for direction in GridDir::ALL {
                     if let Some(neighbour) = self.wfc_grid.get_mut_neighbour_at(&pos, direction) {
-                        if neighbour.pos == (8, 13) {
-                            println!("Got it!");
-                        }
                         if neighbour.resolve_options_neighbour_collapsed(
                             &self.adjacency_rules,
                             direction.opposite(),
