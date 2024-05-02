@@ -10,11 +10,7 @@ use crate::{
     },
 };
 
-use super::{
-    collection::VisCollection,
-    error::VisError,
-    write_tile,
-};
+use super::{collection::VisCollection, error::VisError, write_tile};
 
 /// Easily load [`GridMap2D`] of [`IdentifiableTile`] struct, automatically saving each tile into provided [`VisCollection`].
 ///

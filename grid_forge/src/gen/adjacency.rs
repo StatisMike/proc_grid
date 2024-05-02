@@ -100,6 +100,19 @@ where
             false
         }
     }
+
+    pub(crate) fn is_valid_raw_any(
+        &self,
+        tile_id: u64,
+        adjacent_options: &[u64],
+        direction: GridDir,
+    ) -> bool {
+        if let Some(rules) = self.inner.get(&tile_id) {
+            rules.is_in_options_any(adjacent_options, direction)
+        } else {
+            false
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -125,6 +138,11 @@ impl InnerAdjacency {
 
     fn is_in_options(&self, adjacent_id: u64, dir: GridDir) -> bool {
         self.ia.get(&dir).unwrap().contains(&adjacent_id)
+    }
+
+    fn is_in_options_any(&self, adjacent_options: &[u64], dir: GridDir) -> bool {
+        let options = self.ia.get(&dir).unwrap();
+        adjacent_options.iter().any(|opt| options.contains(opt))
     }
 }
 

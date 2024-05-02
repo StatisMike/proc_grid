@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use std::{collections::BTreeMap, marker::PhantomData};
 
 use crate::tile::identifiable::IdentifiableTile;

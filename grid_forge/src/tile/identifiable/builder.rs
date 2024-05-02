@@ -1,3 +1,5 @@
+use std::error::Error;
+use std::fmt::Display;
 use std::{collections::BTreeMap, marker::PhantomData};
 
 use crate::tile::identifiable::IdentifiableTile;
@@ -50,12 +52,18 @@ where
         tile
     }
 
-    fn missing_tile_creators(&self, tile_ids: &[u64]) -> Vec<u64> {
-        tile_ids
+    fn check_missing_tile_creators(&self, tile_ids: &[u64]) -> Result<(), TileBuilderError> {
+        let missing_ids = tile_ids
             .iter()
-            .filter(|wfc_id| !self.tiles.contains_key(wfc_id))
+            .filter(|tile_id| !self.tiles.contains_key(tile_id))
             .copied()
-            .collect::<Vec<u64>>()
+            .collect::<Vec<_>>();
+
+        if !missing_ids.is_empty() {
+            Err(TileBuilderError::new(&missing_ids))
+        } else {
+            Ok(())
+        }
     }
 }
 
@@ -91,12 +99,18 @@ where
         fun(pos, tile_id)
     }
 
-    fn missing_tile_creators(&self, tile_ids: &[u64]) -> Vec<u64> {
-        tile_ids
+    fn check_missing_tile_creators(&self, tile_ids: &[u64]) -> Result<(), TileBuilderError> {
+        let missing_ids = tile_ids
             .iter()
             .filter(|tile_id| !self.funs.contains_key(tile_id))
             .copied()
-            .collect::<Vec<u64>>()
+            .collect::<Vec<_>>();
+
+        if !missing_ids.is_empty() {
+            Err(TileBuilderError::new(&missing_ids))
+        } else {
+            Ok(())
+        }
     }
 }
 
@@ -136,8 +150,8 @@ where
         T::tile_new(pos, wfc_id)
     }
 
-    fn missing_tile_creators(&self, _tile_ids: &[u64]) -> Vec<u64> {
-        Vec::new()
+    fn check_missing_tile_creators(&self, _tile_ids: &[u64]) -> Result<(), TileBuilderError> {
+        Ok(())
     }
 }
 
@@ -151,5 +165,39 @@ where
     fn create_identifiable_tile(&self, pos: GridPos2D, tile_id: u64) -> T;
 
     /// Returns vector of missing tile creators (if any).
-    fn missing_tile_creators(&self, tile_ids: &[u64]) -> Vec<u64>;
+    fn check_missing_tile_creators(&self, tile_ids: &[u64]) -> Result<(), TileBuilderError>;
 }
+
+#[derive(Debug, Clone)]
+pub struct TileBuilderError {
+    tile_ids: Vec<u64>,
+}
+
+impl TileBuilderError {
+    fn new(tile_ids: &[u64]) -> Self {
+        Self {
+            tile_ids: Vec::from(tile_ids),
+        }
+    }
+
+    pub fn get_missing_tile_ids(&self) -> &[u64] {
+        &self.tile_ids
+    }
+}
+
+impl Display for TileBuilderError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "missing tile ids from builder: {missing_ids}",
+            missing_ids = self
+                .tile_ids
+                .iter()
+                .map(|f| f.to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        )
+    }
+}
+
+impl Error for TileBuilderError {}

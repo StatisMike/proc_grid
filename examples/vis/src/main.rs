@@ -5,10 +5,13 @@
 // Most examples use the `vis` feature to present visual representation of GridMap2D.
 
 use grid_forge::{
-    map::{GridMap2D, GridSize}, tile::{
+    map::{GridMap2D, GridSize},
+    tile::{
         vis::{DefaultVisPixel, VisTile2D},
         GridTile2D,
-    }, vis::ops::{init_map_image_buffer, write_gridmap_vis}, GridPos2D
+    },
+    vis::ops::{init_map_image_buffer, write_gridmap_vis},
+    GridPos2D,
 };
 use image::imageops;
 use rand::{Rng, SeedableRng};
