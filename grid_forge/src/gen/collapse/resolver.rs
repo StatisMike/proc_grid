@@ -8,7 +8,7 @@ use crate::tile::{identifiable::IdentifiableTile, GridTile2D};
 use crate::GridPos2D;
 
 use super::frequency::FrequencyHints;
-use super::selector::CollapseQueue;
+use super::queue::CollapseQueue;
 use super::tile::CollapsibleTile;
 use super::CollapseError;
 
@@ -35,6 +35,20 @@ where
         }
     }
 
+    pub fn fill_with_collapsed(&mut self, tile_id: u64, positions: &[GridPos2D]) {
+        for position in positions {
+            self.inner.insert_tile(CollapsibleTile::new_collapsed(*position, tile_id));
+        }
+    }
+
+    pub fn all_positions(&self) -> Vec<GridPos2D> {
+        self.inner.get_all_positions()
+    }
+
+    pub fn all_empty_positions(&self) -> Vec<GridPos2D> {
+        self.inner.get_all_empty_positions()
+    }
+
     pub fn generate<R, Queue>(
         &mut self,
         rng: &mut R,
@@ -54,7 +68,12 @@ where
         queue.populate_inner_grid(rng, &mut self.inner, positions, frequencies);
 
         for position in positions {
-            if self.remove_tile_options(position, adjacencies, positions, &changed)? {
+            if self.remove_tile_options(
+                position, 
+                adjacencies, 
+                positions, 
+                &changed,
+            !queue.propagating())? {
                 changed.push_back(*position);
             }
         }
@@ -77,7 +96,12 @@ where
         while let Some(next_position) = queue.get_next_position() {
             // Without propagation needs to remove options before collapse.
             if !queue.propagating() {
-                self.remove_tile_options(&next_position, adjacencies, &[], &changed)?;
+                self.remove_tile_options(
+                    &next_position, 
+                    adjacencies, 
+                    &[], 
+                    &changed,
+                false)?;
             }
 
             let to_collapse = self.inner.get_mut_tile_at_position(&next_position).unwrap();
@@ -109,6 +133,7 @@ where
         adjacency: &AdjacencyRules<InputTile>,
         omit_positions_unless_changed: &[GridPos2D],
         changed: &VecDeque<GridPos2D>,
+        collapsed_only: bool
     ) -> Result<bool, CollapseError>
     where
         InputTile: IdentifiableTile,
@@ -117,6 +142,10 @@ where
             .inner
             .get_tile_at_position(pos)
             .expect("no tile at given position");
+
+        if *pos == (2,13) {
+            print!("got it!");
+        }
 
         // If tile is collapsed don't do anything.
         if tile.is_collapsed() {
@@ -143,7 +172,7 @@ where
                             options_to_remove.push(*option);
                         }
                     }
-                } else {
+                } else if !collapsed_only {
                     let neighbour_options = neighbour
                         .options_with_weights
                         .keys()
@@ -194,6 +223,9 @@ where
             let tile_id = tile.get_tile_id();
             for direction in GridDir::ALL {
                 if let Some(neighbour) = self.inner.get_mut_neighbour_at(&pos, direction) {
+                    if neighbour.is_collapsed() {
+                        continue;
+                    }
                     if !neighbour
                         .resolve_options_neighbour_collapsed(
                             adjacency,
@@ -217,6 +249,9 @@ where
                 .collect::<Vec<_>>();
             for direction in GridDir::ALL {
                 if let Some(neighbour) = self.inner.get_mut_neighbour_at(&pos, direction) {
+                    if neighbour.is_collapsed() {
+                        continue;
+                    }
                     if !neighbour
                         .resolve_options_neighbour_uncollapsed(
                             adjacency,
@@ -250,6 +285,9 @@ where
 
         for position in self.inner.get_all_positions() {
             let tile = self.inner.get_tile_at_position(&position).unwrap();
+            if !tile.is_collapsed() {
+                continue;
+            }
 
             grid.insert_tile(builder.create_identifiable_tile(position, tile.get_tile_id()));
         }

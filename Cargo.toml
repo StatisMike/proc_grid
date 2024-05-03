@@ -5,6 +5,7 @@ members = [
   "grid_forge",
 
   # Examples:
+  "examples/collapse",
   "examples/mc",
   "examples/walker",
   "examples/wfc",

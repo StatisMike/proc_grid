@@ -1,10 +1,13 @@
 use crate::{map::GridMap2D, tile::identifiable::IdentifiableTile, GridPos2D};
 
-mod entrophy;
-mod position;
+pub(crate) mod entrophy;
+pub(crate) mod position;
 
 pub use entrophy::EntrophyQueue;
-pub(crate) use entrophy::*;
+pub use position::*;
+// pub (crate) use entrophy::*;
+// pub (crate) use position::*;
+
 use rand::Rng;
 
 use super::{frequency::FrequencyHints, tile::CollapsibleTile};

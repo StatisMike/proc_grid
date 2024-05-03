@@ -47,6 +47,17 @@ impl IdentifiableTile for CollapsibleTile {
 }
 
 impl CollapsibleTile {
+    pub fn new_collapsed(position: GridPos2D, tile_id: u64) -> Self {
+        Self {
+            pos: position,
+            tile_id: Some(tile_id),
+            options_with_weights: BTreeMap::new(),
+            weight_sum: 0,
+            weight_log_sum: 0.,
+            entrophy_noise: 0.
+        }
+    }
+
     /// Vector constructor where collapsible tiles do not need entrophy noise
     pub fn new_from_frequency<T>(
         positions: &[GridPos2D],

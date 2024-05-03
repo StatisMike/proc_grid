@@ -5,7 +5,7 @@ use crate::GridPos2D;
 pub mod frequency;
 pub mod resolver;
 pub mod rules;
-pub mod selector;
+pub mod queue;
 pub mod tile;
 
 #[derive(Debug)]
@@ -17,6 +17,12 @@ impl CollapseError {
     pub(crate) fn new_options_empty(pos: GridPos2D) -> Self {
         Self {
             kind: CollapseErrorKind::OptionsEmpty(pos),
+        }
+    }
+
+    pub fn failed_pos(&self) -> GridPos2D {
+        match self.kind {
+            CollapseErrorKind::OptionsEmpty(pos) => pos
         }
     }
 }

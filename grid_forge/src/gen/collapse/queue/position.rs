@@ -1,4 +1,4 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, collections::VecDeque};
 
 use rand::Rng;
 
@@ -75,6 +75,7 @@ impl PositionQueue {
         };
 
         self.positions.sort_by(cmp_fun);
+        self.positions.reverse();
     }
 }
 
@@ -194,5 +195,19 @@ fn compare_downright_columnwise(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
         b.0.cmp(&a.0).reverse()
     } else {
         cmp_a
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::{gen::collapse::queue::position::compare_downleft_columnwise, gen_grid_positions_square};
+
+    #[test]
+    fn check_sort_default() {
+        let mut tiles = gen_grid_positions_square((0,0), (5,5));
+
+        tiles.sort_by(compare_downleft_columnwise);
+
+        println!("{tiles:?}");
     }
 }
