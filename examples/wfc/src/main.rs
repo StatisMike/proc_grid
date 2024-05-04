@@ -39,14 +39,20 @@ fn main() {
         .into_rgb8();
     let roads_grid = load_gridmap_identifiable_auto(&roads_img, &mut collection, &builder).unwrap();
 
+    // let undertale_img = image::open("assets/samples/undertale.png").unwrap().into_rgb8();
+    // let undertale_grid = load_gridmap_identifiable_auto(&undertale_img, &mut collection, &builder).unwrap();
+
     // Construct WFC Analyzer and provide the maps for analyzing.
     let mut analyzer = WFCAnalyzer::default();
+    println!("began analyzing!");
     analyzer.analyze(&seas_grid);
     analyzer.analyze(&roads_grid);
+    println!("analysis finished, found: {} tiles", analyzer.tiles().len());
+    // analyzer.analyze(&roads_grid);
 
     // Seed for reproductability.
     // let mut seed: [u8; 32] = [1; 32];
-    let mut seed: [u8; 32] = [0; 32];
+    let mut seed: [u8; 32] = [2; 32];
 
     for (i, byte) in "wfc_example".as_bytes().iter().enumerate() {
         if i < 31 {
@@ -57,14 +63,17 @@ fn main() {
     let mut rng = rand_chacha::ChaChaRng::from_seed(seed);
 
     // Create new grid via WFC Resolver.
-    let size = GridSize::new(10, 10);
+    let size = GridSize::new(50, 50);
     let mut resolver = WFCResolver::new(size, &analyzer);
+    println!("populating map!");
     resolver.populate_map_all(&mut rng);
 
     let mut can_process = true;
 
+    println!("began resolving!");
     while can_process {
         can_process = resolver.process(&mut rng);
+        println!("resolved!");
     }
 
     println!("left with options: {}", resolver.n_with_opts());
@@ -80,5 +89,5 @@ fn main() {
     let mut out_buffer = init_map_image_buffer::<DefaultVisPixel, 4, 4>(&size);
     write_gridmap_identifiable(&mut out_buffer, &new_map, &collection).unwrap();
 
-    out_buffer.save("examples/model_synthesis.png").unwrap();
+    out_buffer.save("wfc.png").unwrap();
 }

@@ -66,90 +66,17 @@ fn main() {
     let mut rng = rand_chacha::ChaChaRng::from_seed(seed);
 
     // Create new grid with CollapsibleResolver.
-    let size = GridSize::new(50, 50);
+    let size = GridSize::new(10, 10);
     let mut resolver = CollapsibleResolver::new(size);
 
     // We will generate the map in few parts, so we can prepare the positions arrays.
     let all_positions = size.get_all_possible_positions();
 
-    // We will fill the collapsible grid with water tiles at borders, so we will get some islands.
-    let inner = gen_grid_positions_square((4, 4), (45, 45));
-    let water_tiles = all_positions
-    .iter()
-    .filter(|f| !inner.contains(f))
-    .copied()
-    .collect::<Vec<_>>();
+    let mut retries = 0usize;
 
-    // resolver.fill_with_collapsed(7698123476311124029u64, &water_tiles);
-
-    let identity_positions = vec![
-        gen_grid_positions_square((2, 2), (14, 12)),
-        gen_grid_positions_square((2, 12), (14, 22)),
-        gen_grid_positions_square((2, 20), (14, 30)),
-        gen_grid_positions_square((2, 28), (14, 38)),
-        gen_grid_positions_square((2, 36), (14, 46)),
-
-        gen_grid_positions_square((12, 2), (22, 12)),
-        gen_grid_positions_square((12, 12), (22, 22)),
-        gen_grid_positions_square((12, 20), (22, 30)),
-        gen_grid_positions_square((12, 28), (22, 38)),
-        gen_grid_positions_square((12, 36), (22, 46)),
-
-        gen_grid_positions_square((20, 2), (30, 12)),
-        gen_grid_positions_square((20, 12), (30, 22)),
-        gen_grid_positions_square((20, 20), (30, 30)),
-        gen_grid_positions_square((20, 28), (30, 38)),
-        gen_grid_positions_square((20, 36), (30, 46)),
-
-        gen_grid_positions_square((28, 2), (38, 12)),
-        gen_grid_positions_square((28, 12), (38, 22)),
-        gen_grid_positions_square((28, 20), (38, 30)),
-        gen_grid_positions_square((28, 28), (38, 38)),
-        gen_grid_positions_square((28, 36), (38, 46)),
-
-        gen_grid_positions_square((36, 2), (46, 12)),
-        gen_grid_positions_square((36, 12), (46, 22)),
-        gen_grid_positions_square((36, 20), (46, 30)),
-        gen_grid_positions_square((36, 28), (46, 38)),
-        gen_grid_positions_square((36, 36), (46, 46)),
-    ];
-
-    let border_positions = all_positions
-        .iter()
-        .filter(|p| !identity_positions.iter().any(|v| v.contains(p)))
-        .copied()
-        .collect::<Vec<_>>();
-
-    println!("border positions: {border_positions:?}");
-
-    // Firstly handle all portions to be resolved using 'identity' rules.
-    for (iter_identity, positions) in identity_positions.iter().enumerate() {
-        let mut retries = 0;
-        while let Err(error) = resolver.generate(
-            &mut rng, 
-            positions, 
-            // For 'identity' rules we will use entrophy-based positions queue.
-            EntrophyQueue::default(), 
-            &frequency_hints, 
-            ident_analyzer.adjacency()
-        ) {
-            if retries > 10 {
-                println!("identity rules generation: cannot generate tile at pos: {:?} after {retries} retries", error.failed_pos());
-                break;
-            }
-            println!("identity rules retry: {retries} for iteration: {iter_identity} after failure: {error}");
-            retries += 1;
-        }
-        println!("generated {iter_identity} identity tiles");
-    }
-
-    // Handle all remaining positions.
-    let uncollapsed = resolver.all_empty_positions();
-
-    let mut retries = 0;
     while let Err(error) = resolver.generate(
         &mut rng, 
-        &uncollapsed, 
+        &all_positions, 
         // For 'border' rules we will use position-based queue with default settings: rowwise from Top-Left to Bottom-Down.
         PositionQueue::default(), 
         &frequency_hints, 
@@ -169,4 +96,71 @@ fn main() {
     write_gridmap_identifiable(&mut out_buffer, &new_map, &collection).unwrap();
 
     out_buffer.save("collapsibleunfinished.png").unwrap();
+
+    // let identity_positions = vec![
+    //     gen_grid_positions_square((2, 2), (14, 12)),
+    //     gen_grid_positions_square((2, 12), (14, 22)),
+    //     gen_grid_positions_square((2, 20), (14, 30)),
+    //     gen_grid_positions_square((2, 28), (14, 38)),
+    //     gen_grid_positions_square((2, 36), (14, 46)),
+
+    //     gen_grid_positions_square((12, 2), (22, 12)),
+    //     gen_grid_positions_square((12, 12), (22, 22)),
+    //     gen_grid_positions_square((12, 20), (22, 30)),
+    //     gen_grid_positions_square((12, 28), (22, 38)),
+    //     gen_grid_positions_square((12, 36), (22, 46)),
+
+    //     gen_grid_positions_square((20, 2), (30, 12)),
+    //     gen_grid_positions_square((20, 12), (30, 22)),
+    //     gen_grid_positions_square((20, 20), (30, 30)),
+    //     gen_grid_positions_square((20, 28), (30, 38)),
+    //     gen_grid_positions_square((20, 36), (30, 46)),
+
+    //     gen_grid_positions_square((28, 2), (38, 12)),
+    //     gen_grid_positions_square((28, 12), (38, 22)),
+    //     gen_grid_positions_square((28, 20), (38, 30)),
+    //     gen_grid_positions_square((28, 28), (38, 38)),
+    //     gen_grid_positions_square((28, 36), (38, 46)),
+
+    //     gen_grid_positions_square((36, 2), (46, 12)),
+    //     gen_grid_positions_square((36, 12), (46, 22)),
+    //     gen_grid_positions_square((36, 20), (46, 30)),
+    //     gen_grid_positions_square((36, 28), (46, 38)),
+    //     gen_grid_positions_square((36, 36), (46, 46)),
+    // ];
+
+    // let border_positions = all_positions
+    //     .iter()
+    //     .filter(|p| !identity_positions.iter().any(|v| v.contains(p)))
+    //     .copied()
+    //     .collect::<Vec<_>>();
+
+    // println!("border positions: {border_positions:?}");
+
+    // // Firstly handle all portions to be resolved using 'identity' rules.
+    // for (iter_identity, positions) in identity_positions.iter().enumerate() {
+    //     let mut retries = 0;
+    //     while let Err(error) = resolver.generate(
+    //         &mut rng, 
+    //         positions, 
+    //         // For 'identity' rules we will use entrophy-based positions queue.
+    //         EntrophyQueue::default(), 
+    //         &frequency_hints, 
+    //         ident_analyzer.adjacency()
+    //     ) {
+    //         if retries > 10 {
+    //             println!("identity rules generation: cannot generate tile at pos: {:?} after {retries} retries", error.failed_pos());
+    //             break;
+    //         }
+    //         println!("identity rules retry: {retries} for iteration: {iter_identity} after failure: {error}");
+    //         retries += 1;
+    //     }
+    //     println!("generated {iter_identity} identity tiles");
+    // }
+
+    // // Handle all remaining positions.
+    // let uncollapsed = resolver.all_empty_positions();
+
+    // let mut retries = 0;
+
 }
