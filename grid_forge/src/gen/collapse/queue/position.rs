@@ -126,7 +126,7 @@ impl ResolverSelector for PositionQueue {
 }
 
 // --- Comparison functions --- //
-fn compare_upleft_rowwise(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
+fn compare_upleft_columnwise(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
     let cmp_a = a.0.cmp(&b.0);
     if cmp_a == Ordering::Equal {
         a.1.cmp(&b.1)
@@ -135,7 +135,7 @@ fn compare_upleft_rowwise(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
     }
 }
 
-fn compare_upleft_columnwise(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
+fn compare_upleft_rowwise(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
     let cmp_a = a.1.cmp(&b.1);
     if cmp_a == Ordering::Equal {
         a.0.cmp(&b.0)
@@ -144,7 +144,7 @@ fn compare_upleft_columnwise(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
     }
 }
 
-fn compare_upright_rowwise(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
+fn compare_upright_columnwise(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
     let cmp_a = a.0.cmp(&b.0).reverse();
     if cmp_a == Ordering::Equal {
         a.1.cmp(&b.1)
@@ -153,7 +153,7 @@ fn compare_upright_rowwise(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
     }
 }
 
-fn compare_upright_columnwise(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
+fn compare_upright_rowwise(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
     let cmp_a = a.1.cmp(&b.1);
     if cmp_a == Ordering::Equal {
         a.0.cmp(&b.0)
@@ -162,7 +162,7 @@ fn compare_upright_columnwise(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
     }
 }
 
-fn compare_downleft_rowwise(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
+fn compare_downleft_columnwise(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
     let cmp_a = a.0.cmp(&b.0);
     if cmp_a == Ordering::Equal {
         b.1.cmp(&a.1).reverse()
@@ -171,7 +171,7 @@ fn compare_downleft_rowwise(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
     }
 }
 
-fn compare_downleft_columnwise(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
+fn compare_downleft_rowwise(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
     let cmp_a = a.1.cmp(&b.1).reverse();
     if cmp_a == Ordering::Equal {
         b.0.cmp(&a.0)
@@ -180,7 +180,7 @@ fn compare_downleft_columnwise(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
     }
 }
 
-fn compare_downright_rowwise(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
+fn compare_downright_columnwise(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
     let cmp_a = a.0.cmp(&b.0).reverse();
     if cmp_a == Ordering::Equal {
         b.1.cmp(&a.1).reverse()
@@ -189,7 +189,7 @@ fn compare_downright_rowwise(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
     }
 }
 
-fn compare_downright_columnwise(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
+fn compare_downright_rowwise(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
     let cmp_a = a.1.cmp(&b.1).reverse();
     if cmp_a == Ordering::Equal {
         b.0.cmp(&a.0).reverse()
@@ -200,11 +200,13 @@ fn compare_downright_columnwise(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
 
 #[cfg(test)]
 mod test {
-    use crate::{gen::collapse::queue::position::compare_downleft_columnwise, gen_grid_positions_square};
+    use crate::{
+        gen::collapse::queue::position::compare_downleft_columnwise, gen_grid_positions_square,
+    };
 
     #[test]
     fn check_sort_default() {
-        let mut tiles = gen_grid_positions_square((0,0), (5,5));
+        let mut tiles = gen_grid_positions_square((0, 0), (5, 5));
 
         tiles.sort_by(compare_downleft_columnwise);
 

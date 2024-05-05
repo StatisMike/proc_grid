@@ -192,23 +192,18 @@ where
     }
 
     pub fn n_resolved(&self) -> usize {
-        self.wfc_grid
-            .tiles
-            .iter()
-            .filter(|(_, t)| t.collapsed)
-            .count()
+        self.wfc_grid.iter_tiles().filter(|t| t.collapsed).count()
     }
 
     pub fn n_with_opts(&self) -> usize {
         self.wfc_grid
-            .tiles
-            .iter()
-            .filter(|(_, t)| !t.collapsed && !t.options_with_weights.is_empty())
+            .iter_tiles()
+            .filter(|t| !t.collapsed && !t.options_with_weights.is_empty())
             .count()
     }
 
     pub fn n_all(&self) -> usize {
-        self.wfc_grid.tiles.len()
+        (self.wfc_grid.size.x() * self.wfc_grid.size.y()) as usize
     }
 
     fn process_collapse<R: Rng>(&mut self, rng: &mut R) -> bool {
@@ -288,11 +283,11 @@ where
 
         let mut map = GridMap2D::new(*size);
 
-        for (pos, wfc_tile) in self.wfc_grid.tiles.iter() {
+        for wfc_tile in self.wfc_grid.iter_tiles() {
             if !wfc_tile.collapsed {
                 continue;
             }
-            map.insert_tile(builder.create_identifiable_tile(*pos, wfc_tile.tile_id));
+            map.insert_tile(builder.create_identifiable_tile(wfc_tile.pos, wfc_tile.tile_id));
         }
 
         map

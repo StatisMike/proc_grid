@@ -3,9 +3,9 @@ use std::fmt::Display;
 use crate::GridPos2D;
 
 pub mod frequency;
+pub mod queue;
 pub mod resolver;
 pub mod rules;
-pub mod queue;
 pub mod tile;
 
 #[derive(Debug)]
@@ -22,7 +22,7 @@ impl CollapseError {
 
     pub fn failed_pos(&self) -> GridPos2D {
         match self.kind {
-            CollapseErrorKind::OptionsEmpty(pos) => pos
+            CollapseErrorKind::OptionsEmpty(pos) => pos,
         }
     }
 }

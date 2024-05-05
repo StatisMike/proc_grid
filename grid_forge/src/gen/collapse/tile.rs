@@ -54,7 +54,7 @@ impl CollapsibleTile {
             options_with_weights: BTreeMap::new(),
             weight_sum: 0,
             weight_log_sum: 0.,
-            entrophy_noise: 0.
+            entrophy_noise: 0.,
         }
     }
 

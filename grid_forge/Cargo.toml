@@ -12,6 +12,7 @@ gen = ["dep:rand"]
 
 [dependencies]
 num-traits = "*"
+grid = { version = "0.13.*" }
 image = { version = "0.25.*", optional = true, default-features = false }
 rand = { version = "0.8.*", optional = true }
 

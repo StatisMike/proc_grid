@@ -37,7 +37,8 @@ where
 
     pub fn fill_with_collapsed(&mut self, tile_id: u64, positions: &[GridPos2D]) {
         for position in positions {
-            self.inner.insert_tile(CollapsibleTile::new_collapsed(*position, tile_id));
+            self.inner
+                .insert_tile(CollapsibleTile::new_collapsed(*position, tile_id));
         }
     }
 
@@ -47,6 +48,19 @@ where
 
     pub fn all_empty_positions(&self) -> Vec<GridPos2D> {
         self.inner.get_all_empty_positions()
+    }
+
+    pub fn uncollapsed(&self) -> Vec<GridPos2D> {
+        self.inner
+            .iter_tiles()
+            .filter_map(|t| {
+                if t.is_collapsed() {
+                    None
+                } else {
+                    Some(t.grid_position())
+                }
+            })
+            .collect::<Vec<_>>()
     }
 
     pub fn generate<R, Queue>(
@@ -69,11 +83,12 @@ where
 
         for position in positions {
             if self.remove_tile_options(
-                position, 
-                adjacencies, 
-                positions, 
+                position,
+                adjacencies,
+                positions,
                 &changed,
-            !queue.propagating())? {
+                !queue.propagating(),
+            )? {
                 changed.push_back(*position);
             }
         }
@@ -96,12 +111,7 @@ where
         while let Some(next_position) = queue.get_next_position() {
             // Without propagation needs to remove options before collapse.
             if !queue.propagating() {
-                self.remove_tile_options(
-                    &next_position, 
-                    adjacencies, 
-                    &[], 
-                    &changed,
-                false)?;
+                self.remove_tile_options(&next_position, adjacencies, &[], &changed, false)?;
             }
 
             let to_collapse = self.inner.get_mut_tile_at_position(&next_position).unwrap();
@@ -114,13 +124,17 @@ where
                 }
             }
 
-            // With propagation - propagate after collapse.
+            // With propagation - propagate after collapse recursively.
             if collapsed && queue.propagating() {
                 changed.push_back(next_position);
 
                 while let Some(position_changed) = changed.pop_front() {
                     self.propagate_from(position_changed, &mut queue, adjacencies, &mut changed)?;
                 }
+            } else if !queue.propagating() {
+                // Without propagation - update only direct neighbours.
+
+                self.propagate_from(next_position, &mut queue, adjacencies, &mut VecDeque::new())?;
             }
         }
 
@@ -133,7 +147,7 @@ where
         adjacency: &AdjacencyRules<InputTile>,
         omit_positions_unless_changed: &[GridPos2D],
         changed: &VecDeque<GridPos2D>,
-        collapsed_only: bool
+        collapsed_only: bool,
     ) -> Result<bool, CollapseError>
     where
         InputTile: IdentifiableTile,
@@ -143,7 +157,7 @@ where
             .get_tile_at_position(pos)
             .expect("no tile at given position");
 
-        if *pos == (2,13) {
+        if *pos == (2, 13) {
             print!("got it!");
         }
 
@@ -234,7 +248,10 @@ where
                         )?
                         .is_empty()
                     {
-                        queue.update_queue(neighbour);
+                        if queue.needs_update_after_options_change() {
+                            queue.update_queue(neighbour);
+                        }
+
                         if !changed.contains(&neighbour.grid_position()) {
                             changed.push_back(neighbour.grid_position());
                         }
@@ -260,7 +277,9 @@ where
                         )?
                         .is_empty()
                     {
-                        queue.update_queue(neighbour);
+                        if queue.needs_update_after_options_change() {
+                            queue.update_queue(neighbour);
+                        }
                         if !changed.contains(&neighbour.grid_position()) {
                             changed.push_back(neighbour.grid_position());
                         }
