@@ -1,8 +1,12 @@
 use grid_forge::{
-    gen::walker::GridWalker2DBuilder, map::GridSize, tile::{
+    gen::walker::GridWalker2DBuilder,
+    map::GridSize,
+    tile::{
         vis::{DefaultVisPixel, VisTile2D},
         GridTile2D,
-    }, vis::ops::{init_map_image_buffer, write_gridmap_vis}, GridPos2D
+    },
+    vis::ops::{init_map_image_buffer, write_gridmap_vis},
+    GridPos2D,
 };
 use image::imageops::resize;
 use rand::SeedableRng;

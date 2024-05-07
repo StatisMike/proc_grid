@@ -2,7 +2,7 @@ use std::hash::{DefaultHasher, Hash, Hasher};
 
 use image::{ImageBuffer, Pixel};
 
-use crate::{tile::vis::DefaultPixel, GridPos2D};
+use crate::{tile::vis::PixelWithDefault, GridPos2D};
 
 use self::error::VisError;
 
@@ -21,7 +21,7 @@ where
 
 impl<P, const WIDTH: usize, const HEIGHT: usize> EmptyTile<P, WIDTH, HEIGHT>
 where
-    P: DefaultPixel + Hash,
+    P: PixelWithDefault + Hash,
 {
     pub fn new(pixels: [[P; WIDTH]; HEIGHT]) -> Self {
         let mut hasher = DefaultHasher::default();
@@ -98,7 +98,7 @@ where
 mod test {
     use image::{ImageBuffer, Rgb};
 
-    use crate::tile::vis::{DefaultPixel, DefaultVisPixel};
+    use crate::tile::vis::{DefaultVisPixel, PixelWithDefault};
 
     use super::{read_tile, write_tile};
 

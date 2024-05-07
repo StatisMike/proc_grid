@@ -6,14 +6,14 @@ use super::GridTile2D;
 
 pub type DefaultVisPixel = Rgb<u8>;
 
-pub trait DefaultPixel
+pub trait PixelWithDefault
 where
     Self: Pixel + Hash + PartialEq,
 {
     fn pix_default() -> Self;
 }
 
-impl<T> DefaultPixel for Rgb<T>
+impl<T> PixelWithDefault for Rgb<T>
 where
     T: image::Primitive,
     Self: Pixel + Hash + PartialEq,
@@ -23,7 +23,7 @@ where
     }
 }
 
-impl<T> DefaultPixel for Rgba<T>
+impl<T> PixelWithDefault for Rgba<T>
 where
     T: image::Primitive,
     Self: Pixel + Hash + PartialEq,
@@ -33,7 +33,7 @@ where
     }
 }
 
-impl<T> DefaultPixel for Luma<T>
+impl<T> PixelWithDefault for Luma<T>
 where
     T: image::Primitive,
     Self: Pixel + Hash + PartialEq,
@@ -43,7 +43,7 @@ where
     }
 }
 
-impl<T> DefaultPixel for LumaA<T>
+impl<T> PixelWithDefault for LumaA<T>
 where
     T: image::Primitive,
     Self: Pixel + Hash + PartialEq,

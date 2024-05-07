@@ -1,5 +1,5 @@
 [package]
-name = "mc"
+name = "collapse"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,6 +7,6 @@ edition = "2021"
 
 [dependencies]
 grid_forge = { path = "../../grid_forge", features = ["gen", "vis"] }
-image = { version = "^0.25.1", features = ["png"]}
+image = { version = "^0.25.1", features = ["png", "gif"]}
 rand = { version = "^0.8.5" }
 rand_chacha = "0.3.*"

@@ -1,11 +1,7 @@
-use std::collections::hash_map::Iter;
-use std::collections::HashMap;
+use grid::Grid;
 
 use crate::tile::GridTile2D;
 use crate::{add_grid_positions, GridPos2D};
-
-#[cfg(feature = "vis")]
-pub mod vis;
 
 #[repr(u8)]
 #[derive(PartialEq, Eq, Debug, Clone, Copy, Hash)]
@@ -173,7 +169,7 @@ where
     T: GridTile2D,
 {
     pub(crate) size: GridSize,
-    pub(crate) tiles: HashMap<GridPos2D, T>,
+    pub(crate) tiles: Grid<Option<T>>,
 }
 
 impl<T: GridTile2D> GridMap2D<T> {
@@ -181,7 +177,7 @@ impl<T: GridTile2D> GridMap2D<T> {
     pub fn new(size: GridSize) -> Self {
         Self {
             size,
-            tiles: HashMap::new(),
+            tiles: Grid::new(size.x as usize, size.y as usize),
         }
     }
 
@@ -190,7 +186,7 @@ impl<T: GridTile2D> GridMap2D<T> {
         if !self.size.is_position_valid(position) {
             return None;
         }
-        self.tiles.get(position)
+        self.tiles.get(position.0, position.1).unwrap().as_ref()
     }
 
     /// Get tile at specified position mutably.
@@ -198,7 +194,7 @@ impl<T: GridTile2D> GridMap2D<T> {
         if !self.size.is_position_valid(position) {
             return None;
         }
-        self.tiles.get_mut(position)
+        self.tiles.get_mut(position.0, position.1).unwrap().as_mut()
     }
 
     /// Insert tile. Its position will be determined based on information in [GridTile2D::grid_position]. If tile is
@@ -207,12 +203,20 @@ impl<T: GridTile2D> GridMap2D<T> {
         if !self.size.is_position_valid(&tile.grid_position()) {
             return false;
         }
-        self.tiles.insert(tile.grid_position(), tile);
+        let (x, y) = tile.grid_position();
+        let t = self.tiles.get_mut(x, y).unwrap();
+        *t = Some(tile);
         true
     }
 
-    pub fn remove_tile_at_position(&mut self, position: &GridPos2D) {
-        self.tiles.remove(position);
+    pub fn remove_tile_at_position(&mut self, position: &GridPos2D) -> bool {
+        if !self.size.is_position_valid(position) {
+            return false;
+        }
+        if let Some(tile) = self.tiles.get_mut(position.0, position.1) {
+            *tile = None;
+        }
+        true
     }
 
     pub fn size(&self) -> &GridSize {
@@ -246,42 +250,61 @@ impl<T: GridTile2D> GridMap2D<T> {
         None
     }
 
-    /// Get positions of all tiles within the GridMap
+    /// Get positions of all tiles that are occupied within the GridMap
     pub fn get_all_positions(&self) -> Vec<GridPos2D> {
-        self.tiles.keys().copied().collect::<Vec<GridPos2D>>()
+        self.tiles
+            .indexed_iter()
+            .filter_map(|(pos, t)| {
+                if t.is_some() {
+                    Some((pos.0 as u32, pos.1 as u32))
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<GridPos2D>>()
     }
 
     /// Get positions of all tiles that are in the border
     pub fn get_all_border_positions(&self, direction: &GridDir) -> Vec<GridPos2D> {
         self.tiles
-            .keys()
-            .filter(|position| self.get_neighbour_at(position, direction).is_none())
-            .copied()
+            .indexed_iter()
+            .filter_map(|(pos, t)| {
+                if t.is_some() {
+                    let position = (pos.0 as u32, pos.1 as u32);
+                    if self.get_neighbour_at(&position, direction).is_some() {
+                        return Some(position)
+                    }
+                } 
+                None
+            })
             .collect::<Vec<GridPos2D>>()
     }
 
     pub fn get_all_empty_positions(&self) -> Vec<GridPos2D> {
-        let mut out = Vec::new();
-
-        for possible in self.size.get_all_possible_positions() {
-            if !self.tiles.contains_key(&possible) {
-                out.push(possible);
-            }
-        }
-
-        out
+        self.tiles
+            .indexed_iter()
+            .filter_map(|(pos, t)| {
+                if t.is_none() {
+                    Some((pos.0 as u32, pos.1 as u32))
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<GridPos2D>>()
     }
 
-    pub fn iter_tiles(&self) -> Vec<&T> {
-        self.tiles.values().collect::<Vec<&T>>()
+    pub fn iter_tiles(&self) -> impl Iterator<Item = &T> {
+        self.tiles
+            .iter()
+            .filter_map(|t| if let Some(tile) = t { Some(tile) } else { None })
     }
 
     /// Destroys the GridMap, returning all tiles with their position adjusted
-    pub fn drain_remapped(mut self, anchor_pos: GridPos2D) -> Vec<T> {
+    pub fn drain_remapped(self, anchor_pos: GridPos2D) -> Vec<T> {
         let mut out: Vec<T> = Vec::new();
 
-        for (position, mut tile) in self.tiles.drain() {
-            tile.set_grid_position(add_grid_positions(anchor_pos, position));
+        for mut tile in self.tiles.into_vec().drain(..).flatten() {
+            tile.set_grid_position(add_grid_positions(anchor_pos, tile.grid_position()));
             out.push(tile);
         }
 
@@ -323,12 +346,30 @@ impl<T: GridTile2D + Clone> GridMap2D<T> {
     pub fn get_remapped(&self, anchor_pos: GridPos2D) -> Vec<T> {
         let mut out: Vec<T> = Vec::new();
 
-        for (pos, tile) in self.tiles.iter() {
-            let mut cloned = tile.clone();
-            cloned.set_grid_position(add_grid_positions(anchor_pos, *pos));
-            out.push(cloned);
+        for (pos, t) in self.tiles.indexed_iter() {
+            if let Some(tile) = t {
+                let mut cloned = tile.clone();
+                cloned.set_grid_position(add_grid_positions(
+                    anchor_pos,
+                    (pos.0 as u32, pos.1 as u32),
+                ));
+                out.push(cloned);
+            }
         }
-
         out
     }
+}
+
+fn get_index_for_position(pos: GridPos2D, size: &GridSize) -> usize {
+    (pos.0 + size.x * pos.1) as usize
+}
+
+fn get_length_for_size(size: &GridSize) -> usize {
+    (size.x * size.y) as usize
+}
+
+fn get_position_for_index(idx: usize, size: &GridSize) -> GridPos2D {
+    let x = idx as u32 % size.x;
+    let y = idx as u32 / size.y;
+    (x, y)
 }
