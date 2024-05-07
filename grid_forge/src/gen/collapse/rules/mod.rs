@@ -1,2 +1,5 @@
-pub mod adjacency;
-pub mod pattern;
+mod adjacency;
+mod pattern;
+
+pub use adjacency::*;
+pub use pattern::*;

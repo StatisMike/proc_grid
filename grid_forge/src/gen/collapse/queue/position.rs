@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, collections::VecDeque};
+use std::cmp::Ordering;
 
 use rand::Rng;
 

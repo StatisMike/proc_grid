@@ -12,7 +12,9 @@ use rand::Rng;
 
 use super::{frequency::FrequencyHints, tile::CollapsibleTile};
 
-/// Trait shared by objects that handle the selecting algorithm for next tile to collapse within [`Resolver``]
+/// Trait shared by objects that handle the selecting algorithm for next tile to collapse within
+/// [`CollapsibleResolver`](crate::gen::collapse::CollapsibleResolver)
+#[allow(private_bounds)]
 pub trait CollapseQueue
 where
     Self: Default + ResolverSelector,

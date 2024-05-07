@@ -5,8 +5,8 @@ use image::{ImageBuffer, Pixel};
 use crate::{
     map::{GridMap2D, GridSize},
     tile::{
-        identifiable::{builder::IdentTileBuilder, IdentifiableTile},
-        vis::{DefaultPixel, VisTile2D},
+        identifiable::{builders::IdentTileBuilder, IdentifiableTile},
+        vis::{PixelWithDefault, VisTile2D},
     },
 };
 
@@ -31,7 +31,7 @@ pub fn load_gridmap_identifiable_auto<T, P, B, const WIDTH: usize, const HEIGHT:
 ) -> Result<GridMap2D<T>, VisError<WIDTH, HEIGHT>>
 where
     T: IdentifiableTile,
-    P: DefaultPixel + 'static,
+    P: PixelWithDefault + 'static,
     B: IdentTileBuilder<T>,
 {
     let size = check_grid_vis_size(image_buffer)?;
@@ -42,7 +42,7 @@ where
             image_buffer,
             position,
         )?;
-        let tile = builder.create_identifiable_tile(position, create_tile_id_from_pixels(&pixels));
+        let tile = builder.build_tile_unchecked(position, create_tile_id_from_pixels(&pixels));
         match collection.add_tile_pixels(&tile, image_buffer)? {
             super::collection::VisCollectionOutcome::Empty => {
                 continue;
@@ -70,7 +70,7 @@ pub fn load_gridmap_identifiable_manual<T, P, B, const WIDTH: usize, const HEIGH
 ) -> Result<GridMap2D<T>, VisError<WIDTH, HEIGHT>>
 where
     T: IdentifiableTile,
-    P: DefaultPixel + 'static,
+    P: PixelWithDefault + 'static,
     B: IdentTileBuilder<T>,
 {
     let size = check_grid_vis_size(image_buffer)?;
@@ -82,7 +82,7 @@ where
             position,
         )?;
         if let Some(tile_id) = collection.get_tile_id_by_pixels(&pixels) {
-            grid.insert_tile(builder.create_identifiable_tile(position, *tile_id));
+            grid.insert_tile(builder.build_tile_unchecked(position, *tile_id));
         } else if !collection.is_empty(&pixels) {
             return Err(VisError::new_nonexist(position));
         }
@@ -94,7 +94,7 @@ pub fn init_map_image_buffer<P, const WIDTH: usize, const HEIGHT: usize>(
     grid_size: &GridSize,
 ) -> ImageBuffer<P, Vec<P::Subpixel>>
 where
-    P: DefaultPixel,
+    P: PixelWithDefault,
 {
     ImageBuffer::new(grid_size.x() * WIDTH as u32, grid_size.y() * HEIGHT as u32)
 }
@@ -106,7 +106,7 @@ pub fn write_gridmap_identifiable<T, P, const WIDTH: usize, const HEIGHT: usize>
 ) -> Result<(), VisError<WIDTH, HEIGHT>>
 where
     T: IdentifiableTile,
-    P: DefaultPixel + 'static,
+    P: PixelWithDefault + 'static,
 {
     check_grid_image_size(image_buffer, grid_map.size())?;
 
@@ -121,7 +121,7 @@ pub fn write_gridmap_vis<T, P, const WIDTH: usize, const HEIGHT: usize>(
 ) -> Result<(), VisError<WIDTH, HEIGHT>>
 where
     T: VisTile2D<P, WIDTH, HEIGHT>,
-    P: DefaultPixel + 'static,
+    P: PixelWithDefault + 'static,
 {
     check_grid_image_size(image_buffer, grid_map.size())?;
 
@@ -142,7 +142,7 @@ where
 // ------ PRIVATE ------ //
 
 pub(crate) fn create_tile_id_from_pixels<
-    P: DefaultPixel,
+    P: PixelWithDefault,
     const WIDTH: usize,
     const HEIGHT: usize,
 >(

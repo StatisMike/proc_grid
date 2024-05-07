@@ -1,6 +1,8 @@
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
 
+use rand::distributions::weighted::alias_method::Weight;
+
 use crate::map::GridMap2D;
 use crate::tile::identifiable::IdentifiableTile;
 
@@ -41,11 +43,16 @@ impl<T> FrequencyHints<T>
 where
     T: IdentifiableTile,
 {
+    pub fn set_weight_for_tile(&mut self, tile: &T, weight: u32) {
+        let entry = self.weights.entry(tile.tile_type_id()).or_default();
+        *entry = weight;
+    }
+
     pub fn count_tile(&mut self, tile: &T) {
-        if let Some(count) = self.weights.get_mut(&tile.get_tile_id()) {
+        if let Some(count) = self.weights.get_mut(&tile.tile_type_id()) {
             *count += 1;
         } else {
-            self.weights.insert(tile.get_tile_id(), 1);
+            self.weights.insert(tile.tile_type_id(), 1);
         }
     }
 

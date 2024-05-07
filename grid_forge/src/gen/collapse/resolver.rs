@@ -1,14 +1,15 @@
 use std::collections::VecDeque;
 use std::marker::PhantomData;
 
-use crate::gen::adjacency::AdjacencyRules;
 use crate::map::{GridDir, GridMap2D, GridSize};
-use crate::tile::identifiable::builder::{IdentTileBuilder, TileBuilderError};
+use crate::tile::identifiable::builders::{IdentTileBuilder, TileBuilderError};
 use crate::tile::{identifiable::IdentifiableTile, GridTile2D};
 use crate::GridPos2D;
 
+use super::error::CollapseErrorKind;
 use super::frequency::FrequencyHints;
 use super::queue::CollapseQueue;
+use super::rules::AdjacencyRules;
 use super::tile::CollapsibleTile;
 use super::CollapseError;
 
@@ -82,12 +83,15 @@ where
         queue.populate_inner_grid(rng, &mut self.inner, positions, frequencies);
 
         for position in positions {
-            if self.remove_tile_options(
-                position,
-                adjacencies,
-                positions,
-                &changed,
-                !queue.propagating(),
+            if CollapseError::from_result(
+                self.remove_tile_options(
+                    position,
+                    adjacencies,
+                    positions,
+                    &changed,
+                    !queue.propagating(),
+                ),
+                CollapseErrorKind::OnInit,
             )? {
                 changed.push_back(*position);
             }
@@ -102,7 +106,15 @@ where
             // Propagating queue needs propagation at this point also
             if queue.propagating() {
                 while let Some(position_changed) = changed.pop_front() {
-                    self.propagate_from(position_changed, &mut queue, adjacencies, &mut changed)?;
+                    CollapseError::from_result(
+                        self.propagate_from(
+                            position_changed,
+                            &mut queue,
+                            adjacencies,
+                            &mut changed,
+                        ),
+                        CollapseErrorKind::OnInit,
+                    )?;
                 }
             }
         }
@@ -111,14 +123,17 @@ where
         while let Some(next_position) = queue.get_next_position() {
             // Without propagation needs to remove options before collapse.
             if !queue.propagating() {
-                self.remove_tile_options(&next_position, adjacencies, &[], &changed, false)?;
+                CollapseError::from_result(
+                    self.remove_tile_options(&next_position, adjacencies, &[], &changed, false),
+                    CollapseErrorKind::OnCollapse,
+                )?;
             }
 
             let to_collapse = self.inner.get_mut_tile_at_position(&next_position).unwrap();
             let collapsed = to_collapse.collapse(rng)?;
 
             if collapsed {
-                let collapsed_id = to_collapse.get_tile_id();
+                let collapsed_id = to_collapse.tile_type_id();
                 if !self.tile_ids.contains(&collapsed_id) {
                     self.tile_ids.push(collapsed_id);
                 }
@@ -129,12 +144,28 @@ where
                 changed.push_back(next_position);
 
                 while let Some(position_changed) = changed.pop_front() {
-                    self.propagate_from(position_changed, &mut queue, adjacencies, &mut changed)?;
+                    CollapseError::from_result(
+                        self.propagate_from(
+                            position_changed,
+                            &mut queue,
+                            adjacencies,
+                            &mut changed,
+                        ),
+                        CollapseErrorKind::OnPropagation,
+                    )?;
                 }
             } else if !queue.propagating() {
                 // Without propagation - update only direct neighbours.
 
-                self.propagate_from(next_position, &mut queue, adjacencies, &mut VecDeque::new())?;
+                CollapseError::from_result(
+                    self.propagate_from(
+                        next_position,
+                        &mut queue,
+                        adjacencies,
+                        &mut VecDeque::new(),
+                    ),
+                    CollapseErrorKind::OnNeighbourUpdate,
+                )?;
             }
         }
 
@@ -148,7 +179,7 @@ where
         omit_positions_unless_changed: &[GridPos2D],
         changed: &VecDeque<GridPos2D>,
         collapsed_only: bool,
-    ) -> Result<bool, CollapseError>
+    ) -> Result<bool, GridPos2D>
     where
         InputTile: IdentifiableTile,
     {
@@ -156,10 +187,6 @@ where
             .inner
             .get_tile_at_position(pos)
             .expect("no tile at given position");
-
-        if *pos == (2, 13) {
-            print!("got it!");
-        }
 
         // If tile is collapsed don't do anything.
         if tile.is_collapsed() {
@@ -169,7 +196,7 @@ where
         let mut options_to_remove = Vec::new();
 
         if tile.options_with_weights.is_empty() {
-            return Err(CollapseError::new_options_empty(*pos));
+            return Err(*pos);
         }
 
         // Check if option is valid for each direction.
@@ -182,7 +209,7 @@ where
                 }
                 if neighbour.is_collapsed() {
                     for option in tile.options_with_weights.keys() {
-                        if !adjacency.is_valid_raw(*option, neighbour.get_tile_id(), *dir) {
+                        if !adjacency.is_valid_raw(*option, neighbour.tile_type_id(), *dir) {
                             options_to_remove.push(*option);
                         }
                     }
@@ -212,7 +239,7 @@ where
             for option in options_to_remove {
                 tile.remove_option(option);
                 if !tile.have_options() {
-                    return Err(CollapseError::new_options_empty(*pos));
+                    return Err(*pos);
                 }
             }
             Ok(true)
@@ -225,7 +252,7 @@ where
         queue: &mut Queue,
         adjacency: &AdjacencyRules<InputTile>,
         changed: &mut VecDeque<GridPos2D>,
-    ) -> Result<(), CollapseError>
+    ) -> Result<(), GridPos2D>
     where
         Queue: CollapseQueue,
     {
@@ -234,7 +261,7 @@ where
             .get_tile_at_position(&pos)
             .expect("cant retrieve tile to propagate from");
         if tile.is_collapsed() {
-            let tile_id = tile.get_tile_id();
+            let tile_id = tile.tile_type_id();
             for direction in GridDir::ALL {
                 if let Some(neighbour) = self.inner.get_mut_neighbour_at(&pos, direction) {
                     if neighbour.is_collapsed() {
@@ -298,7 +325,7 @@ where
         OutputTile: IdentifiableTile,
         Builder: IdentTileBuilder<OutputTile>,
     {
-        builder.check_missing_tile_creators(&self.tile_ids)?;
+        builder.check_missing_ids(&self.tile_ids)?;
 
         let mut grid = GridMap2D::new(*self.inner.size());
 
@@ -308,7 +335,7 @@ where
                 continue;
             }
 
-            grid.insert_tile(builder.create_identifiable_tile(position, tile.get_tile_id()));
+            grid.insert_tile(builder.build_tile_unchecked(position, tile.tile_type_id()));
         }
 
         Ok(grid)

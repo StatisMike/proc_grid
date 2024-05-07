@@ -6,12 +6,12 @@ use rand::{
 };
 
 use crate::{
-    gen::adjacency::AdjacencyRules,
     map::GridDir,
     tile::{identifiable::IdentifiableTile, GridTile2D},
     GridPos2D,
 };
 
+use super::{error::CollapseErrorKind, rules::AdjacencyRules};
 use super::{frequency::FrequencyHints, CollapseError};
 
 /// Tile with options that can be collapsed into one of them.
@@ -35,7 +35,7 @@ impl GridTile2D for CollapsibleTile {
 }
 
 impl IdentifiableTile for CollapsibleTile {
-    fn get_tile_id(&self) -> u64 {
+    fn tile_type_id(&self) -> u64 {
         if let Some(tile_id) = self.tile_id {
             return tile_id;
         }
@@ -146,7 +146,7 @@ impl CollapsibleTile {
             return Ok(false);
         }
         if !self.have_options() {
-            return Err(CollapseError::new_options_empty(self.pos));
+            return Err(CollapseError::new(self.pos, CollapseErrorKind::OnCollapse));
         }
         let mut current_sum = 0;
         let mut chosen_option = Option::<u64>::None;
@@ -170,12 +170,12 @@ impl CollapsibleTile {
 
     // --- ADJACENCY RULE --- //
     /// Resolve with regard to adjacency rules if neighbour is collapsed.
-    pub fn resolve_options_neighbour_collapsed<T: IdentifiableTile>(
+    pub(crate) fn resolve_options_neighbour_collapsed<T: IdentifiableTile>(
         &mut self,
         adjacency: &AdjacencyRules<T>,
         dir: GridDir,
         neighbour_tile_id: u64,
-    ) -> Result<Vec<u64>, CollapseError> {
+    ) -> Result<Vec<u64>, GridPos2D> {
         let mut to_remove = Vec::new();
         for option in self.options_with_weights.keys() {
             if !adjacency.is_valid_raw(*option, neighbour_tile_id, dir) {
@@ -186,18 +186,18 @@ impl CollapsibleTile {
             self.remove_option(*tile_id);
         }
         if !self.have_options() {
-            return Err(CollapseError::new_options_empty(self.pos));
+            return Err(self.pos);
         }
         Ok(to_remove)
     }
 
     /// Resolve with regard to adjacency rules if neighbour is not collapsed.
-    pub fn resolve_options_neighbour_uncollapsed<T: IdentifiableTile>(
+    pub(crate) fn resolve_options_neighbour_uncollapsed<T: IdentifiableTile>(
         &mut self,
         adjacency: &AdjacencyRules<T>,
         dir: GridDir,
         neighbour_options: &[u64],
-    ) -> Result<Vec<u64>, CollapseError> {
+    ) -> Result<Vec<u64>, GridPos2D> {
         let mut to_remove = Vec::new();
         for option in self.options_with_weights.keys() {
             if neighbour_options
@@ -211,7 +211,7 @@ impl CollapsibleTile {
             self.remove_option(*tile_id);
         }
         if !self.have_options() {
-            return Err(CollapseError::new_options_empty(self.pos));
+            return Err(self.pos);
         }
         Ok(to_remove)
     }

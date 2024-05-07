@@ -13,8 +13,6 @@ use crate::{
     GridPos2D,
 };
 
-pub(crate) trait EntrophySelector {}
-
 #[derive(Clone, Copy)]
 pub(crate) struct EntrophyItem {
     pos: GridPos2D,
@@ -56,18 +54,10 @@ impl Ord for EntrophyItem {
 /// Select next position to collapse using smallest entrophy condition.
 ///
 /// Its state will be updated every time after tile entrophy changed by removing some of its options.
+#[derive(Default)]
 pub struct EntrophyQueue {
     by_entrophy: BTreeSet<EntrophyItem>,
     by_pos: HashMap<GridPos2D, f32>,
-}
-
-impl Default for EntrophyQueue {
-    fn default() -> Self {
-        Self {
-            by_entrophy: BTreeSet::new(),
-            by_pos: HashMap::new(),
-        }
-    }
 }
 
 impl CollapseQueue for EntrophyQueue {
@@ -103,8 +93,6 @@ impl CollapseQueue for EntrophyQueue {
         }
     }
 }
-
-impl EntrophySelector for EntrophyQueue {}
 
 impl ResolverSelector for EntrophyQueue {
     fn populate_inner_grid<R: Rng, InputTile: IdentifiableTile>(

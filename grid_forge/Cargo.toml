@@ -31,11 +31,6 @@ name = "vis_io"
 harness = false
 
 [[bench]]
-path = "benches/collapsible_initial.rs"
-name = "collapsible_initial"
-harness = false
-
-[[bench]]
 path = "benches/collapsible.rs"
 name = "collapsible"
 harness = false

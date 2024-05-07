@@ -6,19 +6,10 @@ extern crate bencher;
 
 use bencher::Bencher;
 use grid_forge::{
-    gen::{
-        adjacency::AdjacencyAnalyzer,
-        collapse::{
-            frequency::FrequencyHints,
-            queue::{EntrophyQueue, PositionQueue},
-            resolver::CollapsibleResolver,
-        },
-        ms::MSAnalyzer,
-        wfc::analyzer::WFCAnalyzer,
-    },
+    gen::collapse::*,
     map::GridSize,
     tile::{
-        identifiable::{builder::IdentTileTraitBuilder, BasicIdentifiableTile2D},
+        identifiable::{builders::IdentTileTraitBuilder, BasicIdentifiableTile2D},
         vis::DefaultVisPixel,
     },
     vis::{collection::VisCollection, ops::load_gridmap_identifiable_auto},
@@ -41,7 +32,7 @@ fn gen_identity_position_10x10(bencher: &mut Bencher) {
         .into_rgb8();
     let roads_grid = load_gridmap_identifiable_auto(&roads_img, &mut collection, &builder).unwrap();
 
-    let mut analyzer: WFCAnalyzer<BasicIdentifiableTile2D> = WFCAnalyzer::default();
+    let mut analyzer = AdjacencyIdentityAnalyzer::default();
     analyzer.analyze(&seas_grid);
     analyzer.analyze(&roads_grid);
 
@@ -87,7 +78,7 @@ fn gen_identity_entrophy_10x10(bencher: &mut Bencher) {
         .into_rgb8();
     let roads_grid = load_gridmap_identifiable_auto(&roads_img, &mut collection, &builder).unwrap();
 
-    let mut analyzer: WFCAnalyzer<BasicIdentifiableTile2D> = WFCAnalyzer::default();
+    let mut analyzer = AdjacencyIdentityAnalyzer::default();
     analyzer.analyze(&seas_grid);
     analyzer.analyze(&roads_grid);
 
@@ -133,7 +124,7 @@ fn gen_border_position_10x10(bencher: &mut Bencher) {
         .into_rgb8();
     let roads_grid = load_gridmap_identifiable_auto(&roads_img, &mut collection, &builder).unwrap();
 
-    let mut analyzer: MSAnalyzer<BasicIdentifiableTile2D> = MSAnalyzer::default();
+    let mut analyzer = AdjacencyBorderAnalyzer::default();
     analyzer.analyze(&seas_grid);
     analyzer.analyze(&roads_grid);
 
@@ -179,7 +170,7 @@ fn gen_border_entrophy_10x10(bencher: &mut Bencher) {
         .into_rgb8();
     let roads_grid = load_gridmap_identifiable_auto(&roads_img, &mut collection, &builder).unwrap();
 
-    let mut analyzer: MSAnalyzer<BasicIdentifiableTile2D> = MSAnalyzer::default();
+    let mut analyzer = AdjacencyBorderAnalyzer::default();
     analyzer.analyze(&seas_grid);
     analyzer.analyze(&roads_grid);
 

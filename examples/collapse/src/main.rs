@@ -1,42 +1,49 @@
-use grid_forge::{
-    gen::{
-        adjacency::AdjacencyAnalyzer,
-        collapse::{
-            frequency::FrequencyHints,
-            queue::{EntrophyQueue, PositionQueue},
-            resolver::CollapsibleResolver,
-        },
-        ms::MSAnalyzer,
-        wfc::{analyzer::WFCAnalyzer, resolver::WFCResolver},
-    },
-    gen_grid_positions_square,
-    map::GridSize,
-    tile::{
-        identifiable::{builder::IdentTileTraitBuilder, BasicIdentifiableTile2D},
-        vis::DefaultVisPixel,
-    },
-    vis::{
-        collection::VisCollection,
-        ops::{init_map_image_buffer, load_gridmap_identifiable_auto, write_gridmap_identifiable},
-    },
-};
+//! Below, the example of working with [`CollapsibleResolver`] to generate a randomized GridMap2D presented.
+//!
+//! Generation will be done using [`CollapsibleResolver::generate`] method, which can be done only over tiles implementing
+//! [`IdentifiableTile`](grid_forge::tile::identifiable::IdentifiableTile), and needs some setup to be successful:
+//! - you need to provide [`FrequencyHints`], which allows the Resolver to pick the options with variable probabilities.
+//! - you need to provide [`AdjacencyRules`], which allows the Resolver to choose which options are valid for given tile
+//! based on its neighbours.
+//! - you need to provide a *Queue*, which will decide the order in which the chosen tiles will be collapsed.
+//!
+//! As a source of the adjacency rules and frequency hints two sample map tiles will be used to be found in `assets/samples`.
+//! To load and save images, the `"vis"` feature needs to be enabled.
+//!
+//! We will be mixing different rules and queues in the example.
+//!
+//! The goal is to generate a map of island of some kind - so the map borders needs to be compromised of water tiles,
+//! which will be added at the beginning of generation.
+//!
+//! Afterwards, the main part of the map will be generated using more restrictive rules ([`AdjacencyIdentityAnalyzer`]), so it will
+//! be done in 10x10 chunks allowing for retrying upon failure, and with less time-consuming [`PositionQueue`].
+//!
+//! As the last part of the generation, the uncollapsed tiles - caused either by unresolved failures or just by not being
+//! taken into account during previous steps will be generated using more liberate rules ([`AdjacencyBorderAnalyzer`])
+//! with more time-consuming, but less error-prone [`EntrophyQueue`].  
+
+use grid_forge::gen::collapse::*;
+use grid_forge::gen_grid_positions_square;
+use grid_forge::map::GridSize;
+use grid_forge::tile::identifiable::builders::IdentTileTraitBuilder;
+use grid_forge::tile::identifiable::BasicIdentifiableTile2D;
+use grid_forge::tile::vis::DefaultVisPixel;
+use grid_forge::vis::collection::VisCollection;
+use grid_forge::vis::ops::*;
+
 use rand::SeedableRng;
 
 fn main() {
+    // --------------- SETUP --------------- //
+
     // Initialize builder, which will take care of putting new tiles on specific places.
     // As `BasicIdentifiableTile` implements `ConstructableViaIdentifierTile`, the `IdentTileTraitBuilder` can be used.
     let builder = IdentTileTraitBuilder::<BasicIdentifiableTile2D>::default();
 
     // Initialize pixel collection, to retrieve pixels for each identifiable tile.
-    // Tile visual information need to be provided as const generic arguments there: its `Pixel` type, width and height
-    // of each tile as number of pixels in source image.
+    // Tile visual information need to be provided as const generic arguments there: its `Pixel` type alongside width and height
+    // of each tile as number of pixels in image buffer.
     let mut collection = VisCollection::<BasicIdentifiableTile2D, DefaultVisPixel, 4, 4>::default();
-
-    // let paths = std::fs::read_dir("../../assets/samples").unwrap();
-
-    // for path in paths {
-    //     println!("Name: {}", path.unwrap().path().display())
-    // }
 
     // Load samples as grid maps.
     let seas_img = image::open("assets/samples/seas.png")
@@ -53,12 +60,12 @@ fn main() {
     let roads_grid = load_gridmap_identifiable_auto(&roads_img, &mut collection, &builder).unwrap();
 
     // Construct border-based adjacency analyzer and analyze the maps.
-    let mut border_analyzer = MSAnalyzer::default();
+    let mut border_analyzer = AdjacencyBorderAnalyzer::default();
     border_analyzer.analyze(&seas_grid);
     border_analyzer.analyze(&roads_grid);
 
     // Construct identify-based adjacency analyzer and analyze the maps.
-    let mut ident_analyzer = WFCAnalyzer::default();
+    let mut ident_analyzer = AdjacencyIdentityAnalyzer::default();
     ident_analyzer.analyze(&seas_grid);
     ident_analyzer.analyze(&roads_grid);
 
@@ -131,8 +138,8 @@ fn main() {
             positions,
             // For 'identity' rules we will use entrophy-based positions queue.
             PositionQueue::new(
-                grid_forge::gen::collapse::queue::PositionQueueStartingPoint::UpLeft,
-                grid_forge::gen::collapse::queue::PositionQueueDirection::Columnwise,
+                PositionQueueStartingPoint::UpLeft,
+                PositionQueueDirection::Columnwise,
             ),
             &frequency_hints,
             ident_analyzer.adjacency(),
@@ -189,5 +196,5 @@ fn main() {
     let mut out_buffer = init_map_image_buffer::<DefaultVisPixel, 4, 4>(&size);
     write_gridmap_identifiable(&mut out_buffer, &new_map, &collection).unwrap();
 
-    out_buffer.save("collapsibleunfinished.png").unwrap();
+    out_buffer.save("examples/collapse.png").unwrap();
 }

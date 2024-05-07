@@ -6,7 +6,7 @@ extern crate bencher;
 use bencher::Bencher;
 use grid_forge::{
     tile::{
-        identifiable::{builder::IdentTileTraitBuilder, BasicIdentifiableTile2D},
+        identifiable::{builders::IdentTileTraitBuilder, BasicIdentifiableTile2D},
         vis::DefaultVisPixel,
     },
     vis::{
