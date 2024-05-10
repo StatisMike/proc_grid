@@ -1,0 +1,3 @@
+[gd_scene format=3 uid="uid://bsv5t2cahkg4c"]
+
+[node name="TestGridMap" type="Node3D"]

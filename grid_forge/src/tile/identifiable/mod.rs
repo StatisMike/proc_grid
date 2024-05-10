@@ -16,6 +16,7 @@ use crate::GridPos2D;
 use super::GridTile2D;
 
 pub mod builders;
+pub mod collection;
 
 /// Its implementation makes the specific tile identifiable and discernable from other tile instances in regards to tile
 /// type. For the generative algorithms using this trait to match and select tiles, general rules of the tile identity

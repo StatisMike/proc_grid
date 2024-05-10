@@ -272,9 +272,9 @@ impl<T: GridTile2D> GridMap2D<T> {
                 if t.is_some() {
                     let position = (pos.0 as u32, pos.1 as u32);
                     if self.get_neighbour_at(&position, direction).is_some() {
-                        return Some(position)
+                        return Some(position);
                     }
-                } 
+                }
                 None
             })
             .collect::<Vec<GridPos2D>>()

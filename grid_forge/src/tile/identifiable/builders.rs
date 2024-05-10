@@ -327,9 +327,8 @@ impl<T: IdentifiableTile + ConstructableViaIdentifierTile> IdentTileBuilder<T>
     }
 }
 
-/// Trait shared by objects which on basis of the grid position and tile identifier of given [`IdentifiableTile`]-implementing
-/// struct can create correct instance of the tile. Necessary for many [`GridMap2D`](crate::map::GridMap2D) creating
-/// methods.
+/// Trait shared by objects which on basis of the grid position and tile identifier of given [`IdentifiableTile`]-implementing struct can 
+/// create correct instance of the tile. Necessary for many [`GridMap2D`](crate::map::GridMap2D) creating methods.
 ///
 /// Three different builders are available in the `grid_forge`:
 /// - [`IdentTileFunBuilder`] - for tiles not implementing any additional traits.
@@ -339,32 +338,33 @@ pub trait IdentTileBuilder<T: IdentifiableTile> {
     /// Creates tile with given tile identifier at given grid position.
     ///
     /// # Panics
-    /// Can panic if builder does not have possibility to construct tile of given `tile_id` based on the gathered
-    /// information. You can check for missing tile ids with [`check_missing_ids`](IdentTileBuilder::check_missing_ids)
-    /// or use its fallible version: [`build_tile`](IdentTileBuilder::build_tile).
+    /// Can panic if builder does not have possibility to construct tile of given `tile_id` based on the gathered information. You can check 
+    /// for missing tile ids with [`check_missing_ids`](IdentTileBuilder::check_missing_ids) or use its fallible version: 
+    /// [`build_tile`](IdentTileBuilder::build_tile).
     fn build_tile_unchecked(&self, pos: GridPos2D, tile_id: u64) -> T;
 
+    /// Creates tile with given tile identifier at given grid position. Returns error if cannot construct tile of given `tile_id`.
     fn build_tile(&self, pos: GridPos2D, tile_id: u64) -> Result<T, TileBuilderError>;
 
     /// Checks for missing tile creators out of provided slice of `tile_id`.
     fn check_missing_ids(&self, tile_ids: &[u64]) -> Result<(), TileBuilderError>;
 }
 
-/// Error stemming from
+/// Error stemming from missing tiles in [`IdentTileBuilder`].
 #[derive(Debug, Clone)]
 pub struct TileBuilderError {
-    tile_ids: Vec<u64>,
+    tile_type_ids: Vec<u64>,
 }
 
 impl TileBuilderError {
     fn new(tile_ids: &[u64]) -> Self {
         Self {
-            tile_ids: Vec::from(tile_ids),
+            tile_type_ids: Vec::from(tile_ids),
         }
     }
 
-    pub fn get_missing_tile_ids(&self) -> &[u64] {
-        &self.tile_ids
+    pub fn get_missing_tile_type_ids(&self) -> &[u64] {
+        &self.tile_type_ids
     }
 }
 
@@ -374,7 +374,7 @@ impl Display for TileBuilderError {
             f,
             "missing tile ids from builder: {missing_ids}",
             missing_ids = self
-                .tile_ids
+                .tile_type_ids
                 .iter()
                 .map(|f| f.to_string())
                 .collect::<Vec<_>>()
