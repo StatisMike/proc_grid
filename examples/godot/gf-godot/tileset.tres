@@ -1,15 +1,9 @@
-[gd_resource type="TileSet" load_steps=6 format=3 uid="uid://clknfb6b2kcsg"]
+[gd_resource type="TileSet" load_steps=3 format=3 uid="uid://clknfb6b2kcsg"]
 
-[ext_resource type="PackedScene" uid="uid://7tby2rqn7ex0" path="res://tile1.tscn" id="1_mh0if"]
-[ext_resource type="Texture2D" uid="uid://b8kguwox3e744" path="res://tiles/roads-sheet.png" id="1_oikgm"]
-[ext_resource type="PackedScene" uid="uid://btigqnmsnafbc" path="res://tile2.tscn" id="2_x3wi7"]
+[ext_resource type="Texture2D" uid="uid://dmme1ql4q0nm0" path="res://tiles/all_tiles.png" id="1_1ifpm"]
 
-[sub_resource type="TileSetScenesCollectionSource" id="TileSetScenesCollectionSource_gglrl"]
-scenes/1/scene = ExtResource("1_mh0if")
-scenes/2/scene = ExtResource("2_x3wi7")
-
-[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_nmyvo"]
-texture = ExtResource("1_oikgm")
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_wjikg"]
+texture = ExtResource("1_1ifpm")
 texture_region_size = Vector2i(4, 4)
 0:0/0 = 0
 1:0/0 = 0
@@ -26,7 +20,6 @@ texture_region_size = Vector2i(4, 4)
 4:1/0 = 0
 5:1/0 = 0
 6:1/0 = 0
-7:1/next_alternative_id = 2
 7:1/0 = 0
 0:2/0 = 0
 1:2/0 = 0
@@ -55,6 +48,7 @@ texture_region_size = Vector2i(4, 4)
 0:5/0 = 0
 1:5/0 = 0
 2:5/0 = 0
+3:5/0 = 0
 4:5/0 = 0
 5:5/0 = 0
 6:5/0 = 0
@@ -67,9 +61,7 @@ texture_region_size = Vector2i(4, 4)
 5:6/0 = 0
 6:6/0 = 0
 7:6/0 = 0
-0:7/0 = 0
 
 [resource]
-tile_size = Vector2i(4, 4)
-sources/1 = SubResource("TileSetAtlasSource_nmyvo")
-sources/0 = SubResource("TileSetScenesCollectionSource_gglrl")
+tile_size = Vector2i(5, 5)
+sources/0 = SubResource("TileSetAtlasSource_wjikg")

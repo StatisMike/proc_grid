@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use std::collections::hash_map::Entry;
+use std::collections::HashMap;
 use std::hash::{DefaultHasher, Hash, Hasher};
 
 /// Trait implementing the behaviour for easily keeping and retrieving the `tile_type_id` alongside some arbitrary [`DATA`](IdentTileCollection::DATA)
@@ -57,23 +57,28 @@ pub trait IdentTileCollection {
     /// Sets tile data without `tile_type_id` provided - it will be generated with [get_data_hash](IdentTileCollection::get_data_hash).
     /// If either data or generated `tile_type_id` are already present in the collection, they will be overwritten, returning `true`.
     fn set_tile(&mut self, data: Self::DATA) -> bool {
-        let hash = Self::generate_type_id(&data);
-        if let Some(type_id) = self.rev_mut().remove(&hash) {
-            self.inner_mut().remove(&type_id);
-        }
-        self.set_tile_data(hash, data).is_some()
-    }
-
-    /// Removes tile data if either provided data or hash generated with [get_data_hash](IdentTileCollection::get_data_hash) is present
-    /// in the collection.
-    fn remove_tile(&mut self, data: Self::DATA) -> bool {
         let mut changed = false;
         let hash = Self::generate_type_id(&data);
         if let Some(type_id) = self.rev_mut().remove(&hash) {
             self.inner_mut().remove(&type_id);
             changed = true;
         }
-        if self.remove_tile_data(hash).is_some() {
+        if self.set_tile_data(hash, data).is_some() {
+            changed = true;
+        }
+        changed
+    }
+
+    /// Removes tile data if either provided data or hash generated with [get_data_hash](IdentTileCollection::get_data_hash) is present
+    /// in the collection.
+    fn remove_tile(&mut self, data: &Self::DATA) -> bool {
+        let mut changed = false;
+        let hash = Self::generate_type_id(data);
+        if let Some(type_id) = self.rev_mut().remove(&hash) {
+            self.inner_mut().remove(&type_id);
+            changed = true;
+        }
+        if self.remove_tile_data(&hash).is_some() {
             changed = true;
         }
         changed
@@ -98,7 +103,9 @@ pub trait IdentTileCollection {
     fn set_tile_data(&mut self, tile_type_id: u64, data: Self::DATA) -> Option<Self::DATA> {
         let data_hash = Self::generate_type_id(&data);
         let existing_data = self.inner_mut().insert(tile_type_id, data);
-        let existing_hash = existing_data.as_ref().map(|data| Self::generate_type_id(data));
+        let existing_hash = existing_data
+            .as_ref()
+            .map(|data| Self::generate_type_id(data));
         if let Some(hash_to_remove) = existing_hash {
             self.rev_mut().remove(&hash_to_remove);
         }
@@ -108,18 +115,17 @@ pub trait IdentTileCollection {
     }
 
     /// Removes [`DATA`](IdentTileCollection::DATA) for provided `tile_type_id`. Returns removed data.
-    fn remove_tile_data(&mut self, tile_type_id: u64) -> Option<Self::DATA> {
-        let existing_data = self.inner_mut().remove(&tile_type_id);
+    fn remove_tile_data(&mut self, tile_type_id: &u64) -> Option<Self::DATA> {
+        let existing_data = self.inner_mut().remove(tile_type_id);
         if let Some(data_to_remove) = &existing_data {
-            self.inner_mut()
-                .remove(&Self::generate_type_id(data_to_remove));
+            self.remove_tile(data_to_remove);
         }
         existing_data
     }
 
     /// Gets [`DATA`](IdentTileCollection::DATA) stored for given `tile_type_id`.
-    fn get_tile_data(&self, tile_type_id: u64) -> Option<&Self::DATA> {
-        self.inner().get(&tile_type_id)
+    fn get_tile_data(&self, tile_type_id: &u64) -> Option<&Self::DATA> {
+        self.inner().get(tile_type_id)
     }
 
     /// Gets `tile_type_id` bind to given `data`.
@@ -140,6 +146,7 @@ mod test {
     use super::IdentTileCollection;
     use std::collections::HashMap;
 
+    #[derive(Default, Clone)]
     struct TestTileCollection {
         inner: HashMap<u64, i32>,
         rev: HashMap<u64, u64>,
@@ -162,6 +169,161 @@ mod test {
 
         fn rev_mut(&mut self) -> &mut HashMap<u64, u64> {
             &mut self.rev
+        }
+    }
+
+    const TEST_DATA: [i32; 7] = [34231, 1223, -1943, -12453, i32::MAX, i32::MIN, 0];
+
+    #[test]
+    fn test_collection_data_only() {
+        let mut collection = TestTileCollection::default();
+
+        for data in TEST_DATA {
+            assert!(collection.add_tile(data), "no data: {data} has been added");
+        }
+
+        assert_eq!(TEST_DATA.len(), collection.inner().len());
+        assert_eq!(TEST_DATA.len(), collection.rev().len());
+
+        for data in TEST_DATA {
+            assert!(!collection.add_tile(data), "data: {data} has been added");
+        }
+
+        assert_eq!(TEST_DATA.len(), collection.inner().len());
+        assert_eq!(TEST_DATA.len(), collection.rev().len());
+
+        for data in TEST_DATA {
+            assert!(collection.set_tile(data), "data: {data} has not been set");
+        }
+
+        assert_eq!(TEST_DATA.len(), collection.inner().len());
+        assert_eq!(TEST_DATA.len(), collection.rev().len());
+
+        let mut tile_type_ids = Vec::new();
+
+        for data in TEST_DATA {
+            if let Some(type_id) = collection.get_tile_type_id(&data) {
+                tile_type_ids.push(type_id);
+            } else {
+                panic!("didn't extract tile type id for tile data: {data}");
+            }
+        }
+
+        for (data_id, data) in TEST_DATA.iter().enumerate() {
+            let extracted_data = collection
+                .get_tile_data(tile_type_ids.get(data_id).expect("cannot get tile type id"))
+                .expect("cannot get tile data");
+            assert_eq!(data, extracted_data);
+        }
+
+        for (iter, data) in TEST_DATA.iter().enumerate() {
+            collection.remove_tile(data);
+            assert_eq!(TEST_DATA.len() - (iter + 1), collection.inner().len());
+            assert_eq!(TEST_DATA.len() - (iter + 1), collection.rev().len());
+        }
+    }
+
+    #[test]
+    fn test_collection_data_by_id() {
+        let mut collection = TestTileCollection::default();
+
+        for (tile_type_id, data) in TEST_DATA.iter().enumerate() {
+            assert!(
+                collection.add_tile_data(tile_type_id as u64, *data),
+                "no data: {data} has been added"
+            );
+        }
+
+        assert_eq!(TEST_DATA.len(), collection.inner().len());
+        assert_eq!(TEST_DATA.len(), collection.rev().len());
+
+        for (tile_type_id, data) in TEST_DATA.iter().enumerate() {
+            assert!(
+                !collection.add_tile_data(tile_type_id as u64, *data),
+                "data: {data} has been added"
+            );
+        }
+
+        assert_eq!(TEST_DATA.len(), collection.inner().len());
+        assert_eq!(TEST_DATA.len(), collection.rev().len());
+
+        for (tile_type_id, data) in TEST_DATA.iter().enumerate() {
+            let existing_data = collection.set_tile_data(tile_type_id as u64, *data);
+            assert!(existing_data.is_some(), "data: {data} has not been set");
+            assert_eq!(*data, existing_data.unwrap());
+        }
+
+        assert_eq!(TEST_DATA.len(), collection.inner().len());
+        assert_eq!(TEST_DATA.len(), collection.rev().len());
+
+        for (data_id, data) in TEST_DATA.iter().enumerate() {
+            let extracted_data = collection
+                .get_tile_data(&(data_id as u64))
+                .expect("cannot get tile data");
+            assert_eq!(data, extracted_data);
+        }
+
+        for (iter, data) in TEST_DATA.iter().enumerate() {
+            let removed_data = collection.remove_tile_data(&(iter as u64));
+            assert!(removed_data.is_some());
+            assert_eq!(*data, removed_data.unwrap());
+            assert_eq!(
+                TEST_DATA.len() - (iter + 1),
+                collection.inner().len(),
+                "unchanged inner"
+            );
+            assert_eq!(
+                TEST_DATA.len() - (iter + 1),
+                collection.rev().len(),
+                "unchanged rev"
+            );
+        }
+    }
+
+    #[test]
+    fn test_collection_mixed() {
+        let mut collection = TestTileCollection::default();
+
+        for (tile_type_id, data) in TEST_DATA.iter().enumerate() {
+            assert!(
+                collection.add_tile_data(tile_type_id as u64, *data),
+                "no data: {data} has been added"
+            );
+        }
+
+        for data_idx in [1, 3, 5] {
+            assert!(
+                collection.set_tile(TEST_DATA[data_idx]),
+                "no data for idx: {data_idx} has been set"
+            );
+        }
+
+        assert_eq!(
+            TEST_DATA.len(),
+            collection.inner().len(),
+            "wrong `inner` length"
+        );
+        assert_eq!(
+            TEST_DATA.len(),
+            collection.rev().len(),
+            "wrong `rev` length"
+        );
+
+        let mut tile_type_ids = Vec::new();
+
+        for data in TEST_DATA {
+            if let Some(type_id) = collection.get_tile_type_id(&data) {
+                tile_type_ids.push(type_id);
+            } else {
+                panic!("didn't extract tile type id for tile data: {data}");
+            }
+        }
+
+        for (data_id, data) in TEST_DATA.iter().enumerate() {
+            let extracted_data = collection
+                .get_tile_data(tile_type_ids.get(data_id).expect("cannot get tile type id"))
+                .expect("cannot get tile data");
+            assert_eq!(data, extracted_data);
         }
     }
 }

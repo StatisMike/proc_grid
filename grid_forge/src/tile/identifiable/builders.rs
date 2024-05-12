@@ -327,7 +327,7 @@ impl<T: IdentifiableTile + ConstructableViaIdentifierTile> IdentTileBuilder<T>
     }
 }
 
-/// Trait shared by objects which on basis of the grid position and tile identifier of given [`IdentifiableTile`]-implementing struct can 
+/// Trait shared by objects which on basis of the grid position and tile identifier of given [`IdentifiableTile`]-implementing struct can
 /// create correct instance of the tile. Necessary for many [`GridMap2D`](crate::map::GridMap2D) creating methods.
 ///
 /// Three different builders are available in the `grid_forge`:
@@ -338,8 +338,8 @@ pub trait IdentTileBuilder<T: IdentifiableTile> {
     /// Creates tile with given tile identifier at given grid position.
     ///
     /// # Panics
-    /// Can panic if builder does not have possibility to construct tile of given `tile_id` based on the gathered information. You can check 
-    /// for missing tile ids with [`check_missing_ids`](IdentTileBuilder::check_missing_ids) or use its fallible version: 
+    /// Can panic if builder does not have possibility to construct tile of given `tile_id` based on the gathered information. You can check
+    /// for missing tile ids with [`check_missing_ids`](IdentTileBuilder::check_missing_ids) or use its fallible version:
     /// [`build_tile`](IdentTileBuilder::build_tile).
     fn build_tile_unchecked(&self, pos: GridPos2D, tile_id: u64) -> T;
 

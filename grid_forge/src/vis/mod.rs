@@ -33,7 +33,7 @@ where
 }
 
 /// Writes pixels array into image buffer at provided [GridPos2D].
-pub(crate) fn write_tile<P, const WIDTH: usize, const HEIGHT: usize>(
+pub fn write_tile<P, const WIDTH: usize, const HEIGHT: usize>(
     image_buffer: &mut ImageBuffer<P, Vec<P::Subpixel>>,
     pos: GridPos2D,
     pixels: &[[P; WIDTH]; HEIGHT],
@@ -64,10 +64,10 @@ where
 }
 
 /// Reads pixels from image that represents the tile at specified [GridPos2D].
-pub(crate) fn read_tile<P, const WIDTH: usize, const HEIGHT: usize>(
+pub fn read_tile<P, const WIDTH: usize, const HEIGHT: usize>(
     pixels: &mut [[P; WIDTH]; HEIGHT],
     image_buffer: &ImageBuffer<P, Vec<P::Subpixel>>,
-    pos: GridPos2D,
+    pos: &GridPos2D,
 ) -> Result<(), VisError<WIDTH, HEIGHT>>
 where
     P: Pixel,
@@ -85,7 +85,7 @@ where
             } else {
                 return Err(VisError::new_io(
                     true,
-                    pos,
+                    *pos,
                     (x_pos + x as u32, y_pos + y as u32),
                 ));
             }
@@ -141,7 +141,7 @@ mod test {
 
         for i_arr in 0..PIX_ARRAYS.len() {
             let mut pixels = [[DefaultVisPixel::pix_default(); 2]; 2];
-            read_tile(&mut pixels, &image, positions[i_arr]).unwrap();
+            read_tile(&mut pixels, &image, &positions[i_arr]).unwrap();
 
             assert_eq!(PIX_ARRAYS[i_arr], pixels);
         }

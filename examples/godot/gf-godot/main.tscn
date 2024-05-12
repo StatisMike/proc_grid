@@ -1,0 +1,272 @@
+[gd_scene load_steps=11 format=3 uid="uid://bo6a6drfgift2"]
+
+[ext_resource type="Script" path="res://Classes/MainNode.gd" id="1_b3kv3"]
+[ext_resource type="TileSet" uid="uid://clknfb6b2kcsg" path="res://tileset.tres" id="2_sxov8"]
+[ext_resource type="Script" path="res://Classes/MyMap.gd" id="3_cnlk0"]
+[ext_resource type="Script" path="res://Classes/SliderWithLabel.gd" id="4_g33ov"]
+[ext_resource type="Script" path="res://Classes/HoverCellData.gd" id="5_miaey"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_x43o4"]
+bg_color = Color(0.169245, 0.169245, 0.169245, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_blend = true
+
+[sub_resource type="Theme" id="Theme_r14dn"]
+PanelContainer/styles/panel = SubResource("StyleBoxFlat_x43o4")
+
+[sub_resource type="GDScript" id="GDScript_bgg2j"]
+script/source = "extends Button
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	pass # Replace with function body.
+
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta):
+	pass
+
+
+func _on_option_button_item_selected(index):
+	if index >= 0:
+		disabled = false;
+	else:
+		disabled = true;
+	
+"
+
+[sub_resource type="SystemFont" id="SystemFont_46k0a"]
+font_names = PackedStringArray("FreeSans")
+subpixel_positioning = 2
+multichannel_signed_distance_field = true
+
+[sub_resource type="LabelSettings" id="LabelSettings_yjk1e"]
+font = SubResource("SystemFont_46k0a")
+
+[node name="MainNode" type="Node2D" node_paths=PackedStringArray("collections", "generator")]
+script = ExtResource("1_b3kv3")
+collections = NodePath("TileCollections")
+maps_png_files = Array[String](["res://tiles/seas.png", "res://tiles/roads.png"])
+generator = NodePath("TileGenerator")
+
+[node name="TileMapContainer" type="PanelContainer" parent="."]
+offset_right = 576.0
+offset_bottom = 644.0
+theme = SubResource("Theme_r14dn")
+
+[node name="Label" type="Label" parent="TileMapContainer"]
+layout_mode = 2
+size_flags_vertical = 0
+text = "Produced TileMap"
+horizontal_alignment = 1
+
+[node name="TileMap" type="TileMap" parent="TileMapContainer"]
+texture_filter = 1
+position = Vector2(20, 60)
+scale = Vector2(5, 5)
+tile_set = ExtResource("2_sxov8")
+format = 2
+script = ExtResource("3_cnlk0")
+
+[node name="TabContainer" type="TabContainer" parent="."]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = 577.0
+offset_top = 3.0
+offset_right = 1149.0
+offset_bottom = 495.0
+grow_horizontal = 0
+current_tab = 1
+
+[node name="Image" type="Panel" parent="TabContainer"]
+visible = false
+layout_mode = 2
+
+[node name="VSplitContainer" type="VSplitContainer" parent="TabContainer/Image"]
+layout_mode = 0
+offset_left = 25.0
+offset_top = 225.0
+offset_right = 268.0
+offset_bottom = 357.0
+
+[node name="OptionButton" type="OptionButton" parent="TabContainer/Image/VSplitContainer"]
+layout_mode = 2
+
+[node name="Button" type="Button" parent="TabContainer/Image"]
+layout_mode = 0
+offset_left = 323.0
+offset_top = 259.0
+offset_right = 525.0
+offset_bottom = 310.0
+text = "GENERATE"
+script = SubResource("GDScript_bgg2j")
+
+[node name="RichTextLabel" type="RichTextLabel" parent="TabContainer/Image"]
+layout_mode = 0
+offset_left = 25.0
+offset_top = 17.0
+offset_right = 541.0
+offset_bottom = 214.0
+bbcode_enabled = true
+text = "Using below controls you can generate [i]TileMap[/i] on basis of PNG representation of the map, using [b]grid-forge[/b]'s [i]GridMap2D[/i] as an intermediate.
+
+Choose one of the provided PNGs to generate the tilemap.
+
+Resulting [i]TileMap[/i] will have spaces between the tiles, to show the borders between tiles. "
+
+[node name="Generate" type="Panel" parent="TabContainer"]
+layout_mode = 2
+
+[node name="Size" type="VBoxContainer" parent="TabContainer/Generate"]
+layout_mode = 1
+offset_left = 31.0
+offset_top = 215.0
+offset_right = 287.0
+offset_bottom = 287.0
+alignment = 1
+
+[node name="Width" type="HBoxContainer" parent="TabContainer/Generate/Size"]
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Width of generated GridMap"
+script = ExtResource("4_g33ov")
+label_text = "Width"
+
+[node name="Label" type="Label" parent="TabContainer/Generate/Size/Width"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Label"
+label_settings = SubResource("LabelSettings_yjk1e")
+vertical_alignment = 1
+
+[node name="Toggle" type="HSlider" parent="TabContainer/Generate/Size/Width"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+min_value = 10.0
+max_value = 50.0
+value = 10.0
+
+[node name="Height" type="HBoxContainer" parent="TabContainer/Generate/Size"]
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Height of generated GridMap"
+script = ExtResource("4_g33ov")
+label_text = "Height"
+
+[node name="Label" type="Label" parent="TabContainer/Generate/Size/Height"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Label"
+label_settings = SubResource("LabelSettings_yjk1e")
+vertical_alignment = 1
+
+[node name="Toggle" type="HSlider" parent="TabContainer/Generate/Size/Height"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+min_value = 10.0
+max_value = 50.0
+value = 10.0
+
+[node name="Rules" type="OptionButton" parent="TabContainer/Generate"]
+layout_mode = 0
+offset_left = 344.0
+offset_top = 179.0
+offset_right = 532.0
+offset_bottom = 237.0
+item_count = 2
+selected = 0
+popup/item_0/text = "Border Adjacency"
+popup/item_0/id = 0
+popup/item_1/text = "Identity Adjacency"
+popup/item_1/id = 1
+
+[node name="Queue" type="OptionButton" parent="TabContainer/Generate"]
+layout_mode = 0
+offset_left = 346.0
+offset_top = 238.0
+offset_right = 534.0
+offset_bottom = 296.0
+item_count = 2
+selected = 0
+popup/item_0/text = "PositionQueue"
+popup/item_0/id = 0
+popup/item_1/text = "EntrophyQueue"
+popup/item_1/id = 1
+
+[node name="Button" type="Button" parent="TabContainer/Generate"]
+layout_mode = 0
+offset_left = 199.0
+offset_top = 375.0
+offset_right = 383.0
+offset_bottom = 442.0
+text = "Generate"
+
+[node name="RuntimeError" type="Label" parent="TabContainer/Generate"]
+layout_mode = 0
+offset_left = 51.0
+offset_top = 312.0
+offset_right = 521.0
+offset_bottom = 358.0
+autowrap_mode = 2
+
+[node name="AcceptDialog" type="AcceptDialog" parent="."]
+position = Vector2i(295, 250)
+size = Vector2i(550, 154)
+
+[node name="HoverCellPanel" type="Panel" parent="."]
+offset_left = 580.0
+offset_top = 496.0
+offset_right = 1146.0
+offset_bottom = 643.0
+
+[node name="Label" type="Label" parent="HoverCellPanel"]
+layout_mode = 0
+offset_left = 23.0
+offset_top = 7.0
+offset_right = 545.0
+offset_bottom = 55.0
+text = "Hover Cell Data"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="AtlasCoord" type="Label" parent="HoverCellPanel"]
+layout_mode = 0
+offset_left = 22.0
+offset_top = 47.0
+offset_right = 199.0
+offset_bottom = 88.0
+text = "Atlas Coordinates"
+vertical_alignment = 1
+script = ExtResource("5_miaey")
+label = "Atlas Coordinates"
+
+[node name="TilePos" type="Label" parent="HoverCellPanel"]
+layout_mode = 0
+offset_left = 25.0
+offset_top = 91.0
+offset_right = 202.0
+offset_bottom = 132.0
+text = "Atlas Coordinates"
+vertical_alignment = 1
+script = ExtResource("5_miaey")
+label = "Tile Position"
+
+[node name="TileGenerator" type="TileGenerator" parent="." node_paths=PackedStringArray("collection", "modal", "runtime_error")]
+collection = NodePath("../TileCollections")
+modal = NodePath("../AcceptDialog")
+runtime_error = NodePath("../TabContainer/Generate/RuntimeError")
+
+[node name="TileCollections" type="TileCollections" parent="." node_paths=PackedStringArray("modal")]
+path_to_image = "res://tiles/all_tiles.png"
+tileset = ExtResource("2_sxov8")
+modal = NodePath("../AcceptDialog")
+
+[connection signal="node_hovered" from="TileMapContainer/TileMap" to="." method="_on_tile_map_node_hovered"]
+[connection signal="pressed" from="TabContainer/Image/Button" to="." method="_on_button_pressed"]
+[connection signal="pressed" from="TabContainer/Generate/Button" to="." method="_on_button_pressed_gen"]

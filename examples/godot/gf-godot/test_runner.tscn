@@ -1,0 +1,4 @@
+[gd_scene format=3 uid="uid://82dmxtfycyex"]
+
+[node name="TestRunner" type="GdTestRunner"]
+run_benchmarks = false

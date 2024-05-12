@@ -166,7 +166,7 @@ where
             if Self::check_empty_id(&self.empty, tile.tile_type_id()) {
                 return Ok(VisCollectionOutcome::Empty);
             }
-            let pixels = Self::read_pixels_for_tile_at_pos(buffer, tile.grid_position())?;
+            let pixels = Self::read_pixels_for_tile_at_pos(buffer, &tile.grid_position())?;
             e.insert(pixels);
             self.rev
                 .insert(create_tile_id_from_pixels(&pixels), tile.tile_type_id());
@@ -183,7 +183,7 @@ where
         if Self::check_empty_id(&self.empty, tile.tile_type_id()) {
             return Ok(VisCollectionOutcome::Empty);
         }
-        let pixels = Self::read_pixels_for_tile_at_pos(buffer, tile.grid_position())?;
+        let pixels = Self::read_pixels_for_tile_at_pos(buffer, &tile.grid_position())?;
         self.rev
             .insert(create_tile_id_from_pixels(&pixels), tile.tile_type_id());
         Ok(self.set_tile_pixels_manual(tile.tile_type_id(), pixels))
@@ -280,7 +280,7 @@ where
     // ------ Private ------ //
     pub(crate) fn read_pixels_for_tile_at_pos(
         buffer: &ImageBuffer<P, Vec<P::Subpixel>>,
-        pos: GridPos2D,
+        pos: &GridPos2D,
     ) -> Result<[[P; WIDTH]; HEIGHT], VisError<WIDTH, HEIGHT>> {
         let mut pixels = [[P::pix_default(); WIDTH]; HEIGHT];
         read_tile(&mut pixels, buffer, pos)?;
