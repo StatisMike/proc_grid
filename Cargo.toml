@@ -6,6 +6,7 @@ members = [
 
   # Examples:
   "examples/collapse",
+  "examples/godot/gf-rust",
   "examples/walker",
   "examples/vis",
 ]

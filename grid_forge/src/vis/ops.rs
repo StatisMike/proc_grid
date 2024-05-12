@@ -40,7 +40,7 @@ where
     for position in size.get_all_possible_positions() {
         let pixels = VisCollection::<T, P, WIDTH, HEIGHT>::read_pixels_for_tile_at_pos(
             image_buffer,
-            position,
+            &position,
         )?;
         let tile = builder.build_tile_unchecked(position, create_tile_id_from_pixels(&pixels));
         match collection.add_tile_pixels(&tile, image_buffer)? {
@@ -79,7 +79,7 @@ where
     for position in size.get_all_possible_positions() {
         let pixels = VisCollection::<T, P, WIDTH, HEIGHT>::read_pixels_for_tile_at_pos(
             image_buffer,
-            position,
+            &position,
         )?;
         if let Some(tile_id) = collection.get_tile_id_by_pixels(&pixels) {
             grid.insert_tile(builder.build_tile_unchecked(position, *tile_id));
@@ -153,7 +153,7 @@ pub(crate) fn create_tile_id_from_pixels<
     hasher.finish()
 }
 
-fn check_grid_vis_size<P: Pixel + 'static, const WIDTH: usize, const HEIGHT: usize>(
+pub fn check_grid_vis_size<P: Pixel + 'static, const WIDTH: usize, const HEIGHT: usize>(
     image: &ImageBuffer<P, Vec<P::Subpixel>>,
 ) -> Result<GridSize, VisError<WIDTH, HEIGHT>> {
     if image.height() as usize % HEIGHT != 0 || image.width() as usize % WIDTH != 0 {
@@ -166,7 +166,7 @@ fn check_grid_vis_size<P: Pixel + 'static, const WIDTH: usize, const HEIGHT: usi
     }
 }
 
-fn check_grid_image_size<P: Pixel + 'static, const WIDTH: usize, const HEIGHT: usize>(
+pub fn check_grid_image_size<P: Pixel + 'static, const WIDTH: usize, const HEIGHT: usize>(
     image: &ImageBuffer<P, Vec<P::Subpixel>>,
     size: &GridSize,
 ) -> Result<(), VisError<WIDTH, HEIGHT>> {

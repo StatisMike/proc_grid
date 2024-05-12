@@ -1,8 +1,6 @@
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
 
-use rand::distributions::weighted::alias_method::Weight;
-
 use crate::map::GridMap2D;
 use crate::tile::identifiable::IdentifiableTile;
 

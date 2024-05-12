@@ -1,0 +1,17 @@
+[package]
+name = "gf_rust"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]  # Compile this crate to a dynamic C library.
+
+[dependencies]
+grid_forge = { path = "../../../grid_forge", features = ["gen", "godot", "vis"] }
+image = { version = "^0.25.1", features = ["png"]}
+rand = { version = "^0.8.5" }
+# Experimental-threads are needed for Godot 4.2.2 + gdext with custom exported resources
+godot = { git = "https://github.com/godot-rust/gdext", branch = "master" }
+# For tests
+gd-rehearse = { git = "https://github.com/StatisMike/gd-rehearse", branch = "master" }
+

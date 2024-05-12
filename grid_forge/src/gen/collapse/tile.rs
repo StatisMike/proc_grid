@@ -146,7 +146,7 @@ impl CollapsibleTile {
             return Ok(false);
         }
         if !self.have_options() {
-            return Err(CollapseError::new(self.pos, CollapseErrorKind::OnCollapse));
+            return Err(CollapseError::new(self.pos, CollapseErrorKind::Collapse));
         }
         let mut current_sum = 0;
         let mut chosen_option = Option::<u64>::None;

@@ -31,22 +31,22 @@ impl CollapseError {
 impl Display for CollapseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.kind {
-            CollapseErrorKind::OnCollapse => write!(
+            CollapseErrorKind::Collapse => write!(
                 f,
                 "tile at position: {:?} have no options left while collapsing!",
                 self.pos
             ),
-            CollapseErrorKind::OnNeighbourUpdate => write!(
+            CollapseErrorKind::NeighbourUpdate => write!(
                 f,
                 "tile at position: {:?} have no options left after collapsed neighbours update!",
                 self.pos
             ),
-            CollapseErrorKind::OnInit => write!(
+            CollapseErrorKind::Init => write!(
                 f,
                 "tile at position: {:?} have no options left during initial option removal!",
                 self.pos
             ),
-            CollapseErrorKind::OnPropagation => write!(
+            CollapseErrorKind::Propagation => write!(
                 f,
                 "tile at position: {:?} have no options left during propagation!",
                 self.pos
@@ -57,8 +57,8 @@ impl Display for CollapseError {
 
 #[derive(Debug)]
 pub(crate) enum CollapseErrorKind {
-    OnCollapse,
-    OnNeighbourUpdate,
-    OnInit,
-    OnPropagation,
+    Collapse,
+    NeighbourUpdate,
+    Init,
+    Propagation,
 }
