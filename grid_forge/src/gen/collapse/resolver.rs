@@ -91,7 +91,7 @@ where
                     &changed,
                     !queue.propagating(),
                 ),
-                CollapseErrorKind::OnInit,
+                CollapseErrorKind::Init,
             )? {
                 changed.push_back(*position);
             }
@@ -113,7 +113,7 @@ where
                             adjacencies,
                             &mut changed,
                         ),
-                        CollapseErrorKind::OnInit,
+                        CollapseErrorKind::Init,
                     )?;
                 }
             }
@@ -125,7 +125,7 @@ where
             if !queue.propagating() {
                 CollapseError::from_result(
                     self.remove_tile_options(&next_position, adjacencies, &[], &changed, false),
-                    CollapseErrorKind::OnCollapse,
+                    CollapseErrorKind::Collapse,
                 )?;
             }
 
@@ -151,7 +151,7 @@ where
                             adjacencies,
                             &mut changed,
                         ),
-                        CollapseErrorKind::OnPropagation,
+                        CollapseErrorKind::Propagation,
                     )?;
                 }
             } else if !queue.propagating() {
@@ -164,7 +164,7 @@ where
                         adjacencies,
                         &mut VecDeque::new(),
                     ),
-                    CollapseErrorKind::OnNeighbourUpdate,
+                    CollapseErrorKind::NeighbourUpdate,
                 )?;
             }
         }

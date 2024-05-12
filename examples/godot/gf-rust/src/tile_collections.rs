@@ -3,10 +3,11 @@ use std::io::BufReader;
 use godot::{
     builtin::{GString, Vector2i},
     engine::{
-        file_access::ModeFlags, AcceptDialog, FileAccess, GFile, GridMap, Popup, Resource, TileMap, TileSet, TileSetAtlasSource
+        file_access::ModeFlags, AcceptDialog, FileAccess, GFile, TileMap, TileSet,
+        TileSetAtlasSource,
     },
-    log::{godot_error, godot_print, godot_warn},
-    obj::{Base, Gd},
+    log::{godot_error, godot_warn},
+    obj::Gd,
     register::{godot_api, GodotClass},
 };
 
@@ -58,7 +59,6 @@ pub struct TileCollections {
 
 #[godot_api]
 impl TileCollections {
-
     #[func]
     /// Main method, handling initialization of the tile collections.
     /// It needs to generate both collections side-by-side, for the `tile_type_id` to be synchronized.
@@ -143,31 +143,29 @@ impl TileCollections {
     #[func]
     /// Converts png to tilemap, showing modal dialog with error if any.
     fn convert_png_to_tilemap(&self, path: GString, tilemap: Gd<TileMap>) {
+        let mut tilemap = tilemap.clone();
 
-      let mut tilemap = tilemap.clone();
+        let map = match self.load_vis_map_from_path(&path.clone().to_string()) {
+            Ok(map) => map,
+            Err(message) => {
+                self.show_modal(&message);
+                return;
+            }
+        };
 
-      let map = match self.load_vis_map_from_path(&path.clone().to_string()) {
-          Ok(map) => map,
-          Err(message) => {
+        if let Err(message) = self.grid_map_into_tilemap(&map, &mut tilemap) {
             self.show_modal(&message);
-            return;
-          },
-      };
-
-      if let Err(message) = self.grid_map_into_tilemap(&map, &mut tilemap) {
-        self.show_modal(&message);
-      };
-
+        };
     }
 
     fn show_modal(&self, message: &str) {
-      if let Some(modal) = &self.modal {
-        let mut pntr = modal.clone();
-        pntr.set_text(message.into());
-        pntr.set_visible(true);
-      } else {
-        godot_warn!("Cannot find modal for TileCollections. Message to show: {message}");
-      }
+        if let Some(modal) = &self.modal {
+            let mut pntr = modal.clone();
+            pntr.set_text(message.into());
+            pntr.set_visible(true);
+        } else {
+            godot_warn!("Cannot find modal for TileCollections. Message to show: {message}");
+        }
     }
 
     /// Loads GridMap from PNG representation using its VisCollection.

@@ -63,7 +63,22 @@ func _on_button_pressed_gen():
 	var gen_rules = get_node("TabContainer/Generate/Rules").selected;
 	var queue = get_node("TabContainer/Generate/Queue").selected;
 	
-	tilemap.clear();
-	if generator.generate(width as int, height as int, gen_rules, queue, tilemap):
+	generator.begin_generation(width as int, height as int, gen_rules, queue);
+	(get_node("TabContainer/Generate/Button") as Button).disabled = true;
+
+func _on_tile_generator_generation_error(message):
+	(get_node("AcceptDialog") as AcceptDialog).dialog_text = message;
+	(get_node("AcceptDialog") as AcceptDialog).visible = true;
+
+func _on_tile_generator_generation_runtime_error(message):
+	(get_node("TabContainer/Generate/RuntimeError") as Label).text = message;
+
+func _on_tile_generator_generation_finished(success):
+	if success:
+		tilemap.clear();
+		generator.generated_to_tilemap(tilemap);
 		adjust_tilemap(false);
+	
+	(get_node("TabContainer/Generate/RuntimeError") as Label).text = "";
+	(get_node("TabContainer/Generate/Button") as Button).disabled = false;
 	

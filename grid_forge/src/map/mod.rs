@@ -359,17 +359,3 @@ impl<T: GridTile2D + Clone> GridMap2D<T> {
         out
     }
 }
-
-fn get_index_for_position(pos: GridPos2D, size: &GridSize) -> usize {
-    (pos.0 + size.x * pos.1) as usize
-}
-
-fn get_length_for_size(size: &GridSize) -> usize {
-    (size.x * size.y) as usize
-}
-
-fn get_position_for_index(idx: usize, size: &GridSize) -> GridPos2D {
-    let x = idx as u32 % size.x;
-    let y = idx as u32 / size.y;
-    (x, y)
-}

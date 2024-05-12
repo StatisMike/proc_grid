@@ -65,6 +65,8 @@ fn test_load_into_gridmap() {
         size_from_rect(seas_tilemap.get_used_rect()).y()
     );
 
+    std::mem::drop(binding);
+
     roads_tilemap.free();
     seas_tilemap.free();
     cloned.free()
@@ -136,6 +138,8 @@ fn test_from_grindmap_identical() {
                 .tile_type_id()
         );
     }
+
+    std::mem::drop(binding);
 
     roads_tilemap.free();
     seas_tilemap.free();

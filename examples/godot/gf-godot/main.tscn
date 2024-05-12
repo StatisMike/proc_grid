@@ -20,22 +20,11 @@ PanelContainer/styles/panel = SubResource("StyleBoxFlat_x43o4")
 [sub_resource type="GDScript" id="GDScript_bgg2j"]
 script/source = "extends Button
 
-# Called when the node enters the scene tree for the first time.
-func _ready():
-	pass # Replace with function body.
-
-
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta):
-	pass
-
-
 func _on_option_button_item_selected(index):
 	if index >= 0:
 		disabled = false;
 	else:
 		disabled = true;
-	
 "
 
 [sub_resource type="SystemFont" id="SystemFont_46k0a"]
@@ -257,10 +246,9 @@ vertical_alignment = 1
 script = ExtResource("5_miaey")
 label = "Tile Position"
 
-[node name="TileGenerator" type="TileGenerator" parent="." node_paths=PackedStringArray("collection", "modal", "runtime_error")]
+[node name="TileGenerator" type="TileGenerator" parent="." node_paths=PackedStringArray("collection", "modal")]
 collection = NodePath("../TileCollections")
 modal = NodePath("../AcceptDialog")
-runtime_error = NodePath("../TabContainer/Generate/RuntimeError")
 
 [node name="TileCollections" type="TileCollections" parent="." node_paths=PackedStringArray("modal")]
 path_to_image = "res://tiles/all_tiles.png"
@@ -270,3 +258,6 @@ modal = NodePath("../AcceptDialog")
 [connection signal="node_hovered" from="TileMapContainer/TileMap" to="." method="_on_tile_map_node_hovered"]
 [connection signal="pressed" from="TabContainer/Image/Button" to="." method="_on_button_pressed"]
 [connection signal="pressed" from="TabContainer/Generate/Button" to="." method="_on_button_pressed_gen"]
+[connection signal="generation_error" from="TileGenerator" to="." method="_on_tile_generator_generation_error"]
+[connection signal="generation_finished" from="TileGenerator" to="." method="_on_tile_generator_generation_finished"]
+[connection signal="generation_runtime_error" from="TileGenerator" to="." method="_on_tile_generator_generation_runtime_error"]

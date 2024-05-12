@@ -36,7 +36,6 @@ where
         self.iters
     }
 
-    ///
     pub fn walk(&mut self) -> bool {
         self.iters += 1;
         let idx: usize = self.dir_rng.sample(&mut self.rng);
