@@ -1,9 +1,6 @@
-#![cfg(feature = "gen")]
+extern crate test;
 
-#[macro_use]
-extern crate bencher;
-
-use bencher::Bencher;
+use test::Bencher;
 use grid_forge::{gen::walker::GridWalker2DBuilder, map::GridSize, tile::GridTile2D, GridPos2D};
 use rand::thread_rng;
 
@@ -20,6 +17,7 @@ impl GridTile2D for Tile {
     }
 }
 
+#[bench]
 fn walker_walk_45000(bench: &mut Bencher) {
     let grid_size = GridSize::new(255, 255);
 
@@ -41,6 +39,7 @@ fn walker_walk_45000(bench: &mut Bencher) {
     })
 }
 
+#[bench]
 fn walker_grid_45000(bench: &mut Bencher) {
     let grid_size = GridSize::new(255, 255);
 
@@ -60,6 +59,3 @@ fn walker_grid_45000(bench: &mut Bencher) {
         walker.gen_grid_map(|pos| Tile { pos });
     });
 }
-
-benchmark_group!(benches, walker_walk_45000, walker_grid_45000);
-benchmark_main!(benches);

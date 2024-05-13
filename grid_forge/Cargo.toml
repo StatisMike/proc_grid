@@ -20,18 +20,3 @@ godot = { git = "https://github.com/godot-rust/gdext", branch = "master", option
 [dev-dependencies]
 bencher = "0.1.*"
 rand_chacha = "0.3.*"
-
-[[bench]]
-path = "benches/walker.rs"
-name = "walker"
-harness = false
-
-[[bench]]
-path = "benches/vis_io.rs"
-name = "vis_io"
-harness = false
-
-[[bench]]
-path = "benches/collapsible.rs"
-name = "collapsible"
-harness = false

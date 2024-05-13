@@ -44,7 +44,7 @@ use crate::GridPos2D;
 /// # }
 /// #
 /// # impl IdentifiableTile for MyTile {
-/// #     fn get_tile_id(&self) -> u64 {
+/// #     fn tile_type_id(&self) -> u64 {
 /// #         self.tile_id
 /// #     }
 /// # }
@@ -57,16 +57,16 @@ use crate::GridPos2D;
 ///
 /// builder.add_tiles(&tiles, false);
 ///
-/// if let Err(err) = builder.check_missing_tile_creators(&[1,2,3]) {
-///     assert_eq!(&[3], err.get_missing_tile_ids());
+/// if let Err(err) = builder.check_missing_ids(&[1,2,3]) {
+///     assert_eq!(&[3], err.get_missing_tile_type_ids());
 /// } else {
 ///     panic!("Should return error!");
 /// }
 ///
-/// let tile_1st = builder.create_identifiable_tile((2,3), 1);
+/// let tile_1st = builder.build_tile_unchecked((2,3), 1);
 /// assert_eq!(((2,3), 1, "First".to_string()), (tile_1st.pos, tile_1st.tile_id, tile_1st.string));
 ///
-/// let tile_2nd = builder.create_identifiable_tile((3,4), 2);
+/// let tile_2nd = builder.build_tile_unchecked((3,4), 2);
 /// assert_eq!(((3,4), 2, "Second".to_string()), (tile_2nd.pos, tile_2nd.tile_id, tile_2nd.string));
 /// ```
 #[derive(Debug, Clone)]
@@ -160,7 +160,7 @@ impl<T: IdentifiableTile + Clone> IdentTileBuilder<T> for IdentTileCloneBuilder<
 /// # }
 /// #
 /// # impl IdentifiableTile for MyTile {
-/// #     fn get_tile_id(&self) -> u64 {
+/// #     fn tile_type_id(&self) -> u64 {
 /// #         self.tile_id
 /// #     }
 /// # }
@@ -169,16 +169,16 @@ impl<T: IdentifiableTile + Clone> IdentTileBuilder<T> for IdentTileCloneBuilder<
 /// builder.set_tile_constructor(1, |pos: GridPos2D, tile_id: u64|( MyTile { pos, tile_id, traversible: true} ));
 /// builder.set_tile_constructor(2, |pos: GridPos2D, tile_id: u64|( MyTile { pos, tile_id, traversible: false} ));
 ///
-/// if let Err(err) = builder.check_missing_tile_creators(&[1,2,3]) {
-///     assert_eq!(&[3], err.get_missing_tile_ids());
+/// if let Err(err) = builder.check_missing_ids(&[1,2,3]) {
+///     assert_eq!(&[3], err.get_missing_tile_type_ids());
 /// } else {
 ///     panic!("Should return error!");
 /// }
 ///
-/// let tile_1st = builder.create_identifiable_tile((2,3), 1);
+/// let tile_1st = builder.build_tile_unchecked((2,3), 1);
 /// assert_eq!(((2,3), 1, true), (tile_1st.pos, tile_1st.tile_id, tile_1st.traversible));
 ///
-/// let tile_2nd = builder.create_identifiable_tile((3,4), 2);
+/// let tile_2nd = builder.build_tile_unchecked((3,4), 2);
 /// assert_eq!(((3,4), 2, false), (tile_2nd.pos, tile_2nd.tile_id, tile_2nd.traversible));
 /// ```
 #[derive(Debug, Clone)]
@@ -269,7 +269,7 @@ impl<T: IdentifiableTile> IdentTileBuilder<T> for IdentTileFunBuilder<T> {
 /// # }
 /// #
 /// # impl IdentifiableTile for MyTile {
-/// #     fn get_tile_id(&self) -> u64 {
+/// #     fn tile_type_id(&self) -> u64 {
 /// #         self.tile_id
 /// #     }
 /// # }
@@ -280,10 +280,10 @@ impl<T: IdentifiableTile> IdentTileBuilder<T> for IdentTileFunBuilder<T> {
 /// }
 ///
 /// let builder = IdentTileTraitBuilder::<MyTile>::default();
-/// let tile = builder.create_identifiable_tile((2,3), 45);
+/// let tile = builder.build_tile_unchecked((2,3), 45);
 ///
 /// assert_eq!((2,3), tile.grid_position());
-/// assert_eq!(45, tile.get_tile_id());
+/// assert_eq!(45, tile.tile_type_id());
 /// ```
 pub trait ConstructableViaIdentifierTile
 where

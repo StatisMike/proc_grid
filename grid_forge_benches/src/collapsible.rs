@@ -1,10 +1,5 @@
-#![cfg(feature = "vis")]
-#![cfg(feature = "gen")]
+extern crate test;
 
-#[macro_use]
-extern crate bencher;
-
-use bencher::Bencher;
 use grid_forge::{
     gen::collapse::*,
     map::GridSize,
@@ -16,7 +11,9 @@ use grid_forge::{
 };
 use rand::SeedableRng;
 use rand_chacha::ChaChaRng;
+use test::Bencher;
 
+#[bench]
 fn gen_identity_position_10x10(bencher: &mut Bencher) {
     let builder = IdentTileTraitBuilder::<BasicIdentifiableTile2D>::default();
     let mut collection = VisCollection::<BasicIdentifiableTile2D, DefaultVisPixel, 4, 4>::default();
@@ -63,6 +60,7 @@ fn gen_identity_position_10x10(bencher: &mut Bencher) {
     });
 }
 
+#[bench]
 fn gen_identity_entrophy_10x10(bencher: &mut Bencher) {
     let builder = IdentTileTraitBuilder::<BasicIdentifiableTile2D>::default();
     let mut collection = VisCollection::<BasicIdentifiableTile2D, DefaultVisPixel, 4, 4>::default();
@@ -109,6 +107,7 @@ fn gen_identity_entrophy_10x10(bencher: &mut Bencher) {
     });
 }
 
+#[bench]
 fn gen_border_position_10x10(bencher: &mut Bencher) {
     let builder = IdentTileTraitBuilder::<BasicIdentifiableTile2D>::default();
     let mut collection = VisCollection::<BasicIdentifiableTile2D, DefaultVisPixel, 4, 4>::default();
@@ -155,6 +154,7 @@ fn gen_border_position_10x10(bencher: &mut Bencher) {
     });
 }
 
+#[bench]
 fn gen_border_entrophy_10x10(bencher: &mut Bencher) {
     let builder = IdentTileTraitBuilder::<BasicIdentifiableTile2D>::default();
     let mut collection = VisCollection::<BasicIdentifiableTile2D, DefaultVisPixel, 4, 4>::default();
@@ -200,12 +200,3 @@ fn gen_border_entrophy_10x10(bencher: &mut Bencher) {
             .unwrap();
     });
 }
-
-benchmark_group!(
-    benches,
-    gen_border_position_10x10,
-    gen_border_entrophy_10x10,
-    gen_identity_position_10x10,
-    gen_identity_entrophy_10x10
-);
-benchmark_main!(benches);

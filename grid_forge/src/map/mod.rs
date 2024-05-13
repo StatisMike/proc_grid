@@ -25,7 +25,7 @@ impl GridDir {
     /// # Examples
     /// ```
     /// use grid_forge::map::GridDir;
-    /// use grid_forge::map::size::GridSize;
+    /// use grid_forge::map::GridSize;
     ///
     /// let size = GridSize::new(3, 3);
     /// let position = (0, 1);
