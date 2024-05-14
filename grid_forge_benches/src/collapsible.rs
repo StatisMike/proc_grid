@@ -37,7 +37,7 @@ fn gen_identity_position_10x10(bencher: &mut Bencher) {
     frequency_hints.analyze_grid_map(&seas_grid);
     frequency_hints.analyze_grid_map(&roads_grid);
 
-    let size = GridSize::new(10, 10);
+    let size = GridSize::new_xy(10, 10);
 
     bencher.iter(|| {
         // Seed for reproductability
@@ -84,7 +84,7 @@ fn gen_identity_entrophy_10x10(bencher: &mut Bencher) {
     frequency_hints.analyze_grid_map(&seas_grid);
     frequency_hints.analyze_grid_map(&roads_grid);
 
-    let size = GridSize::new(10, 10);
+    let size = GridSize::new_xy(10, 10);
 
     bencher.iter(|| {
         // Seed for reproductability
@@ -131,7 +131,7 @@ fn gen_border_position_10x10(bencher: &mut Bencher) {
     frequency_hints.analyze_grid_map(&seas_grid);
     frequency_hints.analyze_grid_map(&roads_grid);
 
-    let size = GridSize::new(10, 10);
+    let size = GridSize::new_xy(10, 10);
 
     bencher.iter(|| {
         // Seed for reproductability
@@ -178,7 +178,7 @@ fn gen_border_entrophy_10x10(bencher: &mut Bencher) {
     frequency_hints.analyze_grid_map(&seas_grid);
     frequency_hints.analyze_grid_map(&roads_grid);
 
-    let size = GridSize::new(10, 10);
+    let size = GridSize::new_xy(10, 10);
 
     bencher.iter(|| {
         // Seed for reproductability

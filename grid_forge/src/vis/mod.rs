@@ -2,7 +2,7 @@ use std::hash::{DefaultHasher, Hash, Hasher};
 
 use image::{ImageBuffer, Pixel};
 
-use crate::{tile::vis::PixelWithDefault, GridPos2D};
+use crate::{tile::vis::PixelWithDefault, tile::GridPosition};
 
 use self::error::VisError;
 
@@ -35,13 +35,13 @@ where
 /// Writes pixels array into image buffer at provided [GridPos2D].
 pub fn write_tile<P, const WIDTH: usize, const HEIGHT: usize>(
     image_buffer: &mut ImageBuffer<P, Vec<P::Subpixel>>,
-    pos: GridPos2D,
+    pos: GridPosition,
     pixels: &[[P; WIDTH]; HEIGHT],
 ) -> Result<(), VisError<WIDTH, HEIGHT>>
 where
     P: Pixel,
 {
-    let (mut x_pos, mut y_pos) = pos;
+    let (mut x_pos, mut y_pos) = pos.xy();
     x_pos *= WIDTH as u32;
     y_pos *= HEIGHT as u32;
 
@@ -67,12 +67,12 @@ where
 pub fn read_tile<P, const WIDTH: usize, const HEIGHT: usize>(
     pixels: &mut [[P; WIDTH]; HEIGHT],
     image_buffer: &ImageBuffer<P, Vec<P::Subpixel>>,
-    pos: &GridPos2D,
+    pos: &GridPosition,
 ) -> Result<(), VisError<WIDTH, HEIGHT>>
 where
     P: Pixel,
 {
-    let (mut x_pos, mut y_pos) = pos;
+    let (mut x_pos, mut y_pos) = pos.xy();
     x_pos *= WIDTH as u32;
     y_pos *= HEIGHT as u32;
 
@@ -98,7 +98,7 @@ where
 mod test {
     use image::{ImageBuffer, Rgb};
 
-    use crate::tile::vis::{DefaultVisPixel, PixelWithDefault};
+    use crate::tile::{vis::{DefaultVisPixel, PixelWithDefault}, GridPosition};
 
     use super::{read_tile, write_tile};
 
@@ -120,7 +120,12 @@ mod test {
     fn can_write_pixels() {
         let mut image = ImageBuffer::new(4, 4);
 
-        let positions = [(0, 0), (0, 1), (1, 0), (1, 1)];
+        let positions = [
+            GridPosition::new_xy(0, 0),
+            GridPosition::new_xy(0, 1),
+            GridPosition::new_xy(1, 0),
+            GridPosition::new_xy(1, 1)
+        ];
 
         for i_arr in 0..PIX_ARRAYS.len() {
             write_tile(&mut image, positions[i_arr], &PIX_ARRAYS[i_arr]).unwrap();
@@ -133,8 +138,13 @@ mod test {
     fn written_and_read_identical() {
         let mut image = ImageBuffer::new(4, 4);
 
-        let positions = [(0, 0), (0, 1), (1, 0), (1, 1)];
-
+        let positions = [
+            GridPosition::new_xy(0, 0),
+            GridPosition::new_xy(0, 1),
+            GridPosition::new_xy(1, 0),
+            GridPosition::new_xy(1, 1)
+        ];
+        
         for i_arr in 0..PIX_ARRAYS.len() {
             write_tile(&mut image, positions[i_arr], &PIX_ARRAYS[i_arr]).unwrap();
         }

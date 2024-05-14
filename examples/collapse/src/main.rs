@@ -86,7 +86,7 @@ fn main() {
     let mut rng = rand_chacha::ChaChaRng::from_seed(seed);
 
     // Create new grid with CollapsibleResolver.
-    let size = GridSize::new(50, 50);
+    let size = GridSize::new_xy(50, 50);
     let mut resolver = CollapsibleResolver::new(size);
 
     // We will generate the map in few parts, so we can prepare the positions arrays.

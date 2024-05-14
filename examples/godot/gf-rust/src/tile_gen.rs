@@ -156,7 +156,7 @@ impl TileGenerator {
 
         let frequency_hints = self.frequency_hints.clone();
 
-        let size = GridSize::new(width as u32, height as u32);
+        let size = GridSize::new_xy(width as u32, height as u32);
         let builder = IdentTileTraitBuilder::<BasicIdentifiableTile2D>::default();
 
         self.handle = Some(thread::spawn(move || {

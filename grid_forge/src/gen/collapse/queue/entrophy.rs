@@ -10,17 +10,17 @@ use crate::{
     gen::collapse::{frequency::FrequencyHints, tile::CollapsibleTile},
     map::GridMap2D,
     tile::{identifiable::IdentifiableTile, GridTile2D},
-    GridPos2D,
+    GridPosition,
 };
 
 #[derive(Clone, Copy)]
 pub(crate) struct EntrophyItem {
-    pos: GridPos2D,
+    pos: GridPosition,
     entrophy: f32,
 }
 
 impl EntrophyItem {
-    pub fn new(pos: GridPos2D, entrophy: f32) -> Self {
+    pub fn new(pos: GridPosition, entrophy: f32) -> Self {
         Self { pos, entrophy }
     }
 }
@@ -57,11 +57,11 @@ impl Ord for EntrophyItem {
 #[derive(Default)]
 pub struct EntrophyQueue {
     by_entrophy: BTreeSet<EntrophyItem>,
-    by_pos: HashMap<GridPos2D, f32>,
+    by_pos: HashMap<GridPosition, f32>,
 }
 
 impl CollapseQueue for EntrophyQueue {
-    fn get_next_position(&mut self) -> Option<GridPos2D> {
+    fn get_next_position(&mut self) -> Option<GridPosition> {
         if let Some(item) = self.by_entrophy.pop_first() {
             self.by_pos.remove(&item.pos);
             return Some(item.pos);
@@ -99,7 +99,7 @@ impl ResolverSelector for EntrophyQueue {
         &mut self,
         rng: &mut R,
         grid: &mut GridMap2D<CollapsibleTile>,
-        positions: &[GridPos2D],
+        positions: &[GridPosition],
         frequency: &FrequencyHints<InputTile>,
     ) {
         let tiles = CollapsibleTile::new_from_frequency_with_entrophy(rng, positions, frequency);

@@ -6,7 +6,7 @@ use crate::{
     gen::collapse::{frequency::FrequencyHints, tile::CollapsibleTile},
     map::GridMap2D,
     tile::{identifiable::IdentifiableTile, GridTile2D},
-    GridPos2D,
+    GridPosition,
 };
 
 use super::{CollapseQueue, ResolverSelector};
@@ -33,7 +33,7 @@ pub enum PositionQueueDirection {
 pub struct PositionQueue {
     starting_point: PositionQueueStartingPoint,
     progress_direction: PositionQueueDirection,
-    positions: Vec<GridPos2D>,
+    positions: Vec<GridPosition>,
     changed: bool,
 }
 
@@ -80,7 +80,7 @@ impl PositionQueue {
 }
 
 impl CollapseQueue for PositionQueue {
-    fn get_next_position(&mut self) -> Option<GridPos2D> {
+    fn get_next_position(&mut self) -> Option<GridPosition> {
         if self.changed {
             self.sort_elements()
         }
@@ -114,7 +114,7 @@ impl ResolverSelector for PositionQueue {
         &mut self,
         _rng: &mut R,
         grid: &mut GridMap2D<CollapsibleTile>,
-        positions: &[GridPos2D],
+        positions: &[GridPosition],
         frequency: &FrequencyHints<InputTile>,
     ) {
         let tiles = CollapsibleTile::new_from_frequency(positions, frequency);

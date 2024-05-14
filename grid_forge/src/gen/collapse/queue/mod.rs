@@ -1,4 +1,4 @@
-use crate::{map::GridMap2D, tile::identifiable::IdentifiableTile, GridPos2D};
+use crate::{map::GridMap2D, tile::identifiable::IdentifiableTile, GridPosition};
 
 pub(crate) mod entrophy;
 pub(crate) mod position;
@@ -20,7 +20,7 @@ where
     Self: Default + ResolverSelector,
 {
     /// Pop next position for collapsing.
-    fn get_next_position(&mut self) -> Option<GridPos2D>;
+    fn get_next_position(&mut self) -> Option<GridPosition>;
 
     /// Initialize the queue based on provided tiles.
     fn initialize_queue(&mut self, tiles: &[CollapsibleTile]);
@@ -39,7 +39,7 @@ pub(crate) trait ResolverSelector {
         &mut self,
         rng: &mut R,
         grid: &mut GridMap2D<CollapsibleTile>,
-        positions: &[GridPos2D],
+        positions: &[GridPosition],
         frequencies: &FrequencyHints<InputTile>,
     );
 

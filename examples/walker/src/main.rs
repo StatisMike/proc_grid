@@ -6,7 +6,7 @@ use grid_forge::{
         GridTile2D,
     },
     vis::ops::{init_map_image_buffer, write_gridmap_vis},
-    GridPos2D,
+    GridPosition,
 };
 use image::imageops::resize;
 use rand::SeedableRng;
@@ -28,21 +28,21 @@ impl TileColor {
 
 #[derive(Clone, Hash)]
 struct TwoColoredTile {
-    pos: GridPos2D,
+    pos: GridPosition,
     color: TileColor,
 }
 
 impl TwoColoredTile {
-    fn new(pos: GridPos2D, color: TileColor) -> Self {
+    fn new(pos: GridPosition, color: TileColor) -> Self {
         Self { pos, color }
     }
 }
 
 impl GridTile2D for TwoColoredTile {
-    fn grid_position(&self) -> GridPos2D {
+    fn grid_position(&self) -> GridPosition {
         self.pos
     }
-    fn set_grid_position(&mut self, position: GridPos2D) {
+    fn set_grid_position(&mut self, position: GridPosition) {
         self.pos = position;
     }
 }
@@ -64,7 +64,7 @@ fn main() {
     }
     let rng = rand_chacha::ChaChaRng::from_seed(seed);
 
-    let size = GridSize::new(255, 255);
+    let size = GridSize::new_xy(255, 255);
     let mut walker = GridWalker2DBuilder::default()
         .with_size(size)
         .with_current_pos(size.center())

@@ -1,34 +1,25 @@
-use crate::GridPos2D;
+use std::ops::{Add, AddAssign};
 
 pub mod identifiable;
 
 #[cfg(feature = "vis")]
 pub mod vis;
 
-/// Trait that needs to be implemented for objects contained within the [`GridMap2D`](crate::map::GridMap2D).
-pub trait GridTile2D {
-    fn grid_position(&self) -> GridPos2D;
-
-    fn set_grid_position(&mut self, position: GridPos2D);
-}
-
 #[derive(Debug)]
 pub struct GridTile<Data>
+where Data: TileData
 {
     position: GridPosition,
     data: Data
 }
 
-impl<Data> GridTile<Data>
+pub trait TileData: Sized {}
+
+impl<Data: TileData> GridTile<Data>
 {
     pub fn new(position: GridPosition, data: Data) -> Self
     {
         Self { position, data }
-    }
-
-    pub fn grid_position(&self) -> &GridPosition
-    {
-        &self.position
     }
 
     pub fn inner(&self) -> &Data
@@ -40,9 +31,90 @@ impl<Data> GridTile<Data>
     {
         &mut self.data
     }
+
+    pub fn into_inner(self) -> Data
+    {
+        self.data
+    }
 }
 
-#[derive(Clone, Copy, Debug, Hash)]
+impl <Data: TileData>WithTilePosition for GridTile<Data>
+{
+    fn grid_position(&self) -> GridPosition {
+        self.position
+    }
+}
+
+pub struct GridTileRef<'a, Data>
+where Data: TileData
+{
+    position: GridPosition,
+    data: &'a Data
+}
+
+impl<'a, Data: TileData> GridTileRef<'a, Data>
+{
+    pub fn new(position: GridPosition, data: &'a Data) -> Self
+    {
+        Self { position, data }
+    }
+
+    pub fn inner(&self) -> &Data
+    {
+        &self.data
+    }
+
+    pub (crate) fn maybe_new(position: GridPosition, maybe_data: Option<&'a Data>) -> Option<Self>
+    {
+        maybe_data.map(|data| { Self { position, data }})
+    }
+}
+
+impl <Data: TileData>WithTilePosition for GridTileRef<'_, Data>
+{
+    fn grid_position(&self) -> GridPosition {
+        self.position
+    }
+}
+
+pub struct GridTileRefMut<'a, Data>
+where Data: TileData
+{
+    position: GridPosition,
+    data: &'a mut Data
+}
+
+impl<'a, Data: TileData> GridTileRefMut<'a, Data>
+{
+    pub fn new(position: GridPosition, data: &'a mut Data) -> Self
+    {
+        Self { position, data }
+    }
+
+    pub fn inner(&self) -> &Data
+    {
+        &self.data
+    }
+
+    pub fn inner_mut(&mut self) -> &mut Data
+    {
+        &mut self.data
+    }
+
+    pub (crate) fn maybe_new(position: GridPosition, maybe_data: Option<&'a mut Data>) -> Option<Self>
+    {
+        maybe_data.map(|data| { Self { position, data }})
+    }
+}
+
+impl <Data: TileData>WithTilePosition for GridTileRefMut<'_, Data>
+{
+    fn grid_position(&self) -> GridPosition {
+        self.position
+    }
+}
+
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub struct GridPosition {
     x: u32,
     y: u32,
@@ -64,17 +136,45 @@ impl GridPosition {
     pub fn y(&self) -> &u32 {
         &self.y
     }
+    pub fn xy(&self) -> (u32, u32) {
+        (self.x, self.y)
+    }
     pub fn z(&self) -> &Option<u32> {
         &self.z
     }
+
+    pub fn add_xy(&mut self, xy: (u32, u32))
+    {
+        self.x += xy.0;
+        self.y += xy.1;
+    }
 }
 
-// TODO! Remodel GridPosition from simple type to struct, allowing for layered gridmaps and different grids than rectangular.
-// pub trait GridPosition {
-//     /// Retrieves horizontal position on two dimensional grid.
-//     fn x() -> u32;
-//     /// Retrieves vertical position on two dimensional grid.
-//     fn y() -> u32;
-//     /// Retrieves layer number if position is part of layered grid, or `None` if it is not.
-//     fn layer() -> Option<u32>;
-// }
+impl Add for GridPosition {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self {
+
+        if let (Some(lz), Some(rz)) = (&self.z, &rhs.z) {
+            Self::new_xyz(self.x + rhs.x, self.y + rhs.y, lz + rz)
+        } else {
+            Self::new_xy(self.x + rhs.x, self.y + rhs.y)
+        }
+        
+    }
+}
+
+impl AddAssign for GridPosition {
+    fn add_assign(&mut self, rhs: Self) {
+        self.x += rhs.x;
+        self.y += rhs.y;
+
+        if let (Some(mut lz), Some(rz)) = (&mut self.z, &rhs.z) {
+            lz += rz;
+        }
+    }
+}
+
+pub trait WithTilePosition {
+    fn grid_position(&self) -> GridPosition;
+}

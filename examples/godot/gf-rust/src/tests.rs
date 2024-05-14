@@ -8,7 +8,7 @@ use grid_forge::{
     godot::godot::ops::{load_gridmap_from_tilemap_manual, write_gridmap_to_tilemap},
     map::GridSize,
     tile::identifiable::{
-        builders::IdentTileTraitBuilder, BasicIdentifiableTile2D, IdentifiableTile,
+        builders::IdentTileTraitBuilder, BasicIdentifiableTile2D, IdentifiableTileData,
     },
 };
 
@@ -162,7 +162,7 @@ fn get_test_collection() -> Gd<TileCollections> {
 }
 
 fn size_from_rect(rect: Rect2i) -> GridSize {
-    GridSize::new(
+    GridSize::new_xy(
         (rect.size.x - rect.position.x) as u32,
         (rect.size.y - rect.position.y) as u32,
     )

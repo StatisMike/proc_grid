@@ -8,7 +8,7 @@ use rand::{
 use crate::{
     map::GridDir,
     tile::{identifiable::IdentifiableTile, GridTile2D},
-    GridPos2D,
+    GridPosition,
 };
 
 use super::{error::CollapseErrorKind, rules::AdjacencyRules};
@@ -16,7 +16,7 @@ use super::{frequency::FrequencyHints, CollapseError};
 
 /// Tile with options that can be collapsed into one of them.
 pub struct CollapsibleTile {
-    pos: GridPos2D,
+    pos: GridPosition,
     pub(crate) tile_id: Option<u64>,
     pub(crate) options_with_weights: BTreeMap<u64, u32>,
     weight_sum: u32,
@@ -25,11 +25,11 @@ pub struct CollapsibleTile {
 }
 
 impl GridTile2D for CollapsibleTile {
-    fn grid_position(&self) -> GridPos2D {
+    fn grid_position(&self) -> GridPosition {
         self.pos
     }
 
-    fn set_grid_position(&mut self, position: GridPos2D) {
+    fn set_grid_position(&mut self, position: GridPosition) {
         self.pos = position;
     }
 }
@@ -47,7 +47,7 @@ impl IdentifiableTile for CollapsibleTile {
 }
 
 impl CollapsibleTile {
-    pub fn new_collapsed(position: GridPos2D, tile_id: u64) -> Self {
+    pub fn new_collapsed(position: GridPosition, tile_id: u64) -> Self {
         Self {
             pos: position,
             tile_id: Some(tile_id),
@@ -60,7 +60,7 @@ impl CollapsibleTile {
 
     /// Vector constructor where collapsible tiles do not need entrophy noise
     pub fn new_from_frequency<T>(
-        positions: &[GridPos2D],
+        positions: &[GridPosition],
         frequency: &FrequencyHints<T>,
     ) -> Vec<Self>
     where
@@ -89,7 +89,7 @@ impl CollapsibleTile {
     /// Vector constructor where collapsible tiles need entrophy noise
     pub fn new_from_frequency_with_entrophy<T, R>(
         rng: &mut R,
-        positions: &[GridPos2D],
+        positions: &[GridPosition],
         frequency: &FrequencyHints<T>,
     ) -> Vec<Self>
     where
@@ -175,7 +175,7 @@ impl CollapsibleTile {
         adjacency: &AdjacencyRules<T>,
         dir: GridDir,
         neighbour_tile_id: u64,
-    ) -> Result<Vec<u64>, GridPos2D> {
+    ) -> Result<Vec<u64>, GridPosition> {
         let mut to_remove = Vec::new();
         for option in self.options_with_weights.keys() {
             if !adjacency.is_valid_raw(*option, neighbour_tile_id, dir) {
@@ -197,7 +197,7 @@ impl CollapsibleTile {
         adjacency: &AdjacencyRules<T>,
         dir: GridDir,
         neighbour_options: &[u64],
-    ) -> Result<Vec<u64>, GridPos2D> {
+    ) -> Result<Vec<u64>, GridPosition> {
         let mut to_remove = Vec::new();
         for option in self.options_with_weights.keys() {
             if neighbour_options

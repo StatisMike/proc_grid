@@ -5,9 +5,9 @@ use std::marker::PhantomData;
 use image::{ImageBuffer, Pixel};
 
 use crate::map::{GridMap2D, GridSize};
-use crate::tile::identifiable::IdentifiableTile;
-use crate::tile::vis::{PixelWithDefault, VisTile2D};
-use crate::GridPos2D;
+use crate::tile::identifiable::{IdentifiableTile, IdentifiableTileData};
+use crate::tile::vis::{PixelWithDefault, VisTile2D, VisTileData};
+use crate::tile::GridPosition;
 
 use super::error::VisError;
 use super::ops::create_tile_id_from_pixels;
@@ -33,9 +33,8 @@ pub type VisCollectionResult<P, const WIDTH: usize, const HEIGHT: usize> =
 
 /// Collection of pixels registered for identifiers of [`IdentifiableTile`] struct.
 #[derive(Debug, Clone)]
-pub struct VisCollection<T, P, const WIDTH: usize, const HEIGHT: usize>
+pub struct VisCollection<P, const WIDTH: usize, const HEIGHT: usize>
 where
-    T: IdentifiableTile,
     P: Pixel + PixelWithDefault,
 {
     /// Contains provided or created `type_id` alongside the pixels of given tile.
@@ -45,13 +44,10 @@ where
     rev: HashMap<u64, u64>,
     /// Optional specification for pixels which should be omitted during load.
     empty: Option<EmptyTile<P, WIDTH, HEIGHT>>,
-    /// Marker for analyzed tile struct type.
-    tile: PhantomData<T>,
 }
 
-impl<T, P, const WIDTH: usize, const HEIGHT: usize> Default for VisCollection<T, P, WIDTH, HEIGHT>
+impl<P, const WIDTH: usize, const HEIGHT: usize> Default for VisCollection<P, WIDTH, HEIGHT>
 where
-    T: IdentifiableTile,
     P: Pixel + PixelWithDefault,
 {
     fn default() -> Self {
@@ -59,14 +55,12 @@ where
             inner: Default::default(),
             rev: Default::default(),
             empty: None,
-            tile: PhantomData::<T>,
         }
     }
 }
 
-impl<T, P, const WIDTH: usize, const HEIGHT: usize> VisCollection<T, P, WIDTH, HEIGHT>
+impl<P, const WIDTH: usize, const HEIGHT: usize> VisCollection<P, WIDTH, HEIGHT>
 where
-    T: IdentifiableTile,
     P: Pixel + PixelWithDefault,
 {
     // ----- Input ----- //
@@ -91,10 +85,14 @@ where
     /// # See also
     /// - [`Self::set_vis_tile_pixels`]
     /// - [`Self::add_tiles_from_vis_map`]
-    pub fn add_vis_tile_pixels<V: VisTile2D<P, WIDTH, HEIGHT> + IdentifiableTile>(
+    pub fn add_vis_tile_pixels<Data, V>(
         &mut self,
         tile: &V,
-    ) -> VisCollectionOutcome<P, WIDTH, HEIGHT> {
+    ) -> VisCollectionOutcome<P, WIDTH, HEIGHT> 
+    where 
+        Data: VisTileData<P, WIDTH, HEIGHT>,
+        V: VisTile2D<Data, P, WIDTH, HEIGHT> + IdentifiableTile
+    {
         let inner = &mut self.inner;
         let rev = &mut self.rev;
         if let Entry::Vacant(e) = inner.entry(tile.tile_type_id()) {
@@ -122,10 +120,14 @@ where
     /// # See also
     /// - [`Self::add_vis_tile_pixels`]
     /// - [`Self::add_tiles_from_vis_map`]
-    pub fn set_vis_tile_pixels<V: VisTile2D<P, WIDTH, HEIGHT> + IdentifiableTile>(
+    pub fn set_vis_tile_pixels<Data, V>(
         &mut self,
         tile: &V,
-    ) -> VisCollectionOutcome<P, WIDTH, HEIGHT> {
+    ) -> VisCollectionOutcome<P, WIDTH, HEIGHT> 
+    where 
+    Data: VisTileData<P, WIDTH, HEIGHT>,
+    V: VisTile2D<Data, P, WIDTH, HEIGHT> + IdentifiableTile
+    {
         let tile_id = tile.tile_type_id();
         let pix = tile.vis_pixels();
         if !Self::check_empty_id(&self.empty, tile_id) && !Self::check_empty_pix(&self.empty, &pix)
@@ -146,22 +148,28 @@ where
     /// # See also
     /// - [`Self::add_vis_tile_pixels`]
     /// - [`Self::set_vis_tile_pixels`]
-    pub fn add_tiles_from_vis_map<V: VisTile2D<P, WIDTH, HEIGHT> + IdentifiableTile>(
+    pub fn add_tiles_from_vis_map<Data>(
         &mut self,
-        grid_map: &GridMap2D<V>,
-    ) {
+        grid_map: &GridMap2D<Data>,
+    ) 
+    where 
+    Data: VisTileData<P, WIDTH, HEIGHT> + IdentifiableTileData,
+    {
         for position in grid_map.get_all_positions() {
             if let Some(tile) = grid_map.get_tile_at_position(&position) {
-                self.add_vis_tile_pixels(tile);
+                self.add_vis_tile_pixels(&tile);
             }
         }
     }
 
-    pub fn add_tile_pixels(
+    pub fn add_tile_pixels<T>(
         &mut self,
         tile: &T,
         buffer: &ImageBuffer<P, Vec<P::Subpixel>>,
-    ) -> VisCollectionResult<P, WIDTH, HEIGHT> {
+    ) -> VisCollectionResult<P, WIDTH, HEIGHT> 
+    where 
+    T: IdentifiableTile
+    {
         if let Entry::Vacant(e) = self.inner.entry(tile.tile_type_id()) {
             if Self::check_empty_id(&self.empty, tile.tile_type_id()) {
                 return Ok(VisCollectionOutcome::Empty);
@@ -175,11 +183,14 @@ where
         Ok(VisCollectionOutcome::Existing)
     }
 
-    pub fn set_tile_pixels(
+    pub fn set_tile_pixels<T>(
         &mut self,
         tile: &T,
         buffer: &ImageBuffer<P, Vec<P::Subpixel>>,
-    ) -> VisCollectionResult<P, WIDTH, HEIGHT> {
+    ) -> VisCollectionResult<P, WIDTH, HEIGHT> 
+    where 
+    T: IdentifiableTile
+    {
         if Self::check_empty_id(&self.empty, tile.tile_type_id()) {
             return Ok(VisCollectionOutcome::Empty);
         }
@@ -189,14 +200,16 @@ where
         Ok(self.set_tile_pixels_manual(tile.tile_type_id(), pixels))
     }
 
-    pub fn add_tiles_from_map(
+    pub fn add_tiles_from_map<Data>(
         &mut self,
-        grid_map: &GridMap2D<T>,
+        grid_map: &GridMap2D<Data>,
         buffer: &ImageBuffer<P, Vec<P::Subpixel>>,
-    ) -> Result<(), VisError<WIDTH, HEIGHT>> {
+    ) -> Result<(), VisError<WIDTH, HEIGHT>> 
+    where Data: IdentifiableTileData
+    {
         for position in grid_map.get_all_positions() {
             if let Some(tile) = grid_map.get_tile_at_position(&position) {
-                self.add_tile_pixels(tile, buffer)?;
+                self.add_tile_pixels(&tile, buffer)?;
             }
         }
         Ok(())
@@ -248,11 +261,14 @@ where
         }
     }
 
-    pub fn draw_tile(
+    pub fn draw_tile<T>(
         &self,
         tile: &T,
         buffer: &mut ImageBuffer<P, Vec<P::Subpixel>>,
-    ) -> Result<(), VisError<WIDTH, HEIGHT>> {
+    )
+     -> Result<(), VisError<WIDTH, HEIGHT>> 
+     where T: IdentifiableTile
+     {
         if let Some(pixels) = self.inner.get(&tile.tile_type_id()) {
             write_tile(buffer, tile.grid_position(), pixels)?;
             return Ok(());
@@ -264,14 +280,16 @@ where
         ImageBuffer::new(grid_size.x() * WIDTH as u32, grid_size.y() * HEIGHT as u32)
     }
 
-    pub fn draw_map(
+    pub fn draw_map<Data>(
         &self,
-        grid_map: &GridMap2D<T>,
+        grid_map: &GridMap2D<Data>,
         buffer: &mut ImageBuffer<P, Vec<P::Subpixel>>,
-    ) -> Result<(), VisError<WIDTH, HEIGHT>> {
+    ) -> Result<(), VisError<WIDTH, HEIGHT>> 
+    where Data: IdentifiableTileData
+    {
         for position in grid_map.get_all_positions() {
             if let Some(tile) = grid_map.get_tile_at_position(&position) {
-                self.draw_tile(tile, buffer)?;
+                self.draw_tile(&tile, buffer)?;
             }
         }
         Ok(())
@@ -280,7 +298,7 @@ where
     // ------ Private ------ //
     pub(crate) fn read_pixels_for_tile_at_pos(
         buffer: &ImageBuffer<P, Vec<P::Subpixel>>,
-        pos: &GridPos2D,
+        pos: &GridPosition,
     ) -> Result<[[P; WIDTH]; HEIGHT], VisError<WIDTH, HEIGHT>> {
         let mut pixels = [[P::pix_default(); WIDTH]; HEIGHT];
         read_tile(&mut pixels, buffer, pos)?;

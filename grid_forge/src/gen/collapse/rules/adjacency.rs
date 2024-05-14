@@ -3,7 +3,7 @@ use std::{collections::HashMap, marker::PhantomData};
 use crate::{
     map::{GridDir, GridMap2D},
     tile::identifiable::IdentifiableTile,
-    GridPos2D,
+    GridPosition,
 };
 
 pub trait AdjacencyAnalyzer<T>
@@ -108,7 +108,7 @@ impl<T> AdjacencyIdentityAnalyzer<T>
 where
     T: IdentifiableTile,
 {
-    fn analyze_tile_at_pos(&mut self, map: &GridMap2D<T>, pos: GridPos2D) {
+    fn analyze_tile_at_pos(&mut self, map: &GridMap2D<T>, pos: GridPosition) {
         if let Some(tile) = map.get_tile_at_position(&pos) {
             if !self.tiles.contains(&tile.tile_type_id()) {
                 self.tiles.push(tile.tile_type_id());
@@ -205,7 +205,7 @@ where
         self.generate_adjacency_rules()
     }
 
-    fn analyze_tile_at_pos(&mut self, map: &GridMap2D<T>, pos: GridPos2D) {
+    fn analyze_tile_at_pos(&mut self, map: &GridMap2D<T>, pos: GridPosition) {
         if let Some(tile) = map.get_tile_at_position(&pos) {
             if !self.tiles.contains(&tile.tile_type_id()) {
                 self.tiles.push(tile.tile_type_id());

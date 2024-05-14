@@ -11,7 +11,7 @@ use grid_forge::{
         GridTile2D,
     },
     vis::ops::{init_map_image_buffer, write_gridmap_vis},
-    GridPos2D,
+    GridPosition,
 };
 use image::imageops;
 use rand::{Rng, SeedableRng};
@@ -33,16 +33,16 @@ impl TileColor {
 
 // GridTile struct besides required GridPos2D holds also the created enum.
 struct TwoColoredTile {
-    pos: GridPos2D,
+    pos: GridPosition,
     color: TileColor,
 }
 
 impl GridTile2D for TwoColoredTile {
-    fn grid_position(&self) -> GridPos2D {
+    fn grid_position(&self) -> GridPosition {
         self.pos
     }
 
-    fn set_grid_position(&mut self, position: GridPos2D) {
+    fn set_grid_position(&mut self, position: GridPosition) {
         self.pos = position;
     }
 }
@@ -66,7 +66,7 @@ fn main() {
     let mut rng = rand_chacha::ChaChaRng::from_seed(seed);
 
     // Create an empty GridMap...
-    let size = GridSize::new(100, 100);
+    let size = GridSize::new_xy(100, 100);
     let mut map = GridMap2D::<TwoColoredTile>::new(size);
 
     // and fill it with colors at random.

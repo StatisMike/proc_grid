@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::GridPos2D;
+use crate::tile::GridPosition;
 
 #[derive(Debug, Clone)]
 pub struct VisError<const WIDTH: usize, const HEIGHT: usize> {
@@ -8,7 +8,7 @@ pub struct VisError<const WIDTH: usize, const HEIGHT: usize> {
 }
 
 impl<const WIDTH: usize, const HEIGHT: usize> VisError<WIDTH, HEIGHT> {
-    pub(crate) fn new_nonexist(pos: GridPos2D) -> Self {
+    pub(crate) fn new_nonexist(pos: GridPosition) -> Self {
         Self {
             kind: VisErrorKind::NonExistingTile(pos),
         }
@@ -38,7 +38,7 @@ impl<const WIDTH: usize, const HEIGHT: usize> VisError<WIDTH, HEIGHT> {
         }
     }
 
-    pub(crate) fn new_io(read: bool, tile_pos: GridPos2D, pixel_pos: (u32, u32)) -> Self {
+    pub(crate) fn new_io(read: bool, tile_pos: GridPosition, pixel_pos: (u32, u32)) -> Self {
         if read {
             Self {
                 kind: VisErrorKind::PixelRead {
@@ -88,14 +88,14 @@ impl<const WIDTH: usize, const HEIGHT: usize> Display for VisError<WIDTH, HEIGHT
 
 #[derive(Debug, Clone, Copy)]
 enum VisErrorKind {
-    NonExistingTile(GridPos2D),
+    NonExistingTile(GridPosition),
     NoPixelsForIdent(u64),
     PixelRead {
-        tile_pos: GridPos2D,
+        tile_pos: GridPosition,
         pixel_pos: (u32, u32),
     },
     PixelWrite {
-        tile_pos: GridPos2D,
+        tile_pos: GridPosition,
         pixel_pos: (u32, u32),
     },
     WrongSizeTile {

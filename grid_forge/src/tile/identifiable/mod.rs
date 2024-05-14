@@ -11,9 +11,8 @@
 //! present on the struct.
 
 use self::builders::ConstructableViaIdentifierTile;
-use crate::GridPos2D;
 
-use super::GridTile2D;
+use super::{GridPosition, GridTile, GridTileRef, GridTileRefMut, TileData, WithTilePosition};
 
 pub mod builders;
 pub mod collection;
@@ -26,41 +25,52 @@ pub mod collection;
 /// on the GridMap.
 /// - other properties of the tile (such as visual representation) *can* be taken into account depending on your specific
 /// needs.
-pub trait IdentifiableTile
-where
-    Self: GridTile2D,
+pub trait IdentifiableTileData
+where Self: TileData
 {
     fn tile_type_id(&self) -> u64;
 }
 
+pub trait IdentifiableTile
+where Self: WithTilePosition
+{
+    fn tile_type_id(&self) -> u64;
+}
+
+impl <Data: IdentifiableTileData> IdentifiableTile for GridTile<Data> {
+    fn tile_type_id(&self) -> u64 {
+        self.inner().tile_type_id()
+    }
+}
+
+impl <Data:IdentifiableTileData> IdentifiableTile for GridTileRef<'_, Data> {
+    fn tile_type_id(&self) -> u64 {
+        self.inner().tile_type_id()
+    }
+}
+
+impl <Data:IdentifiableTileData> IdentifiableTile for GridTileRefMut<'_, Data> {
+    fn tile_type_id(&self) -> u64 {
+        self.inner().tile_type_id()
+    }
+}
+
 /// Basic tile struct that implements [`IdentifiableTile`], holding only the most basic information.
 #[derive(Clone, Copy, Debug)]
-pub struct BasicIdentifiableTile2D {
-    pos: GridPos2D,
+pub struct BasicIdentTileData {
     tile_type_id: u64,
 }
 
-impl GridTile2D for BasicIdentifiableTile2D {
-    fn grid_position(&self) -> GridPos2D {
-        self.pos
-    }
+impl TileData for BasicIdentTileData {}
 
-    fn set_grid_position(&mut self, position: GridPos2D) {
-        self.pos = position
-    }
-}
-
-impl IdentifiableTile for BasicIdentifiableTile2D {
+impl IdentifiableTileData for BasicIdentTileData {
     fn tile_type_id(&self) -> u64 {
         self.tile_type_id
     }
 }
 
-impl ConstructableViaIdentifierTile for BasicIdentifiableTile2D {
-    fn tile_new(pos: GridPos2D, tile_id: u64) -> Self {
-        Self {
-            pos,
-            tile_type_id: tile_id,
-        }
+impl ConstructableViaIdentifierTile for BasicIdentTileData {
+    fn tile_new(pos: GridPosition, tile_type_id: u64) -> GridTile<Self> {
+        GridTile::new(pos, BasicIdentTileData { tile_type_id })
     }
 }

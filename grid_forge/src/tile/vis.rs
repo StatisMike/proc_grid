@@ -2,7 +2,7 @@ use std::hash::Hash;
 
 use image::{ImageBuffer, Luma, LumaA, Pixel, Rgb, Rgba};
 
-use super::GridTile2D;
+use super::{GridPosition, GridTile, GridTileRef, GridTileRefMut, TileData, WithTilePosition};
 
 pub type DefaultVisPixel = Rgb<u8>;
 
@@ -53,22 +53,82 @@ where
     }
 }
 
-pub trait VisTile2D<P, const WIDTH: usize, const HEIGHT: usize>
+pub trait VisTileData<P, const WIDTH: usize, const HEIGHT: usize>
 where
-    Self: GridTile2D + Sized,
+    Self: TileData,
+    P: Pixel,
+{
+    fn vis_pixels(&self) -> [[P; WIDTH]; HEIGHT];
+}
+
+pub trait VisTile2D<Data, P, const WIDTH: usize, const HEIGHT: usize>
+where
+    Self: WithTilePosition,
+    Data: VisTileData<P, WIDTH, HEIGHT>,
     P: Pixel,
 {
     fn vis_pixels(&self) -> [[P; WIDTH]; HEIGHT];
 
-    fn vis_to_buffer(&self, image_buffer: &mut ImageBuffer<P, Vec<P::Subpixel>>) {
-        let (mut x_pos, mut y_pos) = self.grid_position();
-        x_pos *= WIDTH as u32;
-        y_pos *= HEIGHT as u32;
+    fn vis_to_buffer(&self, image_buffer: &mut ImageBuffer<P, Vec<P::Subpixel>>);
+}
 
-        for (y, row) in self.vis_pixels().iter().enumerate() {
-            for (x, pixel) in row.iter().enumerate() {
-                image_buffer.put_pixel(x_pos + x as u32, y_pos + y as u32, *pixel)
-            }
+impl<Data, P, const WIDTH: usize, const HEIGHT: usize> VisTile2D<Data, P, WIDTH, HEIGHT> for GridTile<Data>
+where
+    Data: VisTileData<P, WIDTH, HEIGHT>,
+    P: Pixel
+{
+    fn vis_pixels(&self) -> [[P; WIDTH]; HEIGHT] {
+        self.inner().vis_pixels()
+    }
+
+    fn vis_to_buffer(&self, image_buffer: &mut ImageBuffer<P, Vec<<P as Pixel>::Subpixel>>) {
+        vis_to_buffer(self.position, &self.vis_pixels(), image_buffer);
+    }
+}
+
+impl<Data, P, const WIDTH: usize, const HEIGHT: usize> VisTile2D<Data, P, WIDTH, HEIGHT> for GridTileRef<'_, Data>
+where
+    Data: VisTileData<P, WIDTH, HEIGHT>,
+    P: Pixel
+{
+    fn vis_pixels(&self) -> [[P; WIDTH]; HEIGHT] {
+        self.inner().vis_pixels()
+    }
+
+    fn vis_to_buffer(&self, image_buffer: &mut ImageBuffer<P, Vec<<P as Pixel>::Subpixel>>) {
+        vis_to_buffer(self.position, &self.vis_pixels(), image_buffer);
+    }
+}
+
+impl<Data, P, const WIDTH: usize, const HEIGHT: usize> VisTile2D<Data, P, WIDTH, HEIGHT> for GridTileRefMut<'_, Data>
+where
+    Data: VisTileData<P, WIDTH, HEIGHT>,
+    P: Pixel
+{
+    fn vis_pixels(&self) -> [[P; WIDTH]; HEIGHT] {
+        self.inner().vis_pixels()
+    }
+
+    fn vis_to_buffer(&self, image_buffer: &mut ImageBuffer<P, Vec<<P as Pixel>::Subpixel>>) {
+        vis_to_buffer(self.position, &self.vis_pixels(), image_buffer);
+    }
+}
+
+#[inline]
+fn vis_to_buffer<P, const WIDTH: usize, const HEIGHT: usize>(
+    position: GridPosition,
+    pixels: &[[P; WIDTH]; HEIGHT],
+    image_buffer: &mut ImageBuffer<P, Vec<<P as Pixel>::Subpixel>>
+)
+where P: Pixel
+{
+    let (mut x_pos, mut y_pos) = (*position.x(), *position.y());
+    x_pos *= WIDTH as u32;
+    y_pos *= HEIGHT as u32;
+
+    for (y, row) in pixels.iter().enumerate() {
+        for (x, pixel) in row.iter().enumerate() {
+            image_buffer.put_pixel(x_pos + x as u32, y_pos + y as u32, *pixel)
         }
     }
 }
@@ -77,19 +137,19 @@ where
 mod tests {
     use image::{ImageBuffer, Pixel};
 
-    use crate::{tile::GridTile2D, GridPos2D};
+    use crate::tile::{GridPosition, GridTile, TileData};
 
-    use super::{DefaultVisPixel, VisTile2D};
+    use super::{DefaultVisPixel, VisTile2D, VisTileData};
 
-    struct TestTile {
-        pos: GridPos2D,
+    struct TestTileData {
         pixels: [[DefaultVisPixel; 3]; 3],
     }
 
-    impl TestTile {
+    impl TileData for TestTileData {}
+
+    impl TestTileData {
         fn get_test() -> Self {
-            TestTile {
-                pos: (0, 0),
+            TestTileData {
                 pixels: [
                     [
                         DefaultVisPixel::from([0, 0, 0]),
@@ -111,25 +171,16 @@ mod tests {
         }
     }
 
-    impl GridTile2D for TestTile {
-        fn grid_position(&self) -> GridPos2D {
-            self.pos
-        }
-
-        fn set_grid_position(&mut self, position: GridPos2D) {
-            self.pos = position;
-        }
-    }
-
-    impl VisTile2D<DefaultVisPixel, 3, 3> for TestTile {
+    impl VisTileData<DefaultVisPixel, 3, 3> for TestTileData {
         fn vis_pixels(&self) -> [[DefaultVisPixel; 3]; 3] {
             self.pixels
         }
+    
     }
 
     #[test]
     fn buffer_same_as_pix() {
-        let tile = TestTile::get_test();
+        let tile = GridTile::new(GridPosition::new_xy(0,0), TestTileData::get_test());
 
         let mut buffer = ImageBuffer::new(3, 3);
         tile.vis_to_buffer(&mut buffer);
@@ -137,7 +188,7 @@ mod tests {
         for y in 0..3 {
             for x in 0..3 {
                 assert_eq!(
-                    tile.pixels[y][x],
+                    tile.vis_pixels()[y][x],
                     buffer.get_pixel(x as u32, y as u32).to_rgb()
                 );
             }

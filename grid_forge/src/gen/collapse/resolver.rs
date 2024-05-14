@@ -4,7 +4,7 @@ use std::marker::PhantomData;
 use crate::map::{GridDir, GridMap2D, GridSize};
 use crate::tile::identifiable::builders::{IdentTileBuilder, TileBuilderError};
 use crate::tile::{identifiable::IdentifiableTile, GridTile2D};
-use crate::GridPos2D;
+use crate::GridPosition;
 
 use super::error::CollapseErrorKind;
 use super::frequency::FrequencyHints;
@@ -36,22 +36,22 @@ where
         }
     }
 
-    pub fn fill_with_collapsed(&mut self, tile_id: u64, positions: &[GridPos2D]) {
+    pub fn fill_with_collapsed(&mut self, tile_id: u64, positions: &[GridPosition]) {
         for position in positions {
             self.inner
                 .insert_tile(CollapsibleTile::new_collapsed(*position, tile_id));
         }
     }
 
-    pub fn all_positions(&self) -> Vec<GridPos2D> {
+    pub fn all_positions(&self) -> Vec<GridPosition> {
         self.inner.get_all_positions()
     }
 
-    pub fn all_empty_positions(&self) -> Vec<GridPos2D> {
+    pub fn all_empty_positions(&self) -> Vec<GridPosition> {
         self.inner.get_all_empty_positions()
     }
 
-    pub fn uncollapsed(&self) -> Vec<GridPos2D> {
+    pub fn uncollapsed(&self) -> Vec<GridPosition> {
         self.inner
             .iter_tiles()
             .filter_map(|t| {
@@ -67,7 +67,7 @@ where
     pub fn generate<R, Queue>(
         &mut self,
         rng: &mut R,
-        positions: &[GridPos2D],
+        positions: &[GridPosition],
         mut queue: Queue,
         frequencies: &FrequencyHints<InputTile>,
         adjacencies: &AdjacencyRules<InputTile>,
@@ -78,7 +78,7 @@ where
         InputTile: IdentifiableTile,
     {
         // Begin populating grid.
-        let mut changed = VecDeque::<GridPos2D>::new();
+        let mut changed = VecDeque::<GridPosition>::new();
 
         queue.populate_inner_grid(rng, &mut self.inner, positions, frequencies);
 
@@ -174,12 +174,12 @@ where
 
     fn remove_tile_options(
         &mut self,
-        pos: &GridPos2D,
+        pos: &GridPosition,
         adjacency: &AdjacencyRules<InputTile>,
-        omit_positions_unless_changed: &[GridPos2D],
-        changed: &VecDeque<GridPos2D>,
+        omit_positions_unless_changed: &[GridPosition],
+        changed: &VecDeque<GridPosition>,
         collapsed_only: bool,
-    ) -> Result<bool, GridPos2D>
+    ) -> Result<bool, GridPosition>
     where
         InputTile: IdentifiableTile,
     {
@@ -248,11 +248,11 @@ where
 
     fn propagate_from<Queue>(
         &mut self,
-        pos: GridPos2D,
+        pos: GridPosition,
         queue: &mut Queue,
         adjacency: &AdjacencyRules<InputTile>,
-        changed: &mut VecDeque<GridPos2D>,
-    ) -> Result<(), GridPos2D>
+        changed: &mut VecDeque<GridPosition>,
+    ) -> Result<(), GridPosition>
     where
         Queue: CollapseQueue,
     {
