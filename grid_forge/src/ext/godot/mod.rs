@@ -23,11 +23,13 @@ impl GridPosition {
     }
 
     pub fn get_godot_coords(&self) -> Vector2i {
-        Vector2i { x: *self.x() as i32, y: *self.y() as i32 }
+        Vector2i {
+            x: *self.x() as i32,
+            y: *self.y() as i32,
+        }
     }
 
-    pub fn get_godot_layer(&self) -> Option<i32>
-    {
+    pub fn get_godot_layer(&self) -> Option<i32> {
         self.z().map(|layer| layer as i32)
     }
 }

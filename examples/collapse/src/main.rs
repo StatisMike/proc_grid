@@ -23,11 +23,11 @@
 //! with more time-consuming, but less error-prone [`EntrophyQueue`].  
 
 use grid_forge::gen::collapse::*;
-use grid_forge::gen_grid_positions_square;
 use grid_forge::map::GridSize;
 use grid_forge::tile::identifiable::builders::IdentTileTraitBuilder;
-use grid_forge::tile::identifiable::BasicIdentifiableTile2D;
+use grid_forge::tile::identifiable::BasicIdentTileData;
 use grid_forge::tile::vis::DefaultVisPixel;
+use grid_forge::tile::GridPosition;
 use grid_forge::vis::collection::VisCollection;
 use grid_forge::vis::ops::*;
 
@@ -38,12 +38,12 @@ fn main() {
 
     // Initialize builder, which will take care of putting new tiles on specific places.
     // As `BasicIdentifiableTile` implements `ConstructableViaIdentifierTile`, the `IdentTileTraitBuilder` can be used.
-    let builder = IdentTileTraitBuilder::<BasicIdentifiableTile2D>::default();
+    let builder = IdentTileTraitBuilder::<BasicIdentTileData>::default();
 
     // Initialize pixel collection, to retrieve pixels for each identifiable tile.
     // Tile visual information need to be provided as const generic arguments there: its `Pixel` type alongside width and height
     // of each tile as number of pixels in image buffer.
-    let mut collection = VisCollection::<BasicIdentifiableTile2D, DefaultVisPixel, 4, 4>::default();
+    let mut collection = VisCollection::<DefaultVisPixel, 4, 4>::default();
 
     // Load samples as grid maps.
     let seas_img = image::open("assets/samples/seas.png")
@@ -75,7 +75,8 @@ fn main() {
     frequency_hints.analyze_grid_map(&roads_grid);
 
     // Seed for reproductability.
-    let mut seed: [u8; 32] = [3; 32];
+    // let mut seed: [u8; 32] = [3; 32];
+    let mut seed: [u8; 32] = [0; 32];
 
     for (i, byte) in "collapse_gen_example".as_bytes().iter().enumerate() {
         if i < 31 {
@@ -93,7 +94,10 @@ fn main() {
     let all_positions = size.get_all_possible_positions();
 
     // We will fill the collapsible grid with water tiles at borders, so we will get some islands.
-    let inner = gen_grid_positions_square((4, 4), (45, 45));
+    let inner = GridPosition::generate_rect_area(
+        &GridPosition::new_xy(4, 4),
+        &GridPosition::new_xy(45, 45),
+    );
     let water_tiles = all_positions
         .iter()
         .filter(|f| !inner.contains(f))
@@ -103,31 +107,86 @@ fn main() {
     resolver.fill_with_collapsed(7698123476311124029u64, &water_tiles);
 
     let identity_positions = vec![
-        gen_grid_positions_square((2, 2), (14, 12)),
-        gen_grid_positions_square((2, 12), (14, 22)),
-        // gen_grid_positions_square((2, 20), (14, 30)),
-        gen_grid_positions_square((2, 28), (14, 38)),
-        gen_grid_positions_square((2, 36), (14, 46)),
-        gen_grid_positions_square((12, 2), (22, 12)),
-        gen_grid_positions_square((12, 12), (22, 22)),
-        // gen_grid_positions_square((12, 20), (22, 30)),
-        gen_grid_positions_square((12, 28), (22, 38)),
-        gen_grid_positions_square((12, 36), (22, 46)),
-        gen_grid_positions_square((20, 2), (30, 12)),
-        gen_grid_positions_square((20, 12), (30, 22)),
-        // gen_grid_positions_square((20, 20), (30, 30)),
-        gen_grid_positions_square((20, 28), (30, 38)),
-        gen_grid_positions_square((20, 36), (30, 46)),
-        gen_grid_positions_square((28, 2), (38, 12)),
-        gen_grid_positions_square((28, 12), (38, 22)),
-        // gen_grid_positions_square((28, 20), (38, 30)),
-        gen_grid_positions_square((28, 28), (38, 38)),
-        gen_grid_positions_square((28, 36), (38, 46)),
-        gen_grid_positions_square((36, 2), (46, 12)),
-        gen_grid_positions_square((36, 12), (46, 22)),
-        // gen_grid_positions_square((36, 20), (46, 30)),
-        gen_grid_positions_square((36, 28), (46, 38)),
-        gen_grid_positions_square((36, 36), (46, 46)),
+        GridPosition::generate_rect_area(
+            &GridPosition::new_xy(2, 2),
+            &GridPosition::new_xy(14, 12),
+        ),
+        GridPosition::generate_rect_area(
+            &GridPosition::new_xy(2, 12),
+            &GridPosition::new_xy(14, 22),
+        ),
+        GridPosition::generate_rect_area(
+            &GridPosition::new_xy(2, 28),
+            &GridPosition::new_xy(14, 38),
+        ),
+        GridPosition::generate_rect_area(
+            &GridPosition::new_xy(2, 36),
+            &GridPosition::new_xy(14, 46),
+        ),
+        GridPosition::generate_rect_area(
+            &GridPosition::new_xy(12, 2),
+            &GridPosition::new_xy(22, 12),
+        ),
+        GridPosition::generate_rect_area(
+            &GridPosition::new_xy(12, 12),
+            &GridPosition::new_xy(22, 22),
+        ),
+        GridPosition::generate_rect_area(
+            &GridPosition::new_xy(12, 28),
+            &GridPosition::new_xy(22, 38),
+        ),
+        GridPosition::generate_rect_area(
+            &GridPosition::new_xy(12, 36),
+            &GridPosition::new_xy(22, 46),
+        ),
+        GridPosition::generate_rect_area(
+            &GridPosition::new_xy(20, 2),
+            &GridPosition::new_xy(30, 12),
+        ),
+        GridPosition::generate_rect_area(
+            &GridPosition::new_xy(20, 12),
+            &GridPosition::new_xy(30, 22),
+        ),
+        GridPosition::generate_rect_area(
+            &GridPosition::new_xy(20, 28),
+            &GridPosition::new_xy(30, 38),
+        ),
+        GridPosition::generate_rect_area(
+            &GridPosition::new_xy(20, 36),
+            &GridPosition::new_xy(30, 46),
+        ),
+        GridPosition::generate_rect_area(
+            &GridPosition::new_xy(28, 2),
+            &GridPosition::new_xy(38, 12),
+        ),
+        GridPosition::generate_rect_area(
+            &GridPosition::new_xy(28, 12),
+            &GridPosition::new_xy(38, 22),
+        ),
+        GridPosition::generate_rect_area(
+            &GridPosition::new_xy(28, 28),
+            &GridPosition::new_xy(38, 38),
+        ),
+        GridPosition::generate_rect_area(
+            &GridPosition::new_xy(28, 36),
+            &GridPosition::new_xy(38, 46),
+        ),
+        GridPosition::generate_rect_area(
+            &GridPosition::new_xy(36, 2),
+            &GridPosition::new_xy(46, 12),
+        ),
+        GridPosition::generate_rect_area(
+            &GridPosition::new_xy(36, 12),
+            &GridPosition::new_xy(46, 22),
+        ),
+        GridPosition::generate_rect_area(
+            &GridPosition::new_xy(36, 28),
+            &GridPosition::new_xy(46, 38),
+        ),
+        GridPosition::generate_rect_area(
+            &GridPosition::new_xy(36, 36),
+            &GridPosition::new_xy(46, 46),
+        ),
     ];
 
     // Firstly handle all portions to be resolved using 'identity' rules.

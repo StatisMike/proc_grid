@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::GridPosition;
+use crate::tile::GridPosition;
 
 #[derive(Debug)]
 pub struct CollapseError {

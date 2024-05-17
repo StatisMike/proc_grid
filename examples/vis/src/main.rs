@@ -7,11 +7,10 @@
 use grid_forge::{
     map::{GridMap2D, GridSize},
     tile::{
-        vis::{DefaultVisPixel, VisTile2D},
-        GridTile2D,
+        vis::{DefaultVisPixel, VisTileData},
+        GridTile, TileData,
     },
     vis::ops::{init_map_image_buffer, write_gridmap_vis},
-    GridPosition,
 };
 use image::imageops;
 use rand::{Rng, SeedableRng};
@@ -33,22 +32,13 @@ impl TileColor {
 
 // GridTile struct besides required GridPos2D holds also the created enum.
 struct TwoColoredTile {
-    pos: GridPosition,
     color: TileColor,
 }
 
-impl GridTile2D for TwoColoredTile {
-    fn grid_position(&self) -> GridPosition {
-        self.pos
-    }
-
-    fn set_grid_position(&mut self, position: GridPosition) {
-        self.pos = position;
-    }
-}
+impl TileData for TwoColoredTile {}
 
 // Trait necessary
-impl VisTile2D<DefaultVisPixel, 1, 1> for TwoColoredTile {
+impl VisTileData<DefaultVisPixel, 1, 1> for TwoColoredTile {
     fn vis_pixels(&self) -> [[DefaultVisPixel; 1]; 1] {
         [[self.color.rgb()]]
     }
@@ -76,7 +66,7 @@ fn main() {
         } else {
             TileColor::Green
         };
-        let tile = TwoColoredTile { pos, color };
+        let tile = GridTile::new(pos, TwoColoredTile { color });
         map.insert_tile(tile);
     }
 

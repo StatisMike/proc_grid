@@ -1,14 +1,14 @@
-use godot::{
-    builtin::{Rect2i, Vector2i},
-    engine::TileMap,
-    obj::Gd,
-};
+use godot::{builtin::Rect2i, engine::TileMap, obj::Gd};
 
 use crate::{
     map::{GridMap2D, GridSize},
-    tile::{identifiable::{
-        builders::IdentTileBuilder, collection::IdentTileCollection, IdentifiableTile, IdentifiableTileData
-    }, GridPosition},
+    tile::{
+        identifiable::{
+            builders::IdentTileBuilder, collection::IdentTileCollection, IdentifiableTile,
+            IdentifiableTileData,
+        },
+        GridPosition,
+    },
 };
 
 use super::{

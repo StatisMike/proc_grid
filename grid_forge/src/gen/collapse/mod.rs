@@ -11,4 +11,4 @@ pub use frequency::FrequencyHints;
 pub use queue::*;
 pub use resolver::CollapsibleResolver;
 pub use rules::*;
-pub use tile::CollapsibleTile;
+pub use tile::CollapsibleTileData;

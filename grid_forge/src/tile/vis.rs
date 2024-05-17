@@ -72,10 +72,11 @@ where
     fn vis_to_buffer(&self, image_buffer: &mut ImageBuffer<P, Vec<P::Subpixel>>);
 }
 
-impl<Data, P, const WIDTH: usize, const HEIGHT: usize> VisTile2D<Data, P, WIDTH, HEIGHT> for GridTile<Data>
+impl<Data, P, const WIDTH: usize, const HEIGHT: usize> VisTile2D<Data, P, WIDTH, HEIGHT>
+    for GridTile<Data>
 where
     Data: VisTileData<P, WIDTH, HEIGHT>,
-    P: Pixel
+    P: Pixel,
 {
     fn vis_pixels(&self) -> [[P; WIDTH]; HEIGHT] {
         self.inner().vis_pixels()
@@ -86,10 +87,11 @@ where
     }
 }
 
-impl<Data, P, const WIDTH: usize, const HEIGHT: usize> VisTile2D<Data, P, WIDTH, HEIGHT> for GridTileRef<'_, Data>
+impl<Data, P, const WIDTH: usize, const HEIGHT: usize> VisTile2D<Data, P, WIDTH, HEIGHT>
+    for GridTileRef<'_, Data>
 where
     Data: VisTileData<P, WIDTH, HEIGHT>,
-    P: Pixel
+    P: Pixel,
 {
     fn vis_pixels(&self) -> [[P; WIDTH]; HEIGHT] {
         self.inner().vis_pixels()
@@ -100,10 +102,11 @@ where
     }
 }
 
-impl<Data, P, const WIDTH: usize, const HEIGHT: usize> VisTile2D<Data, P, WIDTH, HEIGHT> for GridTileRefMut<'_, Data>
+impl<Data, P, const WIDTH: usize, const HEIGHT: usize> VisTile2D<Data, P, WIDTH, HEIGHT>
+    for GridTileRefMut<'_, Data>
 where
     Data: VisTileData<P, WIDTH, HEIGHT>,
-    P: Pixel
+    P: Pixel,
 {
     fn vis_pixels(&self) -> [[P; WIDTH]; HEIGHT] {
         self.inner().vis_pixels()
@@ -118,9 +121,9 @@ where
 fn vis_to_buffer<P, const WIDTH: usize, const HEIGHT: usize>(
     position: GridPosition,
     pixels: &[[P; WIDTH]; HEIGHT],
-    image_buffer: &mut ImageBuffer<P, Vec<<P as Pixel>::Subpixel>>
-)
-where P: Pixel
+    image_buffer: &mut ImageBuffer<P, Vec<<P as Pixel>::Subpixel>>,
+) where
+    P: Pixel,
 {
     let (mut x_pos, mut y_pos) = (*position.x(), *position.y());
     x_pos *= WIDTH as u32;
@@ -175,12 +178,11 @@ mod tests {
         fn vis_pixels(&self) -> [[DefaultVisPixel; 3]; 3] {
             self.pixels
         }
-    
     }
 
     #[test]
     fn buffer_same_as_pix() {
-        let tile = GridTile::new(GridPosition::new_xy(0,0), TestTileData::get_test());
+        let tile = GridTile::new(GridPosition::new_xy(0, 0), TestTileData::get_test());
 
         let mut buffer = ImageBuffer::new(3, 3);
         tile.vis_to_buffer(&mut buffer);

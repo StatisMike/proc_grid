@@ -3,10 +3,12 @@ use std::cmp::Ordering;
 use rand::Rng;
 
 use crate::{
-    gen::collapse::{frequency::FrequencyHints, tile::CollapsibleTile},
+    gen::collapse::{frequency::FrequencyHints, tile::CollapsibleTileData},
     map::GridMap2D,
-    tile::{identifiable::IdentifiableTile, GridTile2D},
-    GridPosition,
+    tile::{
+        identifiable::{IdentifiableTile, IdentifiableTileData},
+        GridPosition, GridTile, GridTileRef, WithTilePosition,
+    },
 };
 
 use super::{CollapseQueue, ResolverSelector};
@@ -87,13 +89,16 @@ impl CollapseQueue for PositionQueue {
         self.positions.pop()
     }
 
-    fn initialize_queue(&mut self, tiles: &[CollapsibleTile]) {
+    fn initialize_queue(&mut self, tiles: &[GridTile<CollapsibleTileData>]) {
         for tile in tiles {
             self.update_queue(tile)
         }
     }
 
-    fn update_queue(&mut self, tile: &CollapsibleTile) {
+    fn update_queue<Tile>(&mut self, tile: &Tile)
+    where
+        Tile: IdentifiableTile<CollapsibleTileData> + AsRef<CollapsibleTileData>,
+    {
         if !self.positions.contains(&tile.grid_position()) {
             self.positions.push(tile.grid_position());
         }
@@ -110,14 +115,14 @@ impl CollapseQueue for PositionQueue {
 }
 
 impl ResolverSelector for PositionQueue {
-    fn populate_inner_grid<R: Rng, InputTile: IdentifiableTile>(
+    fn populate_inner_grid<Data: IdentifiableTileData, R: Rng>(
         &mut self,
         _rng: &mut R,
-        grid: &mut GridMap2D<CollapsibleTile>,
+        grid: &mut GridMap2D<CollapsibleTileData>,
         positions: &[GridPosition],
-        frequency: &FrequencyHints<InputTile>,
+        frequency: &FrequencyHints<Data>,
     ) {
-        let tiles = CollapsibleTile::new_from_frequency(positions, frequency);
+        let tiles = CollapsibleTileData::new_from_frequency(positions, frequency);
         self.initialize_queue(&tiles);
         for tile in tiles {
             grid.insert_tile(tile);
@@ -126,73 +131,105 @@ impl ResolverSelector for PositionQueue {
 }
 
 // --- Comparison functions --- //
-fn compare_upleft_columnwise(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
-    let cmp_a = a.0.cmp(&b.0);
+fn compare_upleft_columnwise(a: &GridPosition, b: &GridPosition) -> Ordering {
+    let cmp_z = a.z().cmp(b.z());
+    if cmp_z != Ordering::Equal {
+        return cmp_z;
+    }
+    let cmp_a = a.x().cmp(b.x());
     if cmp_a == Ordering::Equal {
-        a.1.cmp(&b.1)
+        a.y().cmp(b.y())
     } else {
         cmp_a
     }
 }
 
-fn compare_upleft_rowwise(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
-    let cmp_a = a.1.cmp(&b.1);
+fn compare_upleft_rowwise(a: &GridPosition, b: &GridPosition) -> Ordering {
+    let cmp_z = a.z().cmp(b.z());
+    if cmp_z != Ordering::Equal {
+        return cmp_z;
+    }
+    let cmp_a = a.y().cmp(b.y());
     if cmp_a == Ordering::Equal {
-        a.0.cmp(&b.0)
+        a.x().cmp(b.x())
     } else {
         cmp_a
     }
 }
 
-fn compare_upright_columnwise(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
-    let cmp_a = a.0.cmp(&b.0).reverse();
+fn compare_upright_columnwise(a: &GridPosition, b: &GridPosition) -> Ordering {
+    let cmp_z = a.z().cmp(b.z());
+    if cmp_z != Ordering::Equal {
+        return cmp_z;
+    }
+    let cmp_a = a.x().cmp(b.x()).reverse();
     if cmp_a == Ordering::Equal {
-        a.1.cmp(&b.1)
+        a.y().cmp(b.y())
     } else {
         cmp_a
     }
 }
 
-fn compare_upright_rowwise(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
-    let cmp_a = a.1.cmp(&b.1);
+fn compare_upright_rowwise(a: &GridPosition, b: &GridPosition) -> Ordering {
+    let cmp_z = a.z().cmp(b.z());
+    if cmp_z != Ordering::Equal {
+        return cmp_z;
+    }
+    let cmp_a = a.y().cmp(b.y());
     if cmp_a == Ordering::Equal {
-        a.0.cmp(&b.0)
+        a.x().cmp(b.x())
     } else {
         cmp_a
     }
 }
 
-fn compare_downleft_columnwise(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
-    let cmp_a = a.0.cmp(&b.0);
+fn compare_downleft_columnwise(a: &GridPosition, b: &GridPosition) -> Ordering {
+    let cmp_z = a.z().cmp(b.z());
+    if cmp_z != Ordering::Equal {
+        return cmp_z;
+    }
+    let cmp_a = a.x().cmp(b.x());
     if cmp_a == Ordering::Equal {
-        b.1.cmp(&a.1).reverse()
+        b.y().cmp(a.y()).reverse()
     } else {
         cmp_a
     }
 }
 
-fn compare_downleft_rowwise(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
-    let cmp_a = a.1.cmp(&b.1).reverse();
+fn compare_downleft_rowwise(a: &GridPosition, b: &GridPosition) -> Ordering {
+    let cmp_z = a.z().cmp(b.z());
+    if cmp_z != Ordering::Equal {
+        return cmp_z;
+    }
+    let cmp_a = a.y().cmp(b.y()).reverse();
     if cmp_a == Ordering::Equal {
-        b.0.cmp(&a.0)
+        b.x().cmp(a.x())
     } else {
         cmp_a
     }
 }
 
-fn compare_downright_columnwise(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
-    let cmp_a = a.0.cmp(&b.0).reverse();
+fn compare_downright_columnwise(a: &GridPosition, b: &GridPosition) -> Ordering {
+    let cmp_z = a.z().cmp(b.z());
+    if cmp_z != Ordering::Equal {
+        return cmp_z;
+    }
+    let cmp_a = a.x().cmp(b.x()).reverse();
     if cmp_a == Ordering::Equal {
-        b.1.cmp(&a.1).reverse()
+        b.y().cmp(a.y()).reverse()
     } else {
         cmp_a
     }
 }
 
-fn compare_downright_rowwise(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
-    let cmp_a = a.1.cmp(&b.1).reverse();
+fn compare_downright_rowwise(a: &GridPosition, b: &GridPosition) -> Ordering {
+    let cmp_z = a.z().cmp(b.z());
+    if cmp_z != Ordering::Equal {
+        return cmp_z;
+    }
+    let cmp_a = a.y().cmp(b.y()).reverse();
     if cmp_a == Ordering::Equal {
-        b.0.cmp(&a.0).reverse()
+        b.x().cmp(a.x()).reverse()
     } else {
         cmp_a
     }
@@ -200,13 +237,14 @@ fn compare_downright_rowwise(a: &(u32, u32), b: &(u32, u32)) -> Ordering {
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        gen::collapse::queue::position::compare_downleft_columnwise, gen_grid_positions_square,
-    };
+    use crate::{gen::collapse::queue::position::compare_downleft_columnwise, tile::GridPosition};
 
     #[test]
     fn check_sort_default() {
-        let mut tiles = gen_grid_positions_square((0, 0), (5, 5));
+        let mut tiles = GridPosition::generate_rect_area(
+            &GridPosition::new_xy(0, 0),
+            &GridPosition::new_xy(5, 5),
+        );
 
         tiles.sort_by(compare_downleft_columnwise);
 

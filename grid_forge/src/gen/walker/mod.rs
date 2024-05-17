@@ -5,7 +5,9 @@ use rand::{
 use std::collections::HashSet;
 
 use crate::{
-    error::BuilderError, map::{GridDir, GridMap2D, GridSize}, tile::TileData, GridPosition
+    error::BuilderError,
+    map::{GridDir, GridMap2D, GridSize},
+    tile::{GridPosition, GridTile, TileData},
 };
 
 /// Struct implementing the random walker algorithm, producing the collection of [GridPos2D]. To be created with
@@ -71,7 +73,7 @@ where
     /// # Arguments
     ///
     /// - `tile_fun` - function which will generate the [GridTile2D]-implementing objects with specified positions.
-    pub fn gen_grid_map<Data>(&self, tile_fn: fn(GridPosition) -> Data) -> GridMap2D<Data>
+    pub fn gen_grid_map<Data>(&self, tile_fn: fn(GridPosition) -> GridTile<Data>) -> GridMap2D<Data>
     where
         Data: TileData,
     {
@@ -167,7 +169,8 @@ where
         let current_pos = if let Some(pos) = self.current_pos {
             pos
         } else {
-            self.size.unwrap().center()
+            let center = self.size.unwrap().center();
+            GridPosition::new_xy(center.0, center.1)
         };
 
         if self.rng.is_none() {

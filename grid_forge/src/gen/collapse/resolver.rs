@@ -3,30 +3,31 @@ use std::marker::PhantomData;
 
 use crate::map::{GridDir, GridMap2D, GridSize};
 use crate::tile::identifiable::builders::{IdentTileBuilder, TileBuilderError};
-use crate::tile::{identifiable::IdentifiableTile, GridTile2D};
-use crate::GridPosition;
+use crate::tile::identifiable::IdentifiableTileData;
+use crate::tile::WithTilePosition;
+use crate::tile::{identifiable::IdentifiableTile, GridPosition};
 
 use super::error::CollapseErrorKind;
 use super::frequency::FrequencyHints;
 use super::queue::CollapseQueue;
 use super::rules::AdjacencyRules;
-use super::tile::CollapsibleTile;
+use super::tile::CollapsibleTileData;
 use super::CollapseError;
 
 use rand::Rng;
 
-pub struct CollapsibleResolver<InputTile>
+pub struct CollapsibleResolver<Data>
 where
-    InputTile: IdentifiableTile,
+    Data: IdentifiableTileData,
 {
-    pub(crate) inner: GridMap2D<CollapsibleTile>,
+    pub(crate) inner: GridMap2D<CollapsibleTileData>,
     tile_ids: Vec<u64>,
-    tile_type: PhantomData<InputTile>,
+    tile_type: PhantomData<Data>,
 }
 
-impl<InputTile> CollapsibleResolver<InputTile>
+impl<Data> CollapsibleResolver<Data>
 where
-    InputTile: IdentifiableTile,
+    Data: IdentifiableTileData,
 {
     pub fn new(size: GridSize) -> Self {
         Self {
@@ -39,7 +40,7 @@ where
     pub fn fill_with_collapsed(&mut self, tile_id: u64, positions: &[GridPosition]) {
         for position in positions {
             self.inner
-                .insert_tile(CollapsibleTile::new_collapsed(*position, tile_id));
+                .insert_tile(CollapsibleTileData::new_collapsed_tile(*position, tile_id));
         }
     }
 
@@ -55,7 +56,7 @@ where
         self.inner
             .iter_tiles()
             .filter_map(|t| {
-                if t.is_collapsed() {
+                if t.inner().is_collapsed() {
                     None
                 } else {
                     Some(t.grid_position())
@@ -69,13 +70,13 @@ where
         rng: &mut R,
         positions: &[GridPosition],
         mut queue: Queue,
-        frequencies: &FrequencyHints<InputTile>,
-        adjacencies: &AdjacencyRules<InputTile>,
+        frequencies: &FrequencyHints<Data>,
+        adjacencies: &AdjacencyRules<Data>,
     ) -> Result<(), CollapseError>
     where
         R: Rng,
         Queue: CollapseQueue,
-        InputTile: IdentifiableTile,
+        Data: IdentifiableTileData,
     {
         // Begin populating grid.
         let mut changed = VecDeque::<GridPosition>::new();
@@ -100,7 +101,7 @@ where
         // Updating options if any have changed.
         if queue.needs_update_after_options_change() {
             for position in changed.iter() {
-                queue.update_queue(self.inner.get_tile_at_position(position).unwrap());
+                queue.update_queue(&self.inner.get_tile_at_position(position).unwrap());
             }
 
             // Propagating queue needs propagation at this point also
@@ -121,15 +122,12 @@ where
 
         // Progress with collapse.
         while let Some(next_position) = queue.get_next_position() {
-            // Without propagation needs to remove options before collapse.
-            if !queue.propagating() {
-                CollapseError::from_result(
-                    self.remove_tile_options(&next_position, adjacencies, &[], &changed, false),
-                    CollapseErrorKind::Collapse,
-                )?;
-            }
+            CollapseError::from_result(
+                self.remove_tile_options(&next_position, adjacencies, &[], &changed, false),
+                CollapseErrorKind::Collapse,
+            )?;
 
-            let to_collapse = self.inner.get_mut_tile_at_position(&next_position).unwrap();
+            let mut to_collapse = self.inner.get_mut_tile_at_position(&next_position).unwrap();
             let collapsed = to_collapse.collapse(rng)?;
 
             if collapsed {
@@ -141,9 +139,13 @@ where
 
             // With propagation - propagate after collapse recursively.
             if collapsed && queue.propagating() {
+                let collapsed_position = next_position;
                 changed.push_back(next_position);
 
                 while let Some(position_changed) = changed.pop_front() {
+                    if !queue.in_propagaton_range(&collapsed_position, &position_changed) {
+                        continue;
+                    }
                     CollapseError::from_result(
                         self.propagate_from(
                             position_changed,
@@ -175,13 +177,13 @@ where
     fn remove_tile_options(
         &mut self,
         pos: &GridPosition,
-        adjacency: &AdjacencyRules<InputTile>,
+        adjacency: &AdjacencyRules<Data>,
         omit_positions_unless_changed: &[GridPosition],
         changed: &VecDeque<GridPosition>,
         collapsed_only: bool,
     ) -> Result<bool, GridPosition>
     where
-        InputTile: IdentifiableTile,
+        Data: IdentifiableTileData,
     {
         let tile = self
             .inner
@@ -189,13 +191,13 @@ where
             .expect("no tile at given position");
 
         // If tile is collapsed don't do anything.
-        if tile.is_collapsed() {
+        if tile.inner().is_collapsed() {
             return Ok(false);
         }
 
         let mut options_to_remove = Vec::new();
 
-        if tile.options_with_weights.is_empty() {
+        if tile.inner().options_with_weights.is_empty() {
             return Err(*pos);
         }
 
@@ -207,19 +209,20 @@ where
                 {
                     continue;
                 }
-                if neighbour.is_collapsed() {
-                    for option in tile.options_with_weights.keys() {
+                if neighbour.inner().is_collapsed() {
+                    for option in tile.inner().options_with_weights.keys() {
                         if !adjacency.is_valid_raw(*option, neighbour.tile_type_id(), *dir) {
                             options_to_remove.push(*option);
                         }
                     }
                 } else if !collapsed_only {
                     let neighbour_options = neighbour
+                        .inner()
                         .options_with_weights
                         .keys()
                         .copied()
                         .collect::<Vec<_>>();
-                    for option in tile.options_with_weights.keys() {
+                    for option in tile.inner().options_with_weights.keys() {
                         if !adjacency.is_valid_raw_any(*option, &neighbour_options, *dir) {
                             options_to_remove.push(*option);
                         }
@@ -232,13 +235,13 @@ where
         if options_to_remove.is_empty() {
             Ok(false)
         } else {
-            let tile = self
+            let mut tile = self
                 .inner
                 .get_mut_tile_at_position(pos)
                 .expect("no tile at position");
             for option in options_to_remove {
                 tile.remove_option(option);
-                if !tile.have_options() {
+                if !tile.inner().have_options() {
                     return Err(*pos);
                 }
             }
@@ -250,7 +253,7 @@ where
         &mut self,
         pos: GridPosition,
         queue: &mut Queue,
-        adjacency: &AdjacencyRules<InputTile>,
+        adjacency: &AdjacencyRules<Data>,
         changed: &mut VecDeque<GridPosition>,
     ) -> Result<(), GridPosition>
     where
@@ -260,11 +263,11 @@ where
             .inner
             .get_tile_at_position(&pos)
             .expect("cant retrieve tile to propagate from");
-        if tile.is_collapsed() {
+        if tile.inner().is_collapsed() {
             let tile_id = tile.tile_type_id();
             for direction in GridDir::ALL {
-                if let Some(neighbour) = self.inner.get_mut_neighbour_at(&pos, direction) {
-                    if neighbour.is_collapsed() {
+                if let Some(mut neighbour) = self.inner.get_mut_neighbour_at(&pos, direction) {
+                    if neighbour.inner().is_collapsed() {
                         continue;
                     }
                     if !neighbour
@@ -276,7 +279,7 @@ where
                         .is_empty()
                     {
                         if queue.needs_update_after_options_change() {
-                            queue.update_queue(neighbour);
+                            queue.update_queue(&neighbour);
                         }
 
                         if !changed.contains(&neighbour.grid_position()) {
@@ -287,13 +290,14 @@ where
             }
         } else {
             let tile_options = tile
+                .inner()
                 .options_with_weights
                 .keys()
                 .copied()
                 .collect::<Vec<_>>();
             for direction in GridDir::ALL {
-                if let Some(neighbour) = self.inner.get_mut_neighbour_at(&pos, direction) {
-                    if neighbour.is_collapsed() {
+                if let Some(mut neighbour) = self.inner.get_mut_neighbour_at(&pos, direction) {
+                    if neighbour.as_ref().is_collapsed() {
                         continue;
                     }
                     if !neighbour
@@ -305,7 +309,7 @@ where
                         .is_empty()
                     {
                         if queue.needs_update_after_options_change() {
-                            queue.update_queue(neighbour);
+                            queue.update_queue(&neighbour);
                         }
                         if !changed.contains(&neighbour.grid_position()) {
                             changed.push_back(neighbour.grid_position());
@@ -317,13 +321,13 @@ where
         Ok(())
     }
 
-    pub fn build_grid<OutputTile, Builder>(
+    pub fn build_grid<OutputData, Builder>(
         &self,
         builder: &Builder,
-    ) -> Result<GridMap2D<OutputTile>, TileBuilderError>
+    ) -> Result<GridMap2D<OutputData>, TileBuilderError>
     where
-        OutputTile: IdentifiableTile,
-        Builder: IdentTileBuilder<OutputTile>,
+        OutputData: IdentifiableTileData,
+        Builder: IdentTileBuilder<OutputData>,
     {
         builder.check_missing_ids(&self.tile_ids)?;
 
@@ -331,7 +335,7 @@ where
 
         for position in self.inner.get_all_positions() {
             let tile = self.inner.get_tile_at_position(&position).unwrap();
-            if !tile.is_collapsed() {
+            if !tile.as_ref().is_collapsed() {
                 continue;
             }
 

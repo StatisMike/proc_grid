@@ -26,30 +26,32 @@ pub mod collection;
 /// - other properties of the tile (such as visual representation) *can* be taken into account depending on your specific
 /// needs.
 pub trait IdentifiableTileData
-where Self: TileData
+where
+    Self: TileData,
 {
     fn tile_type_id(&self) -> u64;
 }
 
-pub trait IdentifiableTile
-where Self: WithTilePosition
+pub trait IdentifiableTile<Data: IdentifiableTileData>
+where
+    Self: WithTilePosition,
 {
     fn tile_type_id(&self) -> u64;
 }
 
-impl <Data: IdentifiableTileData> IdentifiableTile for GridTile<Data> {
+impl<Data: IdentifiableTileData> IdentifiableTile<Data> for GridTile<Data> {
     fn tile_type_id(&self) -> u64 {
         self.inner().tile_type_id()
     }
 }
 
-impl <Data:IdentifiableTileData> IdentifiableTile for GridTileRef<'_, Data> {
+impl<Data: IdentifiableTileData> IdentifiableTile<Data> for GridTileRef<'_, Data> {
     fn tile_type_id(&self) -> u64 {
         self.inner().tile_type_id()
     }
 }
 
-impl <Data:IdentifiableTileData> IdentifiableTile for GridTileRefMut<'_, Data> {
+impl<Data: IdentifiableTileData> IdentifiableTile<Data> for GridTileRefMut<'_, Data> {
     fn tile_type_id(&self) -> u64 {
         self.inner().tile_type_id()
     }

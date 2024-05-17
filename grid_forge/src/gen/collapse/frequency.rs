@@ -2,32 +2,32 @@ use std::collections::BTreeMap;
 use std::marker::PhantomData;
 
 use crate::map::GridMap2D;
-use crate::tile::identifiable::IdentifiableTile;
+use crate::tile::identifiable::{IdentifiableTile, IdentifiableTileData};
 
 #[derive(Debug)]
-pub struct FrequencyHints<T>
+pub struct FrequencyHints<Data>
 where
-    T: IdentifiableTile,
+    Data: IdentifiableTileData,
 {
     weights: BTreeMap<u64, u32>,
-    id_type: PhantomData<T>,
+    id_type: PhantomData<Data>,
 }
 
-impl<T> Clone for FrequencyHints<T>
+impl<Data> Clone for FrequencyHints<Data>
 where
-    T: IdentifiableTile,
+    Data: IdentifiableTileData,
 {
     fn clone(&self) -> Self {
         Self {
             weights: self.weights.clone(),
-            id_type: PhantomData::<T>,
+            id_type: PhantomData::<Data>,
         }
     }
 }
 
 impl<T> Default for FrequencyHints<T>
 where
-    T: IdentifiableTile,
+    T: IdentifiableTileData,
 {
     fn default() -> Self {
         Self {
@@ -37,16 +37,22 @@ where
     }
 }
 
-impl<T> FrequencyHints<T>
+impl<Data> FrequencyHints<Data>
 where
-    T: IdentifiableTile,
+    Data: IdentifiableTileData,
 {
-    pub fn set_weight_for_tile(&mut self, tile: &T, weight: u32) {
+    pub fn set_weight_for_tile<Tile>(&mut self, tile: &Data, weight: u32)
+    where
+        Tile: IdentifiableTile<Data>,
+    {
         let entry = self.weights.entry(tile.tile_type_id()).or_default();
         *entry = weight;
     }
 
-    pub fn count_tile(&mut self, tile: &T) {
+    pub fn count_tile<Tile>(&mut self, tile: &Tile)
+    where
+        Tile: IdentifiableTile<Data>,
+    {
         if let Some(count) = self.weights.get_mut(&tile.tile_type_id()) {
             *count += 1;
         } else {
@@ -58,9 +64,10 @@ where
         self.weights.clone()
     }
 
-    pub fn analyze_grid_map(&mut self, map: &GridMap2D<T>) {
+    pub fn analyze_grid_map(&mut self, map: &GridMap2D<Data>) {
         for position in map.get_all_positions() {
-            self.count_tile(map.get_tile_at_position(&position).unwrap())
+            let reference = map.get_tile_at_position(&position).unwrap();
+            self.count_tile(&reference)
         }
     }
 }

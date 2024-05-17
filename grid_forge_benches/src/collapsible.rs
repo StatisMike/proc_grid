@@ -4,7 +4,7 @@ use grid_forge::{
     gen::collapse::*,
     map::GridSize,
     tile::{
-        identifiable::{builders::IdentTileTraitBuilder, BasicIdentifiableTile2D},
+        identifiable::{builders::IdentTileTraitBuilder, BasicIdentTileData},
         vis::DefaultVisPixel,
     },
     vis::{collection::VisCollection, ops::load_gridmap_identifiable_auto},
@@ -15,8 +15,8 @@ use test::Bencher;
 
 #[bench]
 fn gen_identity_position_10x10(bencher: &mut Bencher) {
-    let builder = IdentTileTraitBuilder::<BasicIdentifiableTile2D>::default();
-    let mut collection = VisCollection::<BasicIdentifiableTile2D, DefaultVisPixel, 4, 4>::default();
+    let builder = IdentTileTraitBuilder::<BasicIdentTileData>::default();
+    let mut collection = VisCollection::<DefaultVisPixel, 4, 4>::default();
 
     let seas_img = image::open("../assets/samples/seas.png")
         .unwrap()
@@ -62,8 +62,8 @@ fn gen_identity_position_10x10(bencher: &mut Bencher) {
 
 #[bench]
 fn gen_identity_entrophy_10x10(bencher: &mut Bencher) {
-    let builder = IdentTileTraitBuilder::<BasicIdentifiableTile2D>::default();
-    let mut collection = VisCollection::<BasicIdentifiableTile2D, DefaultVisPixel, 4, 4>::default();
+    let builder = IdentTileTraitBuilder::<BasicIdentTileData>::default();
+    let mut collection = VisCollection::<DefaultVisPixel, 4, 4>::default();
 
     let seas_img = image::open("../assets/samples/seas.png")
         .unwrap()
@@ -109,8 +109,8 @@ fn gen_identity_entrophy_10x10(bencher: &mut Bencher) {
 
 #[bench]
 fn gen_border_position_10x10(bencher: &mut Bencher) {
-    let builder = IdentTileTraitBuilder::<BasicIdentifiableTile2D>::default();
-    let mut collection = VisCollection::<BasicIdentifiableTile2D, DefaultVisPixel, 4, 4>::default();
+    let builder = IdentTileTraitBuilder::<BasicIdentTileData>::default();
+    let mut collection = VisCollection::<DefaultVisPixel, 4, 4>::default();
 
     let seas_img = image::open("../assets/samples/seas.png")
         .unwrap()
@@ -156,8 +156,8 @@ fn gen_border_position_10x10(bencher: &mut Bencher) {
 
 #[bench]
 fn gen_border_entrophy_10x10(bencher: &mut Bencher) {
-    let builder = IdentTileTraitBuilder::<BasicIdentifiableTile2D>::default();
-    let mut collection = VisCollection::<BasicIdentifiableTile2D, DefaultVisPixel, 4, 4>::default();
+    let builder = IdentTileTraitBuilder::<BasicIdentTileData>::default();
+    let mut collection = VisCollection::<DefaultVisPixel, 4, 4>::default();
 
     let seas_img = image::open("../assets/samples/seas.png")
         .unwrap()

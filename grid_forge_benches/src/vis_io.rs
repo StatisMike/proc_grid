@@ -1,9 +1,8 @@
 extern crate test;
 
-use test::Bencher;
 use grid_forge::{
     tile::{
-        identifiable::{builders::IdentTileTraitBuilder, BasicIdentifiableTile2D},
+        identifiable::{builders::IdentTileTraitBuilder, BasicIdentTileData},
         vis::DefaultVisPixel,
     },
     vis::{
@@ -14,29 +13,29 @@ use grid_forge::{
         },
     },
 };
+use test::Bencher;
 
 #[bench]
 fn load_gridmap_auto(bencher: &mut Bencher) {
-    let builder = IdentTileTraitBuilder::<BasicIdentifiableTile2D>::default();
+    let builder = IdentTileTraitBuilder::<BasicIdentTileData>::default();
     let image = image::open("../assets/samples/roads.png")
         .unwrap()
         .into_rgb8();
 
     bencher.iter(|| {
-        let mut collection =
-            VisCollection::<BasicIdentifiableTile2D, DefaultVisPixel, 4, 4>::default();
+        let mut collection = VisCollection::<DefaultVisPixel, 4, 4>::default();
         load_gridmap_identifiable_auto(&image, &mut collection, &builder).unwrap();
     });
 }
 
 #[bench]
 fn load_gridmap_manual(bencher: &mut Bencher) {
-    let builder = IdentTileTraitBuilder::<BasicIdentifiableTile2D>::default();
+    let builder = IdentTileTraitBuilder::<BasicIdentTileData>::default();
     let image = image::open("../assets/samples/roads.png")
         .unwrap()
         .into_rgb8();
 
-    let mut collection = VisCollection::<BasicIdentifiableTile2D, DefaultVisPixel, 4, 4>::default();
+    let mut collection = VisCollection::<DefaultVisPixel, 4, 4>::default();
     load_gridmap_identifiable_auto(&image, &mut collection, &builder).unwrap();
 
     bencher.iter(|| {
@@ -46,11 +45,11 @@ fn load_gridmap_manual(bencher: &mut Bencher) {
 
 #[bench]
 fn write_grimap_ident(bencher: &mut Bencher) {
-    let builder = IdentTileTraitBuilder::<BasicIdentifiableTile2D>::default();
+    let builder = IdentTileTraitBuilder::<BasicIdentTileData>::default();
     let image = image::open("../assets/samples/roads.png")
         .unwrap()
         .into_rgb8();
-    let mut collection = VisCollection::<BasicIdentifiableTile2D, DefaultVisPixel, 4, 4>::default();
+    let mut collection = VisCollection::<DefaultVisPixel, 4, 4>::default();
     let gridmap = load_gridmap_identifiable_auto(&image, &mut collection, &builder).unwrap();
 
     bencher.iter(|| {

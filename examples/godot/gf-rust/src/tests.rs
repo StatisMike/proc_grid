@@ -8,7 +8,7 @@ use grid_forge::{
     godot::godot::ops::{load_gridmap_from_tilemap_manual, write_gridmap_to_tilemap},
     map::GridSize,
     tile::identifiable::{
-        builders::IdentTileTraitBuilder, BasicIdentifiableTile2D, IdentifiableTileData,
+        builders::IdentTileTraitBuilder, BasicIdentTileData, IdentifiableTile, IdentifiableTileData,
     },
 };
 
@@ -77,7 +77,7 @@ fn test_from_grindmap_identical() {
     let collection = get_test_collection();
     let cloned = collection.clone();
     let binding = collection.bind();
-    let builder = IdentTileTraitBuilder::<BasicIdentifiableTile2D>::default();
+    let builder = IdentTileTraitBuilder::<BasicIdentTileData>::default();
     let tileset = load::<TileSet>(TILESET_RESOURCE_PATH);
 
     let roads_map = binding.load_vis_map_from_path(ROADS_MAP_PATH).unwrap();

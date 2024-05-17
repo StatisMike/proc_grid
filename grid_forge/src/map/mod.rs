@@ -1,6 +1,8 @@
 use grid::Grid;
 
-use crate::{add_grid_positions, gen::collapse::position, tile::{GridPosition, GridTile, GridTileRef, GridTileRefMut, TileData, WithTilePosition}};
+use crate::tile::{
+    GridPosition, GridTile, GridTileRef, GridTileRefMut, TileData, WithTilePosition,
+};
 
 #[repr(u8)]
 #[derive(PartialEq, Eq, Debug, Clone, Copy, Hash)]
@@ -60,8 +62,10 @@ impl GridDir {
                 (1i32, 0i32)
             }
         };
-        let (x, y) = ((x_dif.wrapping_add_unsigned(*from.x())) as u32,
-        (y_dif.wrapping_add_unsigned(*from.y())) as u32);
+        let (x, y) = (
+            (x_dif.wrapping_add_unsigned(*from.x())) as u32,
+            (y_dif.wrapping_add_unsigned(*from.y())) as u32,
+        );
 
         if let Some(z) = from.z() {
             Some(GridPosition::new_xyz(x, y, *z))
@@ -78,6 +82,7 @@ impl GridDir {
     ///
     /// assert_eq!(GridDir::UP, GridDir::DOWN.opposite())
     /// ```
+    #[inline]
     pub fn opposite(&self) -> Self {
         match self {
             GridDir::UP => GridDir::DOWN,
@@ -99,12 +104,22 @@ pub struct GridSize {
 impl GridSize {
     pub fn new_xy(x: u32, y: u32) -> Self {
         let center = Self::calc_center_approx(x, y);
-        Self { x, y, z: None, center }
+        Self {
+            x,
+            y,
+            z: None,
+            center,
+        }
     }
 
     pub fn new_xyz(x: u32, y: u32, z: u32) -> Self {
         let center = Self::calc_center_approx(x, y);
-        Self {x, y, z: Some(z), center}
+        Self {
+            x,
+            y,
+            z: Some(z),
+            center,
+        }
     }
 
     pub fn x(&self) -> u32 {
@@ -184,11 +199,10 @@ impl GridSize {
 ///
 /// Extend of created GridMap usage stems from additional traits that are implemented for collected objects, with
 /// [GridTile2D] at minimum.
-pub struct GridMap2D<Data: TileData>
-{
+pub struct GridMap2D<Data: TileData> {
     pub(crate) size: GridSize,
     pub(crate) tiles: Grid<Option<Data>>,
-    pub(crate) layer: Option<u32>
+    pub(crate) layer: Option<u32>,
 }
 
 impl<Data: TileData> GridMap2D<Data> {
@@ -197,7 +211,7 @@ impl<Data: TileData> GridMap2D<Data> {
         Self {
             size,
             tiles: Grid::new(size.x as usize, size.y as usize),
-            layer: None
+            layer: None,
         }
     }
 
@@ -207,19 +221,28 @@ impl<Data: TileData> GridMap2D<Data> {
             return None;
         }
         GridTileRef::maybe_new(
-            *position, 
-            self.tiles.get(*position.x(), *position.y()).unwrap().as_ref()
+            *position,
+            self.tiles
+                .get(*position.x(), *position.y())
+                .unwrap()
+                .as_ref(),
         )
     }
 
     /// Get tile at specified position mutably.
-    pub fn get_mut_tile_at_position(&mut self, position: &GridPosition) -> Option<GridTileRefMut<Data>> {
+    pub fn get_mut_tile_at_position(
+        &mut self,
+        position: &GridPosition,
+    ) -> Option<GridTileRefMut<Data>> {
         if !self.size.is_position_valid(position) {
             return None;
         }
         GridTileRefMut::maybe_new(
-            *position, 
-            self.tiles.get_mut(*position.x(), *position.y()).unwrap().as_mut()
+            *position,
+            self.tiles
+                .get_mut(*position.x(), *position.y())
+                .unwrap()
+                .as_mut(),
         )
     }
 
@@ -268,7 +291,11 @@ impl<Data: TileData> GridMap2D<Data> {
     }
 
     /// Get tile neighbouring the specified position at specified direction.
-    pub fn get_neighbour_at(&self, position: &GridPosition, direction: &GridDir) -> Option<GridTileRef<Data>> {
+    pub fn get_neighbour_at(
+        &self,
+        position: &GridPosition,
+        direction: &GridDir,
+    ) -> Option<GridTileRef<Data>> {
         if let Some(position) = direction.march_step(position, &self.size) {
             return self.get_tile_at_position(&position);
         }
@@ -330,16 +357,22 @@ impl<Data: TileData> GridMap2D<Data> {
             .collect::<Vec<GridPosition>>()
     }
 
-    pub fn iter_tiles(&self) -> impl Iterator<Item = &Data> {
-        self.tiles
-            .iter()
-            .filter_map(|t| if let Some(tile) = t { Some(tile) } else { None })
+    pub fn iter_tiles(&self) -> impl Iterator<Item = GridTileRef<Data>> {
+        self.tiles.indexed_iter().filter_map(|(pos, data)| {
+            if let Some(d) = data {
+                Some(GridTileRef::new(
+                    GridPosition::new_xy(pos.0 as u32, pos.1 as u32),
+                    d,
+                ))
+            } else {
+                None
+            }
+        })
     }
 
     /// Destroys the GridMap, returning all tiles with their position adjusted
     pub fn drain_remapped(mut self, anchor_pos: GridPosition) -> Vec<GridTile<Data>> {
-        self
-            .get_all_positions()
+        self.get_all_positions()
             .iter()
             .filter_map(|pos| {
                 if let Some(data) = self.tiles.get_mut(*pos.x(), *pos.y()).unwrap().take() {
@@ -347,7 +380,6 @@ impl<Data: TileData> GridMap2D<Data> {
                 } else {
                     None
                 }
-                
             })
             .collect()
     }
@@ -363,10 +395,7 @@ impl<Data: TileData> GridMap2D<Data> {
 impl<Data: TileData + Default> GridMap2D<Data> {
     pub fn fill_empty_with_default(&mut self) {
         for pos in self.get_all_empty_positions() {
-            self.insert_data(
-                &pos,
-                Data::default()
-            );
+            self.insert_data(&pos, Data::default());
         }
     }
 }
@@ -380,9 +409,7 @@ impl<Data: TileData + Clone> GridMap2D<Data> {
 
     /// Get all tiles with their positions remapped according to `anchor_pos`, which is the `left-top` position.
     pub fn get_remapped(&self, anchor_pos: GridPosition) -> Vec<GridTile<Data>> {
-
-        self
-            .tiles
+        self.tiles
             .indexed_iter()
             .filter_map(|(pos, maybe_data)| {
                 if let Some(data) = maybe_data {

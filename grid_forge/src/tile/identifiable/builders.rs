@@ -13,7 +13,7 @@ use std::fmt::Display;
 use std::marker::PhantomData;
 
 use crate::tile::identifiable::IdentifiableTileData;
-use crate::tile::{GridPosition, GridTile, TileData};
+use crate::tile::{GridPosition, GridTile};
 
 /// [`IdentTileBuilder`] which creates new tiles of [`Clone`]-implementing tile struct. Prototype of tile with each `tile_id` need to be
 /// provided to the builder via [`add_tiles`](Self::add_tiles).
@@ -107,7 +107,11 @@ impl<Data: IdentifiableTileData + Clone> IdentTileBuilder<Data> for IdentTileClo
         GridTile::new(position, tile_data)
     }
 
-    fn build_tile(&self, position: GridPosition, tile_type_id: u64) -> Result<GridTile<Data>, TileBuilderError> {
+    fn build_tile(
+        &self,
+        position: GridPosition,
+        tile_type_id: u64,
+    ) -> Result<GridTile<Data>, TileBuilderError> {
         if let Some(tile) = self.tiles.get(&tile_type_id) {
             let data = tile.clone();
             Ok(GridTile::new(position, data))
@@ -205,15 +209,18 @@ impl<Data: IdentifiableTileData> Default for IdentTileFunBuilder<Data> {
 
 impl<Data: IdentifiableTileData> IdentTileBuilder<Data> for IdentTileFunBuilder<Data> {
     fn build_tile_unchecked(&self, position: GridPosition, tile_type_id: u64) -> GridTile<Data> {
-        let fun = self
-            .funs
-            .get(&tile_type_id)
-            .unwrap_or_else(|| panic!("can't get tile function with `tile_type_id`: {tile_type_id}"));
+        let fun = self.funs.get(&tile_type_id).unwrap_or_else(|| {
+            panic!("can't get tile function with `tile_type_id`: {tile_type_id}")
+        });
 
         GridTile::new(position, fun(tile_type_id))
     }
 
-    fn build_tile(&self, position: GridPosition, tile_id: u64) -> Result<GridTile<Data>, TileBuilderError> {
+    fn build_tile(
+        &self,
+        position: GridPosition,
+        tile_id: u64,
+    ) -> Result<GridTile<Data>, TileBuilderError> {
         if let Some(fun) = self.funs.get(&tile_id) {
             Ok(GridTile::new(position, fun(tile_id)))
         } else {
@@ -285,7 +292,8 @@ impl<Data: IdentifiableTileData> IdentTileBuilder<Data> for IdentTileFunBuilder<
 /// assert_eq!(45, tile.tile_type_id());
 /// ```
 pub trait ConstructableViaIdentifierTile
-where Self: IdentifiableTileData
+where
+    Self: IdentifiableTileData,
 {
     fn tile_new(position: GridPosition, tile_type_id: u64) -> GridTile<Self>;
 }
@@ -301,7 +309,9 @@ pub struct IdentTileTraitBuilder<Data: IdentifiableTileData + ConstructableViaId
     phantom: PhantomData<Data>,
 }
 
-impl<Data: IdentifiableTileData + ConstructableViaIdentifierTile> Default for IdentTileTraitBuilder<Data> {
+impl<Data: IdentifiableTileData + ConstructableViaIdentifierTile> Default
+    for IdentTileTraitBuilder<Data>
+{
     fn default() -> Self {
         Self {
             phantom: PhantomData::<Data>,
@@ -316,7 +326,11 @@ impl<Data: IdentifiableTileData + ConstructableViaIdentifierTile> IdentTileBuild
         Data::tile_new(position, tile_type_id)
     }
 
-    fn build_tile(&self, position: GridPosition, tile_type_id: u64) -> Result<GridTile<Data>, TileBuilderError> {
+    fn build_tile(
+        &self,
+        position: GridPosition,
+        tile_type_id: u64,
+    ) -> Result<GridTile<Data>, TileBuilderError> {
         Ok(Data::tile_new(position, tile_type_id))
     }
 
@@ -342,7 +356,11 @@ pub trait IdentTileBuilder<Data: IdentifiableTileData> {
     fn build_tile_unchecked(&self, position: GridPosition, tile_type_id: u64) -> GridTile<Data>;
 
     /// Creates tile with given tile identifier at given grid position. Returns error if cannot construct tile of given `tile_id`.
-    fn build_tile(&self, position: GridPosition, tile_type_id: u64) -> Result<GridTile<Data>, TileBuilderError>;
+    fn build_tile(
+        &self,
+        position: GridPosition,
+        tile_type_id: u64,
+    ) -> Result<GridTile<Data>, TileBuilderError>;
 
     /// Checks for missing tile creators out of provided slice of `tile_id`.
     fn check_missing_ids(&self, tile_type_ids: &[u64]) -> Result<(), TileBuilderError>;

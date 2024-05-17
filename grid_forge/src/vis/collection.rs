@@ -88,10 +88,10 @@ where
     pub fn add_vis_tile_pixels<Data, V>(
         &mut self,
         tile: &V,
-    ) -> VisCollectionOutcome<P, WIDTH, HEIGHT> 
-    where 
-        Data: VisTileData<P, WIDTH, HEIGHT>,
-        V: VisTile2D<Data, P, WIDTH, HEIGHT> + IdentifiableTile
+    ) -> VisCollectionOutcome<P, WIDTH, HEIGHT>
+    where
+        Data: VisTileData<P, WIDTH, HEIGHT> + IdentifiableTileData,
+        V: VisTile2D<Data, P, WIDTH, HEIGHT> + IdentifiableTile<Data>,
     {
         let inner = &mut self.inner;
         let rev = &mut self.rev;
@@ -123,10 +123,10 @@ where
     pub fn set_vis_tile_pixels<Data, V>(
         &mut self,
         tile: &V,
-    ) -> VisCollectionOutcome<P, WIDTH, HEIGHT> 
-    where 
-    Data: VisTileData<P, WIDTH, HEIGHT>,
-    V: VisTile2D<Data, P, WIDTH, HEIGHT> + IdentifiableTile
+    ) -> VisCollectionOutcome<P, WIDTH, HEIGHT>
+    where
+        Data: VisTileData<P, WIDTH, HEIGHT> + IdentifiableTileData,
+        V: VisTile2D<Data, P, WIDTH, HEIGHT> + IdentifiableTile<Data>,
     {
         let tile_id = tile.tile_type_id();
         let pix = tile.vis_pixels();
@@ -148,12 +148,9 @@ where
     /// # See also
     /// - [`Self::add_vis_tile_pixels`]
     /// - [`Self::set_vis_tile_pixels`]
-    pub fn add_tiles_from_vis_map<Data>(
-        &mut self,
-        grid_map: &GridMap2D<Data>,
-    ) 
-    where 
-    Data: VisTileData<P, WIDTH, HEIGHT> + IdentifiableTileData,
+    pub fn add_tiles_from_vis_map<Data>(&mut self, grid_map: &GridMap2D<Data>)
+    where
+        Data: VisTileData<P, WIDTH, HEIGHT> + IdentifiableTileData,
     {
         for position in grid_map.get_all_positions() {
             if let Some(tile) = grid_map.get_tile_at_position(&position) {
@@ -162,13 +159,14 @@ where
         }
     }
 
-    pub fn add_tile_pixels<T>(
+    pub fn add_tile_pixels<Data, Tile>(
         &mut self,
-        tile: &T,
+        tile: &Tile,
         buffer: &ImageBuffer<P, Vec<P::Subpixel>>,
-    ) -> VisCollectionResult<P, WIDTH, HEIGHT> 
-    where 
-    T: IdentifiableTile
+    ) -> VisCollectionResult<P, WIDTH, HEIGHT>
+    where
+        Tile: IdentifiableTile<Data>,
+        Data: IdentifiableTileData,
     {
         if let Entry::Vacant(e) = self.inner.entry(tile.tile_type_id()) {
             if Self::check_empty_id(&self.empty, tile.tile_type_id()) {
@@ -183,13 +181,14 @@ where
         Ok(VisCollectionOutcome::Existing)
     }
 
-    pub fn set_tile_pixels<T>(
+    pub fn set_tile_pixels<Data, Tile>(
         &mut self,
-        tile: &T,
+        tile: &Tile,
         buffer: &ImageBuffer<P, Vec<P::Subpixel>>,
-    ) -> VisCollectionResult<P, WIDTH, HEIGHT> 
-    where 
-    T: IdentifiableTile
+    ) -> VisCollectionResult<P, WIDTH, HEIGHT>
+    where
+        Tile: IdentifiableTile<Data>,
+        Data: IdentifiableTileData,
     {
         if Self::check_empty_id(&self.empty, tile.tile_type_id()) {
             return Ok(VisCollectionOutcome::Empty);
@@ -204,8 +203,9 @@ where
         &mut self,
         grid_map: &GridMap2D<Data>,
         buffer: &ImageBuffer<P, Vec<P::Subpixel>>,
-    ) -> Result<(), VisError<WIDTH, HEIGHT>> 
-    where Data: IdentifiableTileData
+    ) -> Result<(), VisError<WIDTH, HEIGHT>>
+    where
+        Data: IdentifiableTileData,
     {
         for position in grid_map.get_all_positions() {
             if let Some(tile) = grid_map.get_tile_at_position(&position) {
@@ -261,14 +261,15 @@ where
         }
     }
 
-    pub fn draw_tile<T>(
+    pub fn draw_tile<Data, Tile>(
         &self,
-        tile: &T,
+        tile: &Tile,
         buffer: &mut ImageBuffer<P, Vec<P::Subpixel>>,
-    )
-     -> Result<(), VisError<WIDTH, HEIGHT>> 
-     where T: IdentifiableTile
-     {
+    ) -> Result<(), VisError<WIDTH, HEIGHT>>
+    where
+        Tile: IdentifiableTile<Data>,
+        Data: IdentifiableTileData,
+    {
         if let Some(pixels) = self.inner.get(&tile.tile_type_id()) {
             write_tile(buffer, tile.grid_position(), pixels)?;
             return Ok(());
@@ -284,8 +285,9 @@ where
         &self,
         grid_map: &GridMap2D<Data>,
         buffer: &mut ImageBuffer<P, Vec<P::Subpixel>>,
-    ) -> Result<(), VisError<WIDTH, HEIGHT>> 
-    where Data: IdentifiableTileData
+    ) -> Result<(), VisError<WIDTH, HEIGHT>>
+    where
+        Data: IdentifiableTileData,
     {
         for position in grid_map.get_all_positions() {
             if let Some(tile) = grid_map.get_tile_at_position(&position) {

@@ -19,8 +19,7 @@ use grid_forge::{
     map::GridMap2D,
     tile::{
         identifiable::{
-            builders::IdentTileTraitBuilder, collection::IdentTileCollection,
-            BasicIdentifiableTile2D,
+            builders::IdentTileTraitBuilder, collection::IdentTileCollection, BasicIdentTileData,
         },
         vis::{DefaultVisPixel, PixelWithDefault},
     },
@@ -53,7 +52,7 @@ pub struct TileCollections {
     #[var]
     generated: bool,
 
-    pub vis_collection: Option<VisCollection<BasicIdentifiableTile2D, DefaultVisPixel, 4, 4>>,
+    pub vis_collection: Option<VisCollection<DefaultVisPixel, 4, 4>>,
     pub godot_collection: Option<GodotTileMapCollection>,
 }
 
@@ -110,8 +109,7 @@ impl TileCollections {
         let grid_size = grid_size.unwrap();
 
         // Began gathering Collections simultanously to make sure that both type tile ids match up.
-        let mut vis_collection: VisCollection<BasicIdentifiableTile2D, image::Rgb<u8>, 4, 4> =
-            VisCollection::default();
+        let mut vis_collection: VisCollection<image::Rgb<u8>, 4, 4> = VisCollection::default();
         vis_collection.set_empty_tile_pixels(Some([[DefaultVisPixel::pix_default(); 4]; 4]));
         let mut godot_collection = GodotTileMapCollection::default();
 
@@ -123,14 +121,8 @@ impl TileCollections {
             }
             vis_collection.add_tile_pixels_manual(tile_type_id as u64, pixels);
 
-            let godot_tile_info = GodotTileMapTileInfo::new_atlas(
-                self.source_id,
-                Vector2i {
-                    x: position.0 as i32,
-                    y: position.1 as i32,
-                },
-                0,
-            );
+            let godot_tile_info =
+                GodotTileMapTileInfo::new_atlas(self.source_id, position.get_godot_coords(), 0);
             godot_collection.add_tile_data(tile_type_id as u64, godot_tile_info);
         }
 
@@ -172,7 +164,7 @@ impl TileCollections {
     pub fn load_vis_map_from_path(
         &self,
         path: &str,
-    ) -> Result<GridMap2D<BasicIdentifiableTile2D>, String> {
+    ) -> Result<GridMap2D<BasicIdentTileData>, String> {
         let gfile =
             GFile::open(path, ModeFlags::READ).map_err(|err| format!("File open error: {err}"))?;
         let reader = BufReader::new(gfile);
@@ -184,7 +176,7 @@ impl TileCollections {
             .vis_collection
             .as_ref()
             .ok_or("Cannot get VisCollection")?;
-        let builder = IdentTileTraitBuilder::<BasicIdentifiableTile2D>::default();
+        let builder = IdentTileTraitBuilder::<BasicIdentTileData>::default();
 
         load_gridmap_identifiable_manual(&image, vis_collection, &builder)
             .map_err(|err| format!("Image to GridMap conversion failed: {err}"))
@@ -193,7 +185,7 @@ impl TileCollections {
     /// Loads tiles from GridMap into Godot TileMap using its GodotTileMapCollection.
     pub fn grid_map_into_tilemap(
         &self,
-        map: &GridMap2D<BasicIdentifiableTile2D>,
+        map: &GridMap2D<BasicIdentTileData>,
         tilemap: &mut Gd<TileMap>,
     ) -> Result<(), String> {
         write_gridmap_to_tilemap(

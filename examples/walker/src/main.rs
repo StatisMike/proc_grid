@@ -2,11 +2,10 @@ use grid_forge::{
     gen::walker::GridWalker2DBuilder,
     map::GridSize,
     tile::{
-        vis::{DefaultVisPixel, VisTile2D},
-        GridTile2D,
+        vis::{DefaultVisPixel, VisTile2D, VisTileData},
+        GridPosition, GridTile, TileData,
     },
     vis::ops::{init_map_image_buffer, write_gridmap_vis},
-    GridPosition,
 };
 use image::imageops::resize;
 use rand::SeedableRng;
@@ -27,27 +26,19 @@ impl TileColor {
 }
 
 #[derive(Clone, Hash)]
-struct TwoColoredTile {
-    pos: GridPosition,
+struct TwoColoredTileData {
     color: TileColor,
 }
 
-impl TwoColoredTile {
-    fn new(pos: GridPosition, color: TileColor) -> Self {
-        Self { pos, color }
+impl TwoColoredTileData {
+    fn new(color: TileColor) -> Self {
+        Self { color }
     }
 }
 
-impl GridTile2D for TwoColoredTile {
-    fn grid_position(&self) -> GridPosition {
-        self.pos
-    }
-    fn set_grid_position(&mut self, position: GridPosition) {
-        self.pos = position;
-    }
-}
+impl TileData for TwoColoredTileData {}
 
-impl VisTile2D<DefaultVisPixel, 1, 1> for TwoColoredTile {
+impl VisTileData<DefaultVisPixel, 1, 1> for TwoColoredTileData {
     fn vis_pixels(&self) -> [[DefaultVisPixel; 1]; 1] {
         [[self.color.rgb()]]
     }
@@ -67,7 +58,7 @@ fn main() {
     let size = GridSize::new_xy(255, 255);
     let mut walker = GridWalker2DBuilder::default()
         .with_size(size)
-        .with_current_pos(size.center())
+        .with_current_pos(GridPosition::new_xy(size.center().0, size.center().1))
         .with_rng(rng)
         .with_min_step_size(2)
         .with_max_step_size(5)
@@ -78,8 +69,9 @@ fn main() {
         walker.walk();
     }
 
-    let mut map = walker.gen_grid_map(|pos| TwoColoredTile::new(pos, TileColor::Red));
-    map.fill_empty_using(|pos| TwoColoredTile::new(pos, TileColor::Gray));
+    let mut map =
+        walker.gen_grid_map(|pos| GridTile::new(pos, TwoColoredTileData::new(TileColor::Red)));
+    map.fill_empty_using(|pos| GridTile::new(pos, TwoColoredTileData::new(TileColor::Gray)));
 
     let mut image = init_map_image_buffer::<DefaultVisPixel, 1, 1>(&size);
 

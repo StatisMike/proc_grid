@@ -98,7 +98,10 @@ where
 mod test {
     use image::{ImageBuffer, Rgb};
 
-    use crate::tile::{vis::{DefaultVisPixel, PixelWithDefault}, GridPosition};
+    use crate::tile::{
+        vis::{DefaultVisPixel, PixelWithDefault},
+        GridPosition,
+    };
 
     use super::{read_tile, write_tile};
 
@@ -124,7 +127,7 @@ mod test {
             GridPosition::new_xy(0, 0),
             GridPosition::new_xy(0, 1),
             GridPosition::new_xy(1, 0),
-            GridPosition::new_xy(1, 1)
+            GridPosition::new_xy(1, 1),
         ];
 
         for i_arr in 0..PIX_ARRAYS.len() {
@@ -142,9 +145,9 @@ mod test {
             GridPosition::new_xy(0, 0),
             GridPosition::new_xy(0, 1),
             GridPosition::new_xy(1, 0),
-            GridPosition::new_xy(1, 1)
+            GridPosition::new_xy(1, 1),
         ];
-        
+
         for i_arr in 0..PIX_ARRAYS.len() {
             write_tile(&mut image, positions[i_arr], &PIX_ARRAYS[i_arr]).unwrap();
         }

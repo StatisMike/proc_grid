@@ -2,57 +2,62 @@ use std::{collections::HashMap, marker::PhantomData};
 
 use crate::{
     map::{GridDir, GridMap2D},
-    tile::identifiable::IdentifiableTile,
-    GridPosition,
+    tile::identifiable::{IdentifiableTile, IdentifiableTileData},
+    tile::GridPosition,
 };
 
-pub trait AdjacencyAnalyzer<T>
+pub trait AdjacencyAnalyzer<Data>
 where
-    T: IdentifiableTile,
+    Data: IdentifiableTileData,
 {
-    fn adjacency(&self) -> &AdjacencyRules<T>;
+    fn adjacency(&self) -> &AdjacencyRules<Data>;
     fn tiles(&self) -> &[u64];
-    fn analyze(&mut self, map: &GridMap2D<T>);
+    fn analyze(&mut self, map: &GridMap2D<Data>);
 }
 
 #[derive(Debug)]
-pub struct AdjacencyRules<T>
+pub struct AdjacencyRules<Data>
 where
-    T: IdentifiableTile,
+    Data: IdentifiableTileData,
 {
     inner: HashMap<u64, InnerAdjacency>,
-    id_type: PhantomData<T>,
+    id_type: PhantomData<Data>,
 }
 
-impl<T> Clone for AdjacencyRules<T>
+impl<Data> Clone for AdjacencyRules<Data>
 where
-    T: IdentifiableTile,
+    Data: IdentifiableTileData,
 {
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),
-            id_type: PhantomData::<T>,
+            id_type: PhantomData::<Data>,
         }
     }
 }
 
-impl<T> Default for AdjacencyRules<T>
+impl<Data> Default for AdjacencyRules<Data>
 where
-    T: IdentifiableTile,
+    Data: IdentifiableTileData,
 {
     fn default() -> Self {
         Self {
             inner: HashMap::new(),
-            id_type: PhantomData::<T>,
+            id_type: PhantomData::<Data>,
         }
     }
 }
 
-impl<T> AdjacencyRules<T>
+impl<Data> AdjacencyRules<Data>
 where
-    T: IdentifiableTile,
+    Data: IdentifiableTileData,
 {
-    fn add_adjacency(&mut self, tile: &T, adjacent_tile: &T, direction: GridDir) {
+    fn add_adjacency<Tile: IdentifiableTile<Data>>(
+        &mut self,
+        tile: &Tile,
+        adjacent_tile: &Tile,
+        direction: GridDir,
+    ) {
         self.add_adjacency_raw(tile.tile_type_id(), adjacent_tile.tile_type_id(), direction)
     }
 
@@ -84,17 +89,17 @@ where
     }
 }
 
-pub struct AdjacencyIdentityAnalyzer<T>
+pub struct AdjacencyIdentityAnalyzer<Data>
 where
-    T: IdentifiableTile,
+    Data: IdentifiableTileData,
 {
     tiles: Vec<u64>,
-    adjacency_rules: AdjacencyRules<T>,
+    adjacency_rules: AdjacencyRules<Data>,
 }
 
-impl<T> Default for AdjacencyIdentityAnalyzer<T>
+impl<Data> Default for AdjacencyIdentityAnalyzer<Data>
 where
-    T: IdentifiableTile,
+    Data: IdentifiableTileData,
 {
     fn default() -> Self {
         Self {
@@ -104,11 +109,11 @@ where
     }
 }
 
-impl<T> AdjacencyIdentityAnalyzer<T>
+impl<Data> AdjacencyIdentityAnalyzer<Data>
 where
-    T: IdentifiableTile,
+    Data: IdentifiableTileData,
 {
-    fn analyze_tile_at_pos(&mut self, map: &GridMap2D<T>, pos: GridPosition) {
+    fn analyze_tile_at_pos(&mut self, map: &GridMap2D<Data>, pos: GridPosition) {
         if let Some(tile) = map.get_tile_at_position(&pos) {
             if !self.tiles.contains(&tile.tile_type_id()) {
                 self.tiles.push(tile.tile_type_id());
@@ -116,28 +121,28 @@ where
 
             for dir in GridDir::ALL {
                 if let Some(neighbour) = map.get_neighbour_at(&pos, dir) {
-                    self.adjacency_rules.add_adjacency(tile, neighbour, *dir)
+                    self.adjacency_rules.add_adjacency(&tile, &neighbour, *dir)
                 }
             }
         }
     }
 
-    pub fn adjacency(&self) -> &AdjacencyRules<T> {
+    pub fn adjacency(&self) -> &AdjacencyRules<Data> {
         &self.adjacency_rules
     }
 }
 
-impl<T> AdjacencyAnalyzer<T> for AdjacencyIdentityAnalyzer<T>
+impl<Data> AdjacencyAnalyzer<Data> for AdjacencyIdentityAnalyzer<Data>
 where
-    T: IdentifiableTile,
+    Data: IdentifiableTileData,
 {
-    fn analyze(&mut self, map: &GridMap2D<T>) {
+    fn analyze(&mut self, map: &GridMap2D<Data>) {
         for position in map.get_all_positions() {
             self.analyze_tile_at_pos(map, position);
         }
     }
 
-    fn adjacency(&self) -> &AdjacencyRules<T> {
+    fn adjacency(&self) -> &AdjacencyRules<Data> {
         &self.adjacency_rules
     }
 
@@ -146,21 +151,21 @@ where
     }
 }
 
-pub struct AdjacencyBorderAnalyzer<T>
+pub struct AdjacencyBorderAnalyzer<Data>
 where
-    T: IdentifiableTile,
+    Data: IdentifiableTileData,
 {
     tiles: Vec<u64>,
-    adjacency_rules: AdjacencyRules<T>,
+    adjacency_rules: AdjacencyRules<Data>,
     /// TileId key
-    inner: HashMap<u64, TileBordersAdjacency<T>>,
+    inner: HashMap<u64, TileBordersAdjacency<Data>>,
     /// BorderId key; (TileId; GridDir)
     border_types: HashMap<u64, Vec<(u64, GridDir)>>,
 }
 
-impl<T> Default for AdjacencyBorderAnalyzer<T>
+impl<Data> Default for AdjacencyBorderAnalyzer<Data>
 where
-    T: IdentifiableTile,
+    Data: IdentifiableTileData,
 {
     fn default() -> Self {
         Self {
@@ -172,11 +177,11 @@ where
     }
 }
 
-impl<T> AdjacencyAnalyzer<T> for AdjacencyBorderAnalyzer<T>
+impl<Data> AdjacencyAnalyzer<Data> for AdjacencyBorderAnalyzer<Data>
 where
-    T: IdentifiableTile,
+    Data: IdentifiableTileData,
 {
-    fn analyze(&mut self, map: &GridMap2D<T>) {
+    fn analyze(&mut self, map: &GridMap2D<Data>) {
         self.adjacency_rules = AdjacencyRules::default();
         for position in map.get_all_positions() {
             self.analyze_tile_at_pos(map, position);
@@ -184,7 +189,7 @@ where
         self.generate_adjacency_rules();
     }
 
-    fn adjacency(&self) -> &AdjacencyRules<T> {
+    fn adjacency(&self) -> &AdjacencyRules<Data> {
         &self.adjacency_rules
     }
 
@@ -193,11 +198,11 @@ where
     }
 }
 
-impl<T> AdjacencyBorderAnalyzer<T>
+impl<Data> AdjacencyBorderAnalyzer<Data>
 where
-    T: IdentifiableTile,
+    Data: IdentifiableTileData,
 {
-    pub fn add_adjacency(&mut self, tile: &T, neighbour: &T, direction: &GridDir) {
+    pub fn add_adjacency(&mut self, tile: &Data, neighbour: &Data, direction: &GridDir) {
         self.add_adjacency_raw(tile.tile_type_id(), neighbour.tile_type_id(), direction)
     }
 
@@ -205,7 +210,7 @@ where
         self.generate_adjacency_rules()
     }
 
-    fn analyze_tile_at_pos(&mut self, map: &GridMap2D<T>, pos: GridPosition) {
+    fn analyze_tile_at_pos(&mut self, map: &GridMap2D<Data>, pos: GridPosition) {
         if let Some(tile) = map.get_tile_at_position(&pos) {
             if !self.tiles.contains(&tile.tile_type_id()) {
                 self.tiles.push(tile.tile_type_id());
@@ -374,17 +379,17 @@ impl InnerAdjacency {
     }
 }
 
-struct TileBordersAdjacency<T>
+struct TileBordersAdjacency<Data>
 where
-    T: IdentifiableTile,
+    Data: IdentifiableTileData,
 {
     borders: HashMap<GridDir, u64>,
-    phantom: PhantomData<T>,
+    phantom: PhantomData<Data>,
 }
 
-impl<T> TileBordersAdjacency<T>
+impl<Data> TileBordersAdjacency<Data>
 where
-    T: IdentifiableTile,
+    Data: IdentifiableTileData,
 {
     fn set_at_dir(&mut self, dir: &GridDir, border_id: u64) {
         self.borders.insert(*dir, border_id);
@@ -395,14 +400,14 @@ where
     }
 }
 
-impl<T> Default for TileBordersAdjacency<T>
+impl<Data> Default for TileBordersAdjacency<Data>
 where
-    T: IdentifiableTile,
+    Data: IdentifiableTileData,
 {
     fn default() -> Self {
         Self {
             borders: HashMap::new(),
-            phantom: PhantomData::<T>,
+            phantom: PhantomData::<Data>,
         }
     }
 }
