@@ -2,7 +2,8 @@ use std::collections::BTreeMap;
 use std::marker::PhantomData;
 
 use crate::map::GridMap2D;
-use crate::tile::identifiable::{IdentifiableTile, IdentifiableTileData};
+use crate::tile::identifiable::IdentifiableTileData;
+use crate::tile::TileContainer;
 
 #[derive(Debug)]
 pub struct FrequencyHints<Data>
@@ -41,22 +42,25 @@ impl<Data> FrequencyHints<Data>
 where
     Data: IdentifiableTileData,
 {
-    pub fn set_weight_for_tile<Tile>(&mut self, tile: &Data, weight: u32)
+    pub fn set_weight_for_tile<Tile>(&mut self, tile: &Tile, weight: u32)
     where
-        Tile: IdentifiableTile<Data>,
+        Tile: TileContainer + AsRef<Data>,
     {
-        let entry = self.weights.entry(tile.tile_type_id()).or_default();
+        let entry = self
+            .weights
+            .entry(tile.as_ref().tile_type_id())
+            .or_default();
         *entry = weight;
     }
 
     pub fn count_tile<Tile>(&mut self, tile: &Tile)
     where
-        Tile: IdentifiableTile<Data>,
+        Tile: TileContainer + AsRef<Data>,
     {
-        if let Some(count) = self.weights.get_mut(&tile.tile_type_id()) {
+        if let Some(count) = self.weights.get_mut(&tile.as_ref().tile_type_id()) {
             *count += 1;
         } else {
-            self.weights.insert(tile.tile_type_id(), 1);
+            self.weights.insert(tile.as_ref().tile_type_id(), 1);
         }
     }
 

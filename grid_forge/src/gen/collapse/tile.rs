@@ -8,8 +8,8 @@ use rand::{
 use crate::{
     map::GridDir,
     tile::{
-        identifiable::{IdentifiableTile, IdentifiableTileData},
-        GridPosition, GridTile, GridTileRefMut, TileData, WithTilePosition,
+        identifiable::IdentifiableTileData, GridPosition, GridTile, GridTileRefMut, TileContainer,
+        TileData,
     },
 };
 

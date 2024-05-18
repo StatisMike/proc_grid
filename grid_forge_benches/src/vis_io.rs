@@ -1,16 +1,14 @@
 extern crate test;
 
 use grid_forge::{
-    tile::{
-        identifiable::{builders::IdentTileTraitBuilder, BasicIdentTileData},
-        vis::DefaultVisPixel,
-    },
+    tile::identifiable::{builders::IdentTileTraitBuilder, BasicIdentTileData},
     vis::{
         collection::VisCollection,
         ops::{
             init_map_image_buffer, load_gridmap_identifiable_auto,
             load_gridmap_identifiable_manual, write_gridmap_identifiable,
         },
+        DefaultVisPixel,
     },
 };
 use test::Bencher;

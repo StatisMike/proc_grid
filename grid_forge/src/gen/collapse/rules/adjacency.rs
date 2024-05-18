@@ -2,7 +2,7 @@ use std::{collections::HashMap, marker::PhantomData};
 
 use crate::{
     map::{GridDir, GridMap2D},
-    tile::identifiable::{IdentifiableTile, IdentifiableTileData},
+    tile::identifiable::IdentifiableTileData,
     tile::GridPosition,
 };
 
@@ -52,13 +52,17 @@ impl<Data> AdjacencyRules<Data>
 where
     Data: IdentifiableTileData,
 {
-    fn add_adjacency<Tile: IdentifiableTile<Data>>(
+    fn add_adjacency<Tile: AsRef<Data>>(
         &mut self,
         tile: &Tile,
         adjacent_tile: &Tile,
         direction: GridDir,
     ) {
-        self.add_adjacency_raw(tile.tile_type_id(), adjacent_tile.tile_type_id(), direction)
+        self.add_adjacency_raw(
+            tile.as_ref().tile_type_id(),
+            adjacent_tile.as_ref().tile_type_id(),
+            direction,
+        )
     }
 
     pub(crate) fn add_adjacency_raw(&mut self, tile_id: u64, adjacent_id: u64, direction: GridDir) {
@@ -115,11 +119,11 @@ where
 {
     fn analyze_tile_at_pos(&mut self, map: &GridMap2D<Data>, pos: GridPosition) {
         if let Some(tile) = map.get_tile_at_position(&pos) {
-            if !self.tiles.contains(&tile.tile_type_id()) {
-                self.tiles.push(tile.tile_type_id());
+            if !self.tiles.contains(&tile.as_ref().tile_type_id()) {
+                self.tiles.push(tile.as_ref().tile_type_id());
             }
 
-            for dir in GridDir::ALL {
+            for dir in GridDir::ALL_2D {
                 if let Some(neighbour) = map.get_neighbour_at(&pos, dir) {
                     self.adjacency_rules.add_adjacency(&tile, &neighbour, *dir)
                 }
@@ -212,13 +216,17 @@ where
 
     fn analyze_tile_at_pos(&mut self, map: &GridMap2D<Data>, pos: GridPosition) {
         if let Some(tile) = map.get_tile_at_position(&pos) {
-            if !self.tiles.contains(&tile.tile_type_id()) {
-                self.tiles.push(tile.tile_type_id());
+            if !self.tiles.contains(&tile.as_ref().tile_type_id()) {
+                self.tiles.push(tile.as_ref().tile_type_id());
             }
 
-            for dir in GridDir::ALL {
+            for dir in GridDir::ALL_2D {
                 if let Some(neighbour) = map.get_neighbour_at(&pos, dir) {
-                    self.add_adjacency_raw(tile.tile_type_id(), neighbour.tile_type_id(), dir);
+                    self.add_adjacency_raw(
+                        tile.as_ref().tile_type_id(),
+                        neighbour.as_ref().tile_type_id(),
+                        dir,
+                    );
                 }
             }
         }
@@ -354,7 +362,7 @@ struct InnerAdjacency {
 impl Default for InnerAdjacency {
     fn default() -> Self {
         let mut ia = HashMap::new();
-        for dir in GridDir::ALL {
+        for dir in GridDir::ALL_2D {
             ia.insert(*dir, Vec::new());
         }
         Self { ia }

@@ -1,7 +1,7 @@
 use std::io::BufReader;
 
 use godot::{
-    builtin::{GString, Vector2i},
+    builtin::GString,
     engine::{
         file_access::ModeFlags, AcceptDialog, FileAccess, GFile, TileMap, TileSet,
         TileSetAtlasSource,
@@ -17,16 +17,13 @@ use grid_forge::{
         ops::write_gridmap_to_tilemap,
     },
     map::GridMap2D,
-    tile::{
-        identifiable::{
-            builders::IdentTileTraitBuilder, collection::IdentTileCollection, BasicIdentTileData,
-        },
-        vis::{DefaultVisPixel, PixelWithDefault},
+    tile::identifiable::{
+        builders::IdentTileTraitBuilder, collection::IdentTileCollection, BasicIdentTileData,
     },
     vis::{
         collection::VisCollection,
         ops::{check_grid_vis_size, load_gridmap_identifiable_manual},
-        read_tile,
+        read_tile, DefaultVisPixel, PixelWithDefault,
     },
 };
 use image::ImageFormat;

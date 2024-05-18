@@ -12,7 +12,7 @@
 
 use self::builders::ConstructableViaIdentifierTile;
 
-use super::{GridPosition, GridTile, GridTileRef, GridTileRefMut, TileData, WithTilePosition};
+use super::{GridPosition, GridTile, TileData};
 
 pub mod builders;
 pub mod collection;
@@ -30,31 +30,6 @@ where
     Self: TileData,
 {
     fn tile_type_id(&self) -> u64;
-}
-
-pub trait IdentifiableTile<Data: IdentifiableTileData>
-where
-    Self: WithTilePosition,
-{
-    fn tile_type_id(&self) -> u64;
-}
-
-impl<Data: IdentifiableTileData> IdentifiableTile<Data> for GridTile<Data> {
-    fn tile_type_id(&self) -> u64 {
-        self.inner().tile_type_id()
-    }
-}
-
-impl<Data: IdentifiableTileData> IdentifiableTile<Data> for GridTileRef<'_, Data> {
-    fn tile_type_id(&self) -> u64 {
-        self.inner().tile_type_id()
-    }
-}
-
-impl<Data: IdentifiableTileData> IdentifiableTile<Data> for GridTileRefMut<'_, Data> {
-    fn tile_type_id(&self) -> u64 {
-        self.inner().tile_type_id()
-    }
 }
 
 /// Basic tile struct that implements [`IdentifiableTile`], holding only the most basic information.

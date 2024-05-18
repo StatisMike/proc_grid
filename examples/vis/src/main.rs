@@ -6,11 +6,11 @@
 
 use grid_forge::{
     map::{GridMap2D, GridSize},
-    tile::{
-        vis::{DefaultVisPixel, VisTileData},
-        GridTile, TileData,
+    tile::{GridTile, TileData},
+    vis::{
+        ops::{init_map_image_buffer, write_gridmap_vis},
+        DefaultVisPixel, VisTileData,
     },
-    vis::ops::{init_map_image_buffer, write_gridmap_vis},
 };
 use image::imageops;
 use rand::{Rng, SeedableRng};

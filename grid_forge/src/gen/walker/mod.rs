@@ -49,7 +49,7 @@ where
         let mut walked = Vec::new();
 
         for _ in 1..step_size {
-            if let Some(pos) = GridDir::ALL[idx].march_step(&current_pos, &self.size) {
+            if let Some(pos) = GridDir::ALL_2D[idx].march_step(&current_pos, &self.size) {
                 current_pos = pos;
                 walked.push(pos);
             } else {
@@ -179,7 +179,7 @@ where
 
         error.try_throw()?;
 
-        let dir_rng = rand::distributions::Uniform::new(0, GridDir::ALL.len());
+        let dir_rng = rand::distributions::Uniform::new(0, GridDir::ALL_2D.len());
         let step_rng = self.get_step_rng();
 
         let mut walked = HashSet::new();

@@ -1,8 +1,6 @@
 use grid::Grid;
 
-use crate::tile::{
-    GridPosition, GridTile, GridTileRef, GridTileRefMut, TileData, WithTilePosition,
-};
+use crate::tile::{GridPosition, GridTile, GridTileRef, GridTileRefMut, TileContainer, TileData};
 
 #[repr(u8)]
 #[derive(PartialEq, Eq, Debug, Clone, Copy, Hash)]
@@ -15,7 +13,7 @@ pub enum GridDir {
 
 impl GridDir {
     /// All possible directions from tile to tile within a [GridMap2D].
-    pub const ALL: &'static [GridDir; 4] =
+    pub const ALL_2D: &'static [GridDir; 4] =
         &[GridDir::UP, GridDir::DOWN, GridDir::LEFT, GridDir::RIGHT];
 
     /// Take a step in specified direction from position within the contains of specified [GridSize].
@@ -29,46 +27,47 @@ impl GridDir {
     /// use grid_forge::map::GridDir;
     /// use grid_forge::map::GridSize;
     ///
-    /// let size = GridSize::new(3, 3);
+    /// let size = GridSize::new_xy(3, 3);
     /// let position = GridPosition::new_xy(0, 1);
     ///
     /// assert_eq!(Some(GridPosition::new_xy(0, 0)), GridDir::UP.march_step(&position, &size));
     /// assert_eq!(None, GridDir::LEFT.march_step(&position, &size));
     /// ```
     pub fn march_step(&self, from: &GridPosition, size: &GridSize) -> Option<GridPosition> {
-        let (x_dif, y_dif) = match self {
+        let (x_dif, y_dif, z_dif) = match self {
             GridDir::UP => {
                 if from.y() == &0 {
                     return None;
                 }
-                (0i32, -1i32)
+                (0i32, -1i32, 0i32)
             }
             GridDir::DOWN => {
                 if from.y() + 1 == size.y() {
                     return None;
                 }
-                (0i32, 1i32)
+                (0i32, 1i32, 0i32)
             }
             GridDir::LEFT => {
                 if from.x() == &0 {
                     return None;
                 }
-                (-1i32, 0i32)
+                (-1i32, 0i32, 0i32)
             }
             GridDir::RIGHT => {
                 if from.x() + 1 == size.x() {
                     return None;
                 }
-                (1i32, 0i32)
+                (1i32, 0i32, 0i32)
             }
         };
-        let (x, y) = (
+        let (x, y, z) = (
             (x_dif.wrapping_add_unsigned(*from.x())) as u32,
             (y_dif.wrapping_add_unsigned(*from.y())) as u32,
+            from.z().map(|z| z_dif.wrapping_add_unsigned(z) as u32),
         );
 
-        if let Some(z) = from.z() {
-            Some(GridPosition::new_xyz(x, y, *z))
+        if let Some(z) = z {
+            Some(GridPosition::new_xyz(x, y, z))
         } else {
             Some(GridPosition::new_xy(x, y))
         }
@@ -178,12 +177,12 @@ impl GridSize {
         if &self.center.0 < position.x() {
             position.x() - self.center.0
         } else {
-            &self.center.0 - position.x()
+            self.center.0 - position.x()
         }
         .min(if &self.center.1 < position.y() {
             position.y() - self.center.1
         } else {
-            &self.center.1 - position.y()
+            self.center.1 - position.y()
         })
     }
 
@@ -194,11 +193,10 @@ impl GridSize {
 
 /// Basic two-dimensional GridMap.
 ///
-/// Grid Map holds data of all objects inside, with their [GridPosition2D] and [GridLayer] for easy access and additional
-/// methods for handling them.
+/// Grid Map holds data of all objects inside, with their [`GridPosition`] for easy access and additional methods for
+/// handling them.
 ///
-/// Extend of created GridMap usage stems from additional traits that are implemented for collected objects, with
-/// [GridTile2D] at minimum.
+/// Extend of created `GridMap` usage stems from additional traits that are implemented for collected objects.
 pub struct GridMap2D<Data: TileData> {
     pub(crate) size: GridSize,
     pub(crate) tiles: Grid<Option<Data>>,
@@ -259,7 +257,7 @@ impl<Data: TileData> GridMap2D<Data> {
     }
 
     pub fn insert_data(&mut self, position: &GridPosition, data: Data) -> bool {
-        if !self.size.is_position_valid(&position) {
+        if !self.size.is_position_valid(position) {
             return false;
         }
         let (x, y) = position.xy();
@@ -284,7 +282,7 @@ impl<Data: TileData> GridMap2D<Data> {
 
     /// Get tiles neighbouring the specified position.
     pub fn get_neighbours(&self, position: &GridPosition) -> Vec<GridTileRef<Data>> {
-        GridDir::ALL
+        GridDir::ALL_2D
             .iter()
             .filter_map(|direction| self.get_neighbour_at(position, direction))
             .collect::<Vec<_>>()
@@ -359,30 +357,38 @@ impl<Data: TileData> GridMap2D<Data> {
 
     pub fn iter_tiles(&self) -> impl Iterator<Item = GridTileRef<Data>> {
         self.tiles.indexed_iter().filter_map(|(pos, data)| {
-            if let Some(d) = data {
-                Some(GridTileRef::new(
-                    GridPosition::new_xy(pos.0 as u32, pos.1 as u32),
-                    d,
-                ))
-            } else {
-                None
-            }
+            data.as_ref()
+                .map(|d| GridTileRef::new(GridPosition::new_xy(pos.0 as u32, pos.1 as u32), d))
         })
     }
 
-    /// Destroys the GridMap, returning all tiles with their position adjusted
+    /// Destroys the GridMap, returning all tiles with their position adjusted in relation to the `anchor_pos`.
     pub fn drain_remapped(mut self, anchor_pos: GridPosition) -> Vec<GridTile<Data>> {
         self.get_all_positions()
             .iter()
             .filter_map(|pos| {
-                if let Some(data) = self.tiles.get_mut(*pos.x(), *pos.y()).unwrap().take() {
-                    Some(GridTile::new(anchor_pos + *pos, data))
-                } else {
-                    None
-                }
+                self.tiles
+                    .get_mut(*pos.x(), *pos.y())
+                    .unwrap()
+                    .take()
+                    .map(|data| GridTile::new(anchor_pos + *pos, data))
             })
             .collect()
     }
+
+        /// Destroys the GridMap, returning all tiles.
+        pub fn drain(mut self) -> Vec<GridTile<Data>> {
+            self.get_all_positions()
+                .iter()
+                .filter_map(|pos| {
+                    self.tiles
+                        .get_mut(*pos.x(), *pos.y())
+                        .unwrap()
+                        .take()
+                        .map(|data| GridTile::new(*pos, data))
+                })
+                .collect()
+        }
 
     /// Fills empty positions using constructor function.
     pub fn fill_empty_using(&mut self, func: fn(GridPosition) -> GridTile<Data>) {

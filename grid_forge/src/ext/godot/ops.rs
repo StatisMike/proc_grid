@@ -4,8 +4,7 @@ use crate::{
     map::{GridMap2D, GridSize},
     tile::{
         identifiable::{
-            builders::IdentTileBuilder, collection::IdentTileCollection, IdentifiableTile,
-            IdentifiableTileData,
+            builders::IdentTileBuilder, collection::IdentTileCollection, IdentifiableTileData,
         },
         GridPosition,
     },
@@ -76,14 +75,16 @@ pub fn write_gridmap_to_tilemap<Data: IdentifiableTileData>(
             .get_tile_at_position(&position)
             .expect("cannot get tile!");
 
-        if let Some(godot_info) = collection.get_tile_data(&tile.tile_type_id()) {
+        if let Some(godot_info) = collection.get_tile_data(&tile.as_ref().tile_type_id()) {
             godot_info.insert_to_tilemap(
                 tilemap,
                 position.get_godot_coords(),
-                position.get_godot_layer().unwrap_or_else(|| 0),
+                position.get_godot_layer().unwrap_or(0),
             )
         } else {
-            return Err(GodotTileError::new_no_info_for_id(tile.tile_type_id()));
+            return Err(GodotTileError::new_no_info_for_id(
+                tile.as_ref().tile_type_id(),
+            ));
         }
     }
     Ok(())

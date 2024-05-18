@@ -8,7 +8,7 @@ use grid_forge::{
     godot::godot::ops::{load_gridmap_from_tilemap_manual, write_gridmap_to_tilemap},
     map::GridSize,
     tile::identifiable::{
-        builders::IdentTileTraitBuilder, BasicIdentTileData, IdentifiableTile, IdentifiableTileData,
+        builders::IdentTileTraitBuilder, BasicIdentTileData, IdentifiableTileData,
     },
 };
 
@@ -118,10 +118,12 @@ fn test_from_grindmap_identical() {
             roads_map
                 .get_tile_at_position(&position)
                 .unwrap()
+                .as_ref()
                 .tile_type_id(),
             second_roads
                 .get_tile_at_position(&position)
                 .unwrap()
+                .as_ref()
                 .tile_type_id()
         );
     }
@@ -131,10 +133,12 @@ fn test_from_grindmap_identical() {
             seas_map
                 .get_tile_at_position(&position)
                 .unwrap()
+                .as_ref()
                 .tile_type_id(),
             second_seas
                 .get_tile_at_position(&position)
                 .unwrap()
+                .as_ref()
                 .tile_type_id()
         );
     }

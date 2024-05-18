@@ -1,4 +1,4 @@
-//! [`IdentifiableTile`] instance builders.
+//! [`IdentifiableTileData`] instance builders.
 //!
 //! Many methods in `grid_forge` needs to construct new instances of [`GridMap2D`](crate::map::GridMap2D) and fill them with
 //! new instances of tiles by their `tile_id`. For them to be flexible, they need to use a builder struct, using some strategy
@@ -20,39 +20,28 @@ use crate::tile::{GridPosition, GridTile};
 ///
 /// # Examples
 /// ```
-/// use grid_forge::GridPos2D;
-/// # use grid_forge::tile::GridTile2D;
-/// # use grid_forge::tile::identifiable::IdentifiableTile;
+/// use grid_forge::tile::{GridPosition, TileData, TileContainer};
+/// use grid_forge::tile::identifiable::IdentifiableTileData;
 /// use grid_forge::tile::identifiable::builders::{ConstructableViaIdentifierTile, IdentTileBuilder, IdentTileCloneBuilder};
 ///
-/// // Tile struct implementing `GridTile2D` and `IdentifiableTile`
 /// #[derive(Clone)]
-/// struct MyTile {
-///     pos: GridPos2D,
-///     tile_id: u64,
+/// struct MyTileData {
+///     tile_type_id: u64,
 ///     string: String
 /// }
-/// #
-/// # impl GridTile2D for MyTile {
-/// #     fn set_grid_position(&mut self, position: GridPos2D) {
-/// #         self.pos = position;
-/// #     }
-/// #
-/// #     fn grid_position(&self) -> GridPos2D {
-/// #         self.pos
-/// #     }
-/// # }
-/// #
-/// # impl IdentifiableTile for MyTile {
-/// #     fn tile_type_id(&self) -> u64 {
-/// #         self.tile_id
-/// #     }
-/// # }
 ///
-/// let mut builder = IdentTileCloneBuilder::<MyTile>::default();
+/// impl TileData for MyTileData {};
+///
+/// impl IdentifiableTileData for MyTileData {
+///     fn tile_type_id(&self) -> u64 {
+///         self.tile_type_id
+///     }
+/// }
+///
+/// let mut builder = IdentTileCloneBuilder::<MyTileData>::default();
 /// let tiles = vec![
-///     MyTile { pos: (0, 0), tile_id: 1, string: "First".to_string() },
-///     MyTile { pos: (0, 0), tile_id: 2, string: "Second".to_string() },
+///     MyTileData { tile_type_id: 1, string: "First".to_string() },
+///     MyTileData { tile_type_id: 2, string: "Second".to_string() },
 /// ];
 ///
 /// builder.add_tiles(&tiles, false);
@@ -63,11 +52,17 @@ use crate::tile::{GridPosition, GridTile};
 ///     panic!("Should return error!");
 /// }
 ///
-/// let tile_1st = builder.build_tile_unchecked((2,3), 1);
-/// assert_eq!(((2,3), 1, "First".to_string()), (tile_1st.pos, tile_1st.tile_id, tile_1st.string));
+/// let tile_1st = builder.build_tile_unchecked(GridPosition::new_xy(2,3), 1);
+/// assert_eq!(
+///     (GridPosition::new_xy(2,3), 1, &"First".to_string()), 
+///     (tile_1st.grid_position(), tile_1st.as_ref().tile_type_id, &tile_1st.as_ref().string)
+/// );
 ///
-/// let tile_2nd = builder.build_tile_unchecked((3,4), 2);
-/// assert_eq!(((3,4), 2, "Second".to_string()), (tile_2nd.pos, tile_2nd.tile_id, tile_2nd.string));
+/// let tile_2nd = builder.build_tile_unchecked(GridPosition::new_xy(3,4), 2);
+/// assert_eq!(
+///     (GridPosition::new_xy(3,4), 2, &"Second".to_string()), 
+///     (tile_2nd.grid_position(), tile_2nd.as_ref().tile_type_id, &tile_2nd.as_ref().string)
+/// );
 /// ```
 #[derive(Debug, Clone)]
 pub struct IdentTileCloneBuilder<Data: IdentifiableTileData + Clone> {

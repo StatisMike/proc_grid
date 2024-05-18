@@ -1,8 +1,7 @@
 use crate::{
     map::GridMap2D,
     tile::{
-        identifiable::{IdentifiableTile, IdentifiableTileData},
-        GridPosition, GridTile, GridTileRef,
+        identifiable::IdentifiableTileData, GridPosition, GridTile, GridTileRef, TileContainer,
     },
 };
 
@@ -34,7 +33,7 @@ where
     /// Update internal based on provided tile.
     fn update_queue<Tile>(&mut self, tile: &Tile)
     where
-        Tile: IdentifiableTile<CollapsibleTileData> + AsRef<CollapsibleTileData>;
+        Tile: TileContainer + AsRef<CollapsibleTileData>;
 
     /// Checks the current size of the inner queue.
     fn len(&self) -> usize;

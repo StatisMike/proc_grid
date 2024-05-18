@@ -1,7 +1,6 @@
 pub mod error;
 pub mod map;
 pub mod tile;
-pub(crate) mod utils;
 
 #[allow(clippy::non_minimal_cfg)]
 #[cfg(any(feature = "godot"))]

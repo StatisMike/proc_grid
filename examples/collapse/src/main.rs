@@ -26,10 +26,10 @@ use grid_forge::gen::collapse::*;
 use grid_forge::map::GridSize;
 use grid_forge::tile::identifiable::builders::IdentTileTraitBuilder;
 use grid_forge::tile::identifiable::BasicIdentTileData;
-use grid_forge::tile::vis::DefaultVisPixel;
 use grid_forge::tile::GridPosition;
 use grid_forge::vis::collection::VisCollection;
 use grid_forge::vis::ops::*;
+use grid_forge::vis::DefaultVisPixel;
 
 use rand::SeedableRng;
 

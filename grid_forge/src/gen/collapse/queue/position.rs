@@ -6,8 +6,7 @@ use crate::{
     gen::collapse::{frequency::FrequencyHints, tile::CollapsibleTileData},
     map::GridMap2D,
     tile::{
-        identifiable::{IdentifiableTile, IdentifiableTileData},
-        GridPosition, GridTile, GridTileRef, WithTilePosition,
+        identifiable::IdentifiableTileData, GridPosition, GridTile, GridTileRef, TileContainer,
     },
 };
 
@@ -97,7 +96,7 @@ impl CollapseQueue for PositionQueue {
 
     fn update_queue<Tile>(&mut self, tile: &Tile)
     where
-        Tile: IdentifiableTile<CollapsibleTileData> + AsRef<CollapsibleTileData>,
+        Tile: TileContainer + AsRef<CollapsibleTileData>,
     {
         if !self.positions.contains(&tile.grid_position()) {
             self.positions.push(tile.grid_position());

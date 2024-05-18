@@ -4,8 +4,8 @@ use std::marker::PhantomData;
 use crate::map::{GridDir, GridMap2D, GridSize};
 use crate::tile::identifiable::builders::{IdentTileBuilder, TileBuilderError};
 use crate::tile::identifiable::IdentifiableTileData;
-use crate::tile::WithTilePosition;
-use crate::tile::{identifiable::IdentifiableTile, GridPosition};
+use crate::tile::GridPosition;
+use crate::tile::TileContainer;
 
 use super::error::CollapseErrorKind;
 use super::frequency::FrequencyHints;
@@ -131,7 +131,7 @@ where
             let collapsed = to_collapse.collapse(rng)?;
 
             if collapsed {
-                let collapsed_id = to_collapse.tile_type_id();
+                let collapsed_id = to_collapse.as_ref().tile_type_id();
                 if !self.tile_ids.contains(&collapsed_id) {
                     self.tile_ids.push(collapsed_id);
                 }
@@ -202,7 +202,7 @@ where
         }
 
         // Check if option is valid for each direction.
-        for dir in GridDir::ALL {
+        for dir in GridDir::ALL_2D {
             if let Some(neighbour) = self.inner.get_neighbour_at(pos, dir) {
                 if omit_positions_unless_changed.contains(&neighbour.grid_position())
                     && !changed.contains(&neighbour.grid_position())
@@ -211,7 +211,8 @@ where
                 }
                 if neighbour.inner().is_collapsed() {
                     for option in tile.inner().options_with_weights.keys() {
-                        if !adjacency.is_valid_raw(*option, neighbour.tile_type_id(), *dir) {
+                        if !adjacency.is_valid_raw(*option, neighbour.as_ref().tile_type_id(), *dir)
+                        {
                             options_to_remove.push(*option);
                         }
                     }
@@ -264,8 +265,8 @@ where
             .get_tile_at_position(&pos)
             .expect("cant retrieve tile to propagate from");
         if tile.inner().is_collapsed() {
-            let tile_id = tile.tile_type_id();
-            for direction in GridDir::ALL {
+            let tile_id = tile.as_ref().tile_type_id();
+            for direction in GridDir::ALL_2D {
                 if let Some(mut neighbour) = self.inner.get_mut_neighbour_at(&pos, direction) {
                     if neighbour.inner().is_collapsed() {
                         continue;
@@ -295,7 +296,7 @@ where
                 .keys()
                 .copied()
                 .collect::<Vec<_>>();
-            for direction in GridDir::ALL {
+            for direction in GridDir::ALL_2D {
                 if let Some(mut neighbour) = self.inner.get_mut_neighbour_at(&pos, direction) {
                     if neighbour.as_ref().is_collapsed() {
                         continue;
@@ -339,7 +340,7 @@ where
                 continue;
             }
 
-            grid.insert_tile(builder.build_tile_unchecked(position, tile.tile_type_id()));
+            grid.insert_tile(builder.build_tile_unchecked(position, tile.as_ref().tile_type_id()));
         }
 
         Ok(grid)

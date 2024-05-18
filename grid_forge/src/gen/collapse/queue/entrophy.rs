@@ -10,8 +10,7 @@ use crate::{
     gen::collapse::{frequency::FrequencyHints, tile::CollapsibleTileData},
     map::GridMap2D,
     tile::{
-        identifiable::{IdentifiableTile, IdentifiableTileData},
-        GridPosition, GridTile, GridTileRef, WithTilePosition,
+        identifiable::IdentifiableTileData, GridPosition, GridTile, GridTileRef, TileContainer,
     },
 };
 
@@ -89,7 +88,7 @@ impl CollapseQueue for EntrophyQueue {
 
     fn update_queue<Tile>(&mut self, tile: &Tile)
     where
-        Tile: IdentifiableTile<CollapsibleTileData> + AsRef<CollapsibleTileData>,
+        Tile: TileContainer + AsRef<CollapsibleTileData>,
     {
         let item = EntrophyItem::new(tile.grid_position(), tile.as_ref().calc_entrophy());
         if let Some(existing_entrophy) = self.by_pos.remove(&item.pos) {

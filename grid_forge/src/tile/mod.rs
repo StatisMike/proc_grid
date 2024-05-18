@@ -1,9 +1,5 @@
 use std::ops::{Add, AddAssign};
 
-use grid::Grid;
-
-use self::identifiable::IdentifiableTileData;
-
 pub mod identifiable;
 
 #[cfg(feature = "vis")]
@@ -18,19 +14,15 @@ where
     data: Data,
 }
 
+/// Marker trait for structs that can be contained withing [`GridMap2D`](crate::map::GridMap2D) and [`TileContainer`]
 pub trait TileData: Sized {}
 
+/// Container of the [`TileData`] owning the data, when it is not yet passed to [`GridMap2D`](crate::map::GridMap2D) or
+/// after it was retrieved from it through [`drain`](crate::map::GridMap2D::drain) or [`drain_remapped`](crate::map::GridMap2D::drain_remapped)
 impl<Data: TileData> GridTile<Data> {
+    #[inline]
     pub fn new(position: GridPosition, data: Data) -> Self {
         Self { position, data }
-    }
-
-    pub fn inner(&self) -> &Data {
-        &self.data
-    }
-
-    pub fn inner_mut(&mut self) -> &mut Data {
-        &mut self.data
     }
 
     pub fn into_inner(self) -> Data {
@@ -38,7 +30,7 @@ impl<Data: TileData> GridTile<Data> {
     }
 }
 
-impl<Data: TileData> WithTilePosition for GridTile<Data> {
+impl<Data: TileData> TileContainer for GridTile<Data> {
     fn grid_position(&self) -> GridPosition {
         self.position
     }
@@ -56,6 +48,8 @@ impl<Data: TileData> AsMut<Data> for GridTile<Data> {
     }
 }
 
+/// Reference to the [`TileData`] contained within [`GridMap2D`](crate::map::GridMap2D). Underlying tile data
+/// can be accessed through [`AsRef`] implementation.
 pub struct GridTileRef<'a, Data>
 where
     Data: TileData,
@@ -71,6 +65,7 @@ impl<'a, Data: TileData> AsRef<Data> for GridTileRef<'a, Data> {
 }
 
 impl<'a, Data: TileData> GridTileRef<'a, Data> {
+    #[inline]
     pub fn new(position: GridPosition, data: &'a Data) -> Self {
         Self { position, data }
     }
@@ -84,12 +79,14 @@ impl<'a, Data: TileData> GridTileRef<'a, Data> {
     }
 }
 
-impl<Data: TileData> WithTilePosition for GridTileRef<'_, Data> {
+impl<Data: TileData> TileContainer for GridTileRef<'_, Data> {
     fn grid_position(&self) -> GridPosition {
         self.position
     }
 }
 
+/// Mutable reference to the [`TileData`] contained within [`GridMap2D`](crate::map::GridMap2D). Underlying tile data
+/// can be accessed through [`AsRef`] and [`AsMut`] implementations.
 pub struct GridTileRefMut<'a, Data>
 where
     Data: TileData,
@@ -111,6 +108,7 @@ impl<'a, Data: TileData> AsMut<Data> for GridTileRefMut<'a, Data> {
 }
 
 impl<'a, Data: TileData> GridTileRefMut<'a, Data> {
+    #[inline]
     pub fn new(position: GridPosition, data: &'a mut Data) -> Self {
         Self { position, data }
     }
@@ -131,12 +129,13 @@ impl<'a, Data: TileData> GridTileRefMut<'a, Data> {
     }
 }
 
-impl<Data: TileData> WithTilePosition for GridTileRefMut<'_, Data> {
+impl<Data: TileData> TileContainer for GridTileRefMut<'_, Data> {
     fn grid_position(&self) -> GridPosition {
         self.position
     }
 }
 
+/// Position of the [`TileData`] within a [`GridMap2D`](crate::map::GridMap2D).
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct GridPosition {
     x: u32,
@@ -178,6 +177,12 @@ impl GridPosition {
     pub fn add_xy(&mut self, xy: (u32, u32)) {
         self.x += xy.0;
         self.y += xy.1;
+    }
+
+    pub fn add_z(&mut self, z: u32) {
+        if let Some(zs) = &mut self.z {
+            *zs += z;
+        }
     }
 
     pub fn in_range(&self, other: &Self, range: u32) -> bool {
@@ -252,6 +257,9 @@ impl AddAssign for GridPosition {
     }
 }
 
-pub trait WithTilePosition {
+/// Trait gathering the containers for [`TileData`] outside of the [`GridMap2D`](crate::map::GridMap2D).
+/// 
+/// Allows accessing all the data not contained within tile data, making sense only in context of the grid map.
+pub trait TileContainer {
     fn grid_position(&self) -> GridPosition;
 }

@@ -3,11 +3,8 @@ extern crate test;
 use grid_forge::{
     gen::collapse::*,
     map::GridSize,
-    tile::{
-        identifiable::{builders::IdentTileTraitBuilder, BasicIdentTileData},
-        vis::DefaultVisPixel,
-    },
-    vis::{collection::VisCollection, ops::load_gridmap_identifiable_auto},
+    tile::identifiable::{builders::IdentTileTraitBuilder, BasicIdentTileData},
+    vis::{collection::VisCollection, ops::load_gridmap_identifiable_auto, DefaultVisPixel},
 };
 use rand::SeedableRng;
 use rand_chacha::ChaChaRng;
