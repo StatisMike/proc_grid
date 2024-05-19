@@ -1,4 +1,4 @@
-//! [`IdentifiableTile`] instance builders.
+//! [`IdentifiableTileData`] instance builders.
 //!
 //! Many methods in `grid_forge` needs to construct new instances of [`GridMap2D`](crate::map::GridMap2D) and fill them with
 //! new instances of tiles by their `tile_id`. For them to be flexible, they need to use a builder struct, using some strategy
@@ -12,69 +12,65 @@ use std::error::Error;
 use std::fmt::Display;
 use std::marker::PhantomData;
 
-use crate::tile::identifiable::IdentifiableTile;
-use crate::GridPos2D;
+use crate::tile::identifiable::IdentifiableTileData;
+use crate::tile::{GridPosition, GridTile};
 
 /// [`IdentTileBuilder`] which creates new tiles of [`Clone`]-implementing tile struct. Prototype of tile with each `tile_id` need to be
 /// provided to the builder via [`add_tiles`](Self::add_tiles).
 ///
 /// # Examples
 /// ```
-/// use grid_forge::GridPos2D;
-/// # use grid_forge::tile::GridTile2D;
-/// # use grid_forge::tile::identifiable::IdentifiableTile;
-/// use grid_forge::tile::identifiable::builders::{ConstructableViaIdentifierTile, IdentTileBuilder, IdentTileCloneBuilder};
+/// use grid_forge::tile::{GridPosition, TileData, TileContainer};
+/// use grid_forge::tile::identifiable::IdentifiableTileData;
+/// use grid_forge::tile::identifiable::builders::{IdentTileBuilder, IdentTileCloneBuilder};
 ///
-/// // Tile struct implementing `GridTile2D` and `IdentifiableTile`
+/// // Implementing custom TileData supported by `IdentTileCloneBuilder`.
 /// #[derive(Clone)]
-/// struct MyTile {
-///     pos: GridPos2D,
-///     tile_id: u64,
+/// struct MyTileData {
+///     tile_type_id: u64,
 ///     string: String
 /// }
-/// #
-/// # impl GridTile2D for MyTile {
-/// #     fn set_grid_position(&mut self, position: GridPos2D) {
-/// #         self.pos = position;
-/// #     }
-/// #
-/// #     fn grid_position(&self) -> GridPos2D {
-/// #         self.pos
-/// #     }
-/// # }
-/// #
-/// # impl IdentifiableTile for MyTile {
-/// #     fn get_tile_id(&self) -> u64 {
-/// #         self.tile_id
-/// #     }
-/// # }
 ///
-/// let mut builder = IdentTileCloneBuilder::<MyTile>::default();
+/// impl TileData for MyTileData {};
+///
+/// impl IdentifiableTileData for MyTileData {
+///     fn tile_type_id(&self) -> u64 {
+///         self.tile_type_id
+///     }
+/// }
+///
+/// let mut builder = IdentTileCloneBuilder::<MyTileData>::default();
 /// let tiles = vec![
-///     MyTile { pos: (0, 0), tile_id: 1, string: "First".to_string() },
-///     MyTile { pos: (0, 0), tile_id: 2, string: "Second".to_string() },
+///     MyTileData { tile_type_id: 1, string: "First".to_string() },
+///     MyTileData { tile_type_id: 2, string: "Second".to_string() },
 /// ];
 ///
 /// builder.add_tiles(&tiles, false);
 ///
-/// if let Err(err) = builder.check_missing_tile_creators(&[1,2,3]) {
-///     assert_eq!(&[3], err.get_missing_tile_ids());
+/// if let Err(err) = builder.check_missing_ids(&[1,2,3]) {
+///     assert_eq!(&[3], err.get_missing_tile_type_ids());
 /// } else {
 ///     panic!("Should return error!");
 /// }
 ///
-/// let tile_1st = builder.create_identifiable_tile((2,3), 1);
-/// assert_eq!(((2,3), 1, "First".to_string()), (tile_1st.pos, tile_1st.tile_id, tile_1st.string));
+/// let tile_1st = builder.build_tile_unchecked(GridPosition::new_xy(2,3), 1);
+/// assert_eq!(
+///     (GridPosition::new_xy(2,3), 1, &"First".to_string()),
+///     (tile_1st.grid_position(), tile_1st.as_ref().tile_type_id, &tile_1st.as_ref().string)
+/// );
 ///
-/// let tile_2nd = builder.create_identifiable_tile((3,4), 2);
-/// assert_eq!(((3,4), 2, "Second".to_string()), (tile_2nd.pos, tile_2nd.tile_id, tile_2nd.string));
+/// let tile_2nd = builder.build_tile_unchecked(GridPosition::new_xy(3,4), 2);
+/// assert_eq!(
+///     (GridPosition::new_xy(3,4), 2, &"Second".to_string()),
+///     (tile_2nd.grid_position(), tile_2nd.as_ref().tile_type_id, &tile_2nd.as_ref().string)
+/// );
 /// ```
 #[derive(Debug, Clone)]
-pub struct IdentTileCloneBuilder<T: IdentifiableTile + Clone> {
-    tiles: BTreeMap<u64, T>,
+pub struct IdentTileCloneBuilder<Data: IdentifiableTileData + Clone> {
+    tiles: BTreeMap<u64, Data>,
 }
 
-impl<T: IdentifiableTile + Clone> Default for IdentTileCloneBuilder<T> {
+impl<T: IdentifiableTileData + Clone> Default for IdentTileCloneBuilder<T> {
     fn default() -> Self {
         Self {
             tiles: BTreeMap::new(),
@@ -82,11 +78,11 @@ impl<T: IdentifiableTile + Clone> Default for IdentTileCloneBuilder<T> {
     }
 }
 
-impl<T: IdentifiableTile + Clone> IdentTileCloneBuilder<T> {
+impl<Data: IdentifiableTileData + Clone> IdentTileCloneBuilder<Data> {
     /// Provide tile prototypes to the builder, which will be used to create new tile instances.
     ///
     /// If `overwrite` is `true`, then if prototype for given `tile_id` has been already saved, it will be overwritten.
-    pub fn add_tiles(&mut self, tiles: &[T], overwrite: bool) {
+    pub fn add_tiles(&mut self, tiles: &[Data], overwrite: bool) {
         for tile in tiles {
             if !overwrite && self.tiles.contains_key(&tile.tile_type_id()) {
                 continue;
@@ -96,29 +92,32 @@ impl<T: IdentifiableTile + Clone> IdentTileCloneBuilder<T> {
     }
 }
 
-impl<T: IdentifiableTile + Clone> IdentTileBuilder<T> for IdentTileCloneBuilder<T> {
-    fn build_tile_unchecked(&self, pos: GridPos2D, tile_id: u64) -> T {
-        let mut tile = self
+impl<Data: IdentifiableTileData + Clone> IdentTileBuilder<Data> for IdentTileCloneBuilder<Data> {
+    fn build_tile_unchecked(&self, position: GridPosition, tile_type_id: u64) -> GridTile<Data> {
+        let tile_data = self
             .tiles
-            .get(&tile_id)
-            .unwrap_or_else(|| panic!("can't get tile with tile id: {tile_id}"))
+            .get(&tile_type_id)
+            .unwrap_or_else(|| panic!("can't get tile_data with `tile_type_id`: {tile_type_id}"))
             .clone();
-        tile.set_grid_position(pos);
-        tile
+
+        GridTile::new(position, tile_data)
     }
 
-    fn build_tile(&self, pos: GridPos2D, tile_id: u64) -> Result<T, TileBuilderError> {
-        if let Some(tile) = self.tiles.get(&tile_id) {
-            let mut cloned = tile.clone();
-            cloned.set_grid_position(pos);
-            Ok(cloned)
+    fn build_tile(
+        &self,
+        position: GridPosition,
+        tile_type_id: u64,
+    ) -> Result<GridTile<Data>, TileBuilderError> {
+        if let Some(tile) = self.tiles.get(&tile_type_id) {
+            let data = tile.clone();
+            Ok(GridTile::new(position, data))
         } else {
-            Err(TileBuilderError::new(&[tile_id]))
+            Err(TileBuilderError::new(&[tile_type_id]))
         }
     }
 
-    fn check_missing_ids(&self, tile_ids: &[u64]) -> Result<(), TileBuilderError> {
-        let missing_ids = tile_ids
+    fn check_missing_ids(&self, tile_type_ids: &[u64]) -> Result<(), TileBuilderError> {
+        let missing_ids = tile_type_ids
             .iter()
             .filter(|tile_id| !self.tiles.contains_key(tile_id))
             .copied()
@@ -137,57 +136,48 @@ impl<T: IdentifiableTile + Clone> IdentTileBuilder<T> for IdentTileCloneBuilder<
 ///
 /// # Examples
 /// ```
-/// use grid_forge::GridPos2D;
-/// # use grid_forge::tile::GridTile2D;
-/// # use grid_forge::tile::identifiable::IdentifiableTile;
-/// use grid_forge::tile::identifiable::builders::{ConstructableViaIdentifierTile, IdentTileBuilder, IdentTileFunBuilder};
+/// use grid_forge::tile::{GridPosition, TileData, TileContainer};
+/// use grid_forge::tile::identifiable::IdentifiableTileData;
+/// use grid_forge::tile::identifiable::builders::{IdentTileBuilder, IdentTileFunBuilder};
 ///
-/// // Tile struct implementing `GridTile2D` and `IdentifiableTile`
-/// struct MyTile {
-///     pos: GridPos2D,
-///     tile_id: u64,
+/// // Implementing custom TileData supported by `IdentTileCloneBuilder`.
+/// #[derive(Clone)]
+/// struct MyTileData {
+///     tile_type_id: u64,
 ///     traversible: bool
 /// }
-/// #
-/// # impl GridTile2D for MyTile {
-/// #     fn set_grid_position(&mut self, position: GridPos2D) {
-/// #         self.pos = position;
-/// #     }
-/// #
-/// #     fn grid_position(&self) -> GridPos2D {
-/// #         self.pos
-/// #     }
-/// # }
-/// #
-/// # impl IdentifiableTile for MyTile {
-/// #     fn get_tile_id(&self) -> u64 {
-/// #         self.tile_id
-/// #     }
-/// # }
 ///
-/// let mut builder = IdentTileFunBuilder::<MyTile>::default();
-/// builder.set_tile_constructor(1, |pos: GridPos2D, tile_id: u64|( MyTile { pos, tile_id, traversible: true} ));
-/// builder.set_tile_constructor(2, |pos: GridPos2D, tile_id: u64|( MyTile { pos, tile_id, traversible: false} ));
+/// impl TileData for MyTileData {};
 ///
-/// if let Err(err) = builder.check_missing_tile_creators(&[1,2,3]) {
-///     assert_eq!(&[3], err.get_missing_tile_ids());
+/// impl IdentifiableTileData for MyTileData {
+///     fn tile_type_id(&self) -> u64 {
+///         self.tile_type_id
+///     }
+/// }
+///
+/// let mut builder = IdentTileFunBuilder::<MyTileData>::default();
+/// builder.set_tile_constructor(1, ||( MyTileData { tile_type_id: 1, traversible: true} ));
+/// builder.set_tile_constructor(2, ||( MyTileData { tile_type_id: 2, traversible: false} ));
+///
+/// if let Err(err) = builder.check_missing_ids(&[1,2,3]) {
+///     assert_eq!(&[3], err.get_missing_tile_type_ids());
 /// } else {
 ///     panic!("Should return error!");
 /// }
 ///
-/// let tile_1st = builder.create_identifiable_tile((2,3), 1);
-/// assert_eq!(((2,3), 1, true), (tile_1st.pos, tile_1st.tile_id, tile_1st.traversible));
+/// let tile_1st = builder.build_tile_unchecked(GridPosition::new_xy(2,3), 1);
+/// assert_eq!((GridPosition::new_xy(2,3), 1, true), (tile_1st.grid_position(), tile_1st.as_ref().tile_type_id(), tile_1st.as_ref().traversible));
 ///
-/// let tile_2nd = builder.create_identifiable_tile((3,4), 2);
-/// assert_eq!(((3,4), 2, false), (tile_2nd.pos, tile_2nd.tile_id, tile_2nd.traversible));
+/// let tile_2nd = builder.build_tile_unchecked(GridPosition::new_xy(3,4), 2);
+/// assert_eq!((GridPosition::new_xy(3,4), 2, false), (tile_2nd.grid_position(), tile_2nd.as_ref().tile_type_id(), tile_2nd.as_ref().traversible));
 /// ```
 #[derive(Debug, Clone)]
-pub struct IdentTileFunBuilder<T: IdentifiableTile> {
-    funs: BTreeMap<u64, fn(GridPos2D, u64) -> T>,
+pub struct IdentTileFunBuilder<T: IdentifiableTileData> {
+    funs: BTreeMap<u64, fn() -> T>,
 }
 
-impl<T: IdentifiableTile> IdentTileFunBuilder<T> {
-    pub fn set_tile_constructor(&mut self, tile_id: u64, constructor: fn(GridPos2D, u64) -> T) {
+impl<Data: IdentifiableTileData> IdentTileFunBuilder<Data> {
+    pub fn set_tile_constructor(&mut self, tile_id: u64, constructor: fn() -> Data) {
         self.funs.insert(tile_id, constructor);
     }
 
@@ -196,7 +186,7 @@ impl<T: IdentifiableTile> IdentTileFunBuilder<T> {
     }
 }
 
-impl<T: IdentifiableTile> Default for IdentTileFunBuilder<T> {
+impl<Data: IdentifiableTileData> Default for IdentTileFunBuilder<Data> {
     fn default() -> Self {
         Self {
             funs: BTreeMap::new(),
@@ -204,19 +194,22 @@ impl<T: IdentifiableTile> Default for IdentTileFunBuilder<T> {
     }
 }
 
-impl<T: IdentifiableTile> IdentTileBuilder<T> for IdentTileFunBuilder<T> {
-    fn build_tile_unchecked(&self, pos: GridPos2D, tile_id: u64) -> T {
-        let fun = self
-            .funs
-            .get(&tile_id)
-            .unwrap_or_else(|| panic!("can't get tile function with `wfc_id`: {tile_id}"));
+impl<Data: IdentifiableTileData> IdentTileBuilder<Data> for IdentTileFunBuilder<Data> {
+    fn build_tile_unchecked(&self, position: GridPosition, tile_type_id: u64) -> GridTile<Data> {
+        let fun = self.funs.get(&tile_type_id).unwrap_or_else(|| {
+            panic!("can't get tile constructor function for `tile_type_id`: {tile_type_id}")
+        });
 
-        fun(pos, tile_id)
+        GridTile::new(position, fun())
     }
 
-    fn build_tile(&self, pos: GridPos2D, tile_id: u64) -> Result<T, TileBuilderError> {
+    fn build_tile(
+        &self,
+        position: GridPosition,
+        tile_id: u64,
+    ) -> Result<GridTile<Data>, TileBuilderError> {
         if let Some(fun) = self.funs.get(&tile_id) {
-            Ok(fun(pos, tile_id))
+            Ok(GridTile::new(position, fun()))
         } else {
             Err(TileBuilderError::new(&[tile_id]))
         }
@@ -237,89 +230,88 @@ impl<T: IdentifiableTile> IdentTileBuilder<T> for IdentTileFunBuilder<T> {
     }
 }
 
-/// Trait which allows creating new istance of struct implementing [`IdentifiableTile`].
+/// Trait which allows creating new istance of struct implementing [`IdentifiableTileData`].
 ///
-/// See also [`BasicIdentifiableTile2D`](crate::tile::identifiable::BasicIdentifiableTile2D) for basic identifiable tile type,
-/// implementing this trait out of the box, for applications where you don't need your tile struct to hold any additional information.
+/// See also [`BasicIdentTileData`](crate::tile::identifiable::BasicIdentTileData) for basic identifiable tile type which
+/// implements this trait out of the box whenever you don't need your tile struct to hold any additional information.
 ///
 /// # Examples
 ///
 /// Implementing this trait for you custom tile makes it constructable via [`IdentTileTraitBuilder`].
 ///
 /// ```
-/// use grid_forge::GridPos2D;
-/// # use grid_forge::tile::GridTile2D;
-/// # use grid_forge::tile::identifiable::IdentifiableTile;
+/// use grid_forge::tile::{GridPosition, TileData, TileContainer};
+/// use grid_forge::tile::identifiable::IdentifiableTileData;
 /// use grid_forge::tile::identifiable::builders::{ConstructableViaIdentifierTile, IdentTileBuilder, IdentTileTraitBuilder};
 ///
-/// // Tile struct implementing `GridTile2D` and `IdentifiableTile`
-/// struct MyTile {
-///     pos: GridPos2D,
-///     tile_id: u64
+/// // Implementing custom TileData supported by `IdentTileCloneBuilder`.
+/// #[derive(Clone)]
+/// struct MyTileData {
+///     tile_type_id: u64,
 /// }
 ///
-/// # impl GridTile2D for MyTile {
-/// #     fn set_grid_position(&mut self, position: GridPos2D) {
-/// #         self.pos = position;
-/// #     }
-/// #
-/// #     fn grid_position(&self) -> GridPos2D {
-/// #         self.pos
-/// #     }
-/// # }
-/// #
-/// # impl IdentifiableTile for MyTile {
-/// #     fn get_tile_id(&self) -> u64 {
-/// #         self.tile_id
-/// #     }
-/// # }
-/// impl ConstructableViaIdentifierTile for MyTile {
-///     fn tile_new(pos: GridPos2D, tile_id: u64) -> Self {
-///         Self { pos, tile_id }
+/// impl TileData for MyTileData {};
+///
+/// impl IdentifiableTileData for MyTileData {
+///     fn tile_type_id(&self) -> u64 {
+///         self.tile_type_id
 ///     }
 /// }
 ///
-/// let builder = IdentTileTraitBuilder::<MyTile>::default();
-/// let tile = builder.create_identifiable_tile((2,3), 45);
+/// impl ConstructableViaIdentifierTile for MyTileData {
+///     fn tile_new(tile_type_id: u64) -> Self {
+///         Self { tile_type_id }
+///     }
+/// }
 ///
-/// assert_eq!((2,3), tile.grid_position());
-/// assert_eq!(45, tile.get_tile_id());
+/// let builder = IdentTileTraitBuilder::<MyTileData>::default();
+/// let tile = builder.build_tile_unchecked(GridPosition::new_xy(2,3), 45);
+///
+/// assert_eq!(GridPosition::new_xy(2,3), tile.grid_position());
+/// assert_eq!(45, tile.as_ref().tile_type_id());
 /// ```
 pub trait ConstructableViaIdentifierTile
 where
-    Self: IdentifiableTile,
+    Self: IdentifiableTileData,
 {
-    fn tile_new(pos: GridPos2D, tile_id: u64) -> Self;
+    fn tile_new(tile_type_id: u64) -> Self;
 }
 
 /// [`IdentTileBuilder`] which creates new tiles with given identifier based on the tile implementation of
-/// [`ConstructableViaIdentifierTile`]. No need to add any tile creators.
+/// [`ConstructableViaIdentifierTile`].
 ///
-/// [`IdentTileBuilder::check_missing_ids`] is an no-op for this struct.
+/// There's no need to add any tile creators, as it is purely based on implemented traits, so [`IdentTileBuilder::check_missing_ids`]
+/// is an no-op for this struct.
 ///
 /// Refer to documentation of [`ConstructableViaIdentifierTile`] for usage example.
 #[derive(Debug, Clone)]
-pub struct IdentTileTraitBuilder<T: IdentifiableTile + ConstructableViaIdentifierTile> {
-    phantom: PhantomData<T>,
+pub struct IdentTileTraitBuilder<Data: IdentifiableTileData + ConstructableViaIdentifierTile> {
+    phantom: PhantomData<Data>,
 }
 
-impl<T: IdentifiableTile + ConstructableViaIdentifierTile> Default for IdentTileTraitBuilder<T> {
+impl<Data: IdentifiableTileData + ConstructableViaIdentifierTile> Default
+    for IdentTileTraitBuilder<Data>
+{
     fn default() -> Self {
         Self {
-            phantom: PhantomData::<T>,
+            phantom: PhantomData::<Data>,
         }
     }
 }
 
-impl<T: IdentifiableTile + ConstructableViaIdentifierTile> IdentTileBuilder<T>
-    for IdentTileTraitBuilder<T>
+impl<Data: IdentifiableTileData + ConstructableViaIdentifierTile> IdentTileBuilder<Data>
+    for IdentTileTraitBuilder<Data>
 {
-    fn build_tile_unchecked(&self, pos: GridPos2D, tile_id: u64) -> T {
-        T::tile_new(pos, tile_id)
+    fn build_tile_unchecked(&self, position: GridPosition, tile_type_id: u64) -> GridTile<Data> {
+        GridTile::new(position, Data::tile_new(tile_type_id))
     }
 
-    fn build_tile(&self, pos: GridPos2D, tile_id: u64) -> Result<T, TileBuilderError> {
-        Ok(T::tile_new(pos, tile_id))
+    fn build_tile(
+        &self,
+        position: GridPosition,
+        tile_type_id: u64,
+    ) -> Result<GridTile<Data>, TileBuilderError> {
+        Ok(self.build_tile_unchecked(position, tile_type_id))
     }
 
     fn check_missing_ids(&self, _tile_ids: &[u64]) -> Result<(), TileBuilderError> {
@@ -334,20 +326,29 @@ impl<T: IdentifiableTile + ConstructableViaIdentifierTile> IdentTileBuilder<T>
 /// - [`IdentTileFunBuilder`] - for tiles not implementing any additional traits.
 /// - [`IdentTileCloneBuilder`] - for tiles implementing [`Clone`].
 /// - [`IdentTileTraitBuilder`] - for tiles implementing [`ConstructableViaIdentifierTile`].
-pub trait IdentTileBuilder<T: IdentifiableTile> {
+///
+/// The logic for building tile is encapsulated in [`build_tile_unchecked`](IdentTileBuilder::build_tile_unchecked) and
+/// [`build_tile`](IdentTileBuilder::build_tile) methods. The `unchecked` version is usually faster and is recommended
+/// to be used when creating a batch of tiles at once - can be used reliably if [`check_missing_ids`](IdentTileBuilder::check_missing_ids)
+/// is called before beginning the batch operation.
+pub trait IdentTileBuilder<Data: IdentifiableTileData> {
     /// Creates tile with given tile identifier at given grid position.
     ///
     /// # Panics
     /// Can panic if builder does not have possibility to construct tile of given `tile_id` based on the gathered information. You can check
     /// for missing tile ids with [`check_missing_ids`](IdentTileBuilder::check_missing_ids) or use its fallible version:
     /// [`build_tile`](IdentTileBuilder::build_tile).
-    fn build_tile_unchecked(&self, pos: GridPos2D, tile_id: u64) -> T;
+    fn build_tile_unchecked(&self, position: GridPosition, tile_type_id: u64) -> GridTile<Data>;
 
     /// Creates tile with given tile identifier at given grid position. Returns error if cannot construct tile of given `tile_id`.
-    fn build_tile(&self, pos: GridPos2D, tile_id: u64) -> Result<T, TileBuilderError>;
+    fn build_tile(
+        &self,
+        position: GridPosition,
+        tile_type_id: u64,
+    ) -> Result<GridTile<Data>, TileBuilderError>;
 
     /// Checks for missing tile creators out of provided slice of `tile_id`.
-    fn check_missing_ids(&self, tile_ids: &[u64]) -> Result<(), TileBuilderError>;
+    fn check_missing_ids(&self, tile_type_ids: &[u64]) -> Result<(), TileBuilderError>;
 }
 
 /// Error stemming from missing tiles in [`IdentTileBuilder`].

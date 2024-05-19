@@ -7,20 +7,19 @@ use rand::Rng;
 
 use super::{CollapseQueue, ResolverSelector};
 use crate::{
-    gen::collapse::{frequency::FrequencyHints, tile::CollapsibleTile},
+    gen::collapse::{frequency::FrequencyHints, tile::CollapsibleTileData},
     map::GridMap2D,
-    tile::{identifiable::IdentifiableTile, GridTile2D},
-    GridPos2D,
+    tile::{identifiable::IdentifiableTileData, GridPosition, GridTile, TileContainer},
 };
 
 #[derive(Clone, Copy)]
 pub(crate) struct EntrophyItem {
-    pos: GridPos2D,
+    pos: GridPosition,
     entrophy: f32,
 }
 
 impl EntrophyItem {
-    pub fn new(pos: GridPos2D, entrophy: f32) -> Self {
+    pub fn new(pos: GridPosition, entrophy: f32) -> Self {
         Self { pos, entrophy }
     }
 }
@@ -42,10 +41,7 @@ impl PartialOrd for EntrophyItem {
 impl Ord for EntrophyItem {
     fn cmp(&self, other: &Self) -> Ordering {
         match self.entrophy.partial_cmp(&other.entrophy) {
-            Some(Ordering::Equal) | None => match self.pos.0.cmp(&other.pos.0) {
-                Ordering::Equal => self.pos.1.cmp(&other.pos.1),
-                order => order,
-            },
+            Some(Ordering::Equal) | None => self.pos.cmp(&other.pos),
             Some(order) => order,
         }
     }
@@ -54,14 +50,33 @@ impl Ord for EntrophyItem {
 /// Select next position to collapse using smallest entrophy condition.
 ///
 /// Its state will be updated every time after tile entrophy changed by removing some of its options.
-#[derive(Default)]
 pub struct EntrophyQueue {
     by_entrophy: BTreeSet<EntrophyItem>,
-    by_pos: HashMap<GridPos2D, f32>,
+    by_pos: HashMap<GridPosition, f32>,
+    propagation_range: u32,
+}
+
+impl EntrophyQueue {
+    pub fn new(propagation_range: u32) -> Self {
+        Self {
+            propagation_range,
+            ..Default::default()
+        }
+    }
+}
+
+impl Default for EntrophyQueue {
+    fn default() -> Self {
+        Self {
+            by_entrophy: BTreeSet::new(),
+            by_pos: HashMap::new(),
+            propagation_range: 5,
+        }
+    }
 }
 
 impl CollapseQueue for EntrophyQueue {
-    fn get_next_position(&mut self) -> Option<GridPos2D> {
+    fn get_next_position(&mut self) -> Option<GridPosition> {
         if let Some(item) = self.by_entrophy.pop_first() {
             self.by_pos.remove(&item.pos);
             return Some(item.pos);
@@ -69,8 +84,11 @@ impl CollapseQueue for EntrophyQueue {
         None
     }
 
-    fn update_queue(&mut self, tile: &CollapsibleTile) {
-        let item = EntrophyItem::new(tile.grid_position(), tile.calc_entrophy());
+    fn update_queue<Tile>(&mut self, tile: &Tile)
+    where
+        Tile: TileContainer + AsRef<CollapsibleTileData>,
+    {
+        let item = EntrophyItem::new(tile.grid_position(), tile.as_ref().calc_entrophy());
         if let Some(existing_entrophy) = self.by_pos.remove(&item.pos) {
             self.by_entrophy
                 .remove(&EntrophyItem::new(item.pos, existing_entrophy));
@@ -87,7 +105,7 @@ impl CollapseQueue for EntrophyQueue {
         self.by_entrophy.is_empty()
     }
 
-    fn initialize_queue(&mut self, tiles: &[CollapsibleTile]) {
+    fn initialize_queue(&mut self, tiles: &[GridTile<CollapsibleTileData>]) {
         for element in tiles {
             self.update_queue(element)
         }
@@ -95,14 +113,15 @@ impl CollapseQueue for EntrophyQueue {
 }
 
 impl ResolverSelector for EntrophyQueue {
-    fn populate_inner_grid<R: Rng, InputTile: IdentifiableTile>(
+    fn populate_inner_grid<Data: IdentifiableTileData, R: Rng>(
         &mut self,
         rng: &mut R,
-        grid: &mut GridMap2D<CollapsibleTile>,
-        positions: &[GridPos2D],
-        frequency: &FrequencyHints<InputTile>,
+        grid: &mut GridMap2D<CollapsibleTileData>,
+        positions: &[GridPosition],
+        frequency: &FrequencyHints<Data>,
     ) {
-        let tiles = CollapsibleTile::new_from_frequency_with_entrophy(rng, positions, frequency);
+        let tiles =
+            CollapsibleTileData::new_from_frequency_with_entrophy(rng, positions, frequency);
 
         self.initialize_queue(&tiles);
 
@@ -117,5 +136,9 @@ impl ResolverSelector for EntrophyQueue {
 
     fn propagating(&self) -> bool {
         true
+    }
+
+    fn in_propagaton_range(&self, collapsed: &GridPosition, candidate: &GridPosition) -> bool {
+        collapsed.in_range(candidate, self.propagation_range)
     }
 }

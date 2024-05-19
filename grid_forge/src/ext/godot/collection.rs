@@ -1,13 +1,9 @@
-use std::{
-    collections::{hash_map::Entry, HashMap},
-    hash::{DefaultHasher, Hash, Hasher},
-};
+use std::collections::hash_map::{Entry, HashMap};
+use std::hash::{DefaultHasher, Hash, Hasher};
 
-use godot::{
-    builtin::{Vector2i, Vector3i},
-    engine::{GridMap, TileMap, TileSet, TileSetAtlasSource, TileSetScenesCollectionSource},
-    obj::Gd,
-};
+use godot::builtin::{Vector2i, Vector3i};
+use godot::engine::{GridMap, TileMap, TileSet, TileSetAtlasSource, TileSetScenesCollectionSource};
+use godot::obj::Gd;
 
 use crate::tile::identifiable::collection::IdentTileCollection;
 

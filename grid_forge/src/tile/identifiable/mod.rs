@@ -11,9 +11,8 @@
 //! present on the struct.
 
 use self::builders::ConstructableViaIdentifierTile;
-use crate::GridPos2D;
 
-use super::GridTile2D;
+use super::TileData;
 
 pub mod builders;
 pub mod collection;
@@ -26,41 +25,29 @@ pub mod collection;
 /// on the GridMap.
 /// - other properties of the tile (such as visual representation) *can* be taken into account depending on your specific
 /// needs.
-pub trait IdentifiableTile
+pub trait IdentifiableTileData
 where
-    Self: GridTile2D,
+    Self: TileData,
 {
     fn tile_type_id(&self) -> u64;
 }
 
 /// Basic tile struct that implements [`IdentifiableTile`], holding only the most basic information.
 #[derive(Clone, Copy, Debug)]
-pub struct BasicIdentifiableTile2D {
-    pos: GridPos2D,
+pub struct BasicIdentTileData {
     tile_type_id: u64,
 }
 
-impl GridTile2D for BasicIdentifiableTile2D {
-    fn grid_position(&self) -> GridPos2D {
-        self.pos
-    }
+impl TileData for BasicIdentTileData {}
 
-    fn set_grid_position(&mut self, position: GridPos2D) {
-        self.pos = position
-    }
-}
-
-impl IdentifiableTile for BasicIdentifiableTile2D {
+impl IdentifiableTileData for BasicIdentTileData {
     fn tile_type_id(&self) -> u64 {
         self.tile_type_id
     }
 }
 
-impl ConstructableViaIdentifierTile for BasicIdentifiableTile2D {
-    fn tile_new(pos: GridPos2D, tile_id: u64) -> Self {
-        Self {
-            pos,
-            tile_type_id: tile_id,
-        }
+impl ConstructableViaIdentifierTile for BasicIdentTileData {
+    fn tile_new(tile_type_id: u64) -> Self {
+        BasicIdentTileData { tile_type_id }
     }
 }

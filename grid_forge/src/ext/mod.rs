@@ -1,2 +1,2 @@
 #[cfg(feature = "godot")]
-pub mod godot;
+pub(crate) mod godot;

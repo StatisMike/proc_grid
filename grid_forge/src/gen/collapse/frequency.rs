@@ -2,32 +2,33 @@ use std::collections::BTreeMap;
 use std::marker::PhantomData;
 
 use crate::map::GridMap2D;
-use crate::tile::identifiable::IdentifiableTile;
+use crate::tile::identifiable::IdentifiableTileData;
+use crate::tile::TileContainer;
 
 #[derive(Debug)]
-pub struct FrequencyHints<T>
+pub struct FrequencyHints<Data>
 where
-    T: IdentifiableTile,
+    Data: IdentifiableTileData,
 {
     weights: BTreeMap<u64, u32>,
-    id_type: PhantomData<T>,
+    id_type: PhantomData<Data>,
 }
 
-impl<T> Clone for FrequencyHints<T>
+impl<Data> Clone for FrequencyHints<Data>
 where
-    T: IdentifiableTile,
+    Data: IdentifiableTileData,
 {
     fn clone(&self) -> Self {
         Self {
             weights: self.weights.clone(),
-            id_type: PhantomData::<T>,
+            id_type: PhantomData::<Data>,
         }
     }
 }
 
 impl<T> Default for FrequencyHints<T>
 where
-    T: IdentifiableTile,
+    T: IdentifiableTileData,
 {
     fn default() -> Self {
         Self {
@@ -37,20 +38,29 @@ where
     }
 }
 
-impl<T> FrequencyHints<T>
+impl<Data> FrequencyHints<Data>
 where
-    T: IdentifiableTile,
+    Data: IdentifiableTileData,
 {
-    pub fn set_weight_for_tile(&mut self, tile: &T, weight: u32) {
-        let entry = self.weights.entry(tile.tile_type_id()).or_default();
+    pub fn set_weight_for_tile<Tile>(&mut self, tile: &Tile, weight: u32)
+    where
+        Tile: TileContainer + AsRef<Data>,
+    {
+        let entry = self
+            .weights
+            .entry(tile.as_ref().tile_type_id())
+            .or_default();
         *entry = weight;
     }
 
-    pub fn count_tile(&mut self, tile: &T) {
-        if let Some(count) = self.weights.get_mut(&tile.tile_type_id()) {
+    pub fn count_tile<Tile>(&mut self, tile: &Tile)
+    where
+        Tile: TileContainer + AsRef<Data>,
+    {
+        if let Some(count) = self.weights.get_mut(&tile.as_ref().tile_type_id()) {
             *count += 1;
         } else {
-            self.weights.insert(tile.tile_type_id(), 1);
+            self.weights.insert(tile.as_ref().tile_type_id(), 1);
         }
     }
 
@@ -58,9 +68,10 @@ where
         self.weights.clone()
     }
 
-    pub fn analyze_grid_map(&mut self, map: &GridMap2D<T>) {
+    pub fn analyze_grid_map(&mut self, map: &GridMap2D<Data>) {
         for position in map.get_all_positions() {
-            self.count_tile(map.get_tile_at_position(&position).unwrap())
+            let reference = map.get_tile_at_position(&position).unwrap();
+            self.count_tile(&reference)
         }
     }
 }

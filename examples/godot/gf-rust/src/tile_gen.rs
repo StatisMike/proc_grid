@@ -1,23 +1,20 @@
-use std::{
-    sync::mpsc::{self, Receiver},
-    thread::{self, JoinHandle},
-};
+//! Implements `grid_forge` collapse procedural generation algorithm, allowing its usage within Godot app.
 
-use godot::{
-    builtin::{meta::ToGodot, Array, GString},
-    engine::{AcceptDialog, INode, Node, TileMap},
-    log::godot_warn,
-    obj::{Base, Gd, WithBaseField},
-    register::{godot_api, GodotClass},
-};
-use grid_forge::{
-    gen::collapse::{
-        AdjacencyAnalyzer, AdjacencyBorderAnalyzer, AdjacencyIdentityAnalyzer, AdjacencyRules,
-        CollapsibleResolver, EntrophyQueue, FrequencyHints, PositionQueue,
-    },
-    map::{GridMap2D, GridSize},
-    tile::identifiable::{builders::IdentTileTraitBuilder, BasicIdentifiableTile2D},
-};
+use std::sync::mpsc::{self, Receiver};
+use std::thread::{self, JoinHandle};
+
+use godot::builtin::meta::ToGodot;
+use godot::builtin::{Array, GString};
+use godot::engine::{AcceptDialog, INode, Node, TileMap};
+use godot::log::godot_warn;
+use godot::obj::{Base, Gd, WithBaseField};
+use godot::register::{godot_api, GodotClass};
+
+use grid_forge::gen::collapse::*;
+use grid_forge::map::*;
+use grid_forge::tile::identifiable::builders::IdentTileTraitBuilder;
+use grid_forge::tile::identifiable::BasicIdentTileData;
+
 use rand::thread_rng;
 
 use crate::tile_collections::TileCollections;
@@ -34,11 +31,11 @@ pub struct TileGenerator {
 
     handle: Option<JoinHandle<()>>,
     channel: Option<Receiver<GenerationResult>>,
-    generated: Option<GridMap2D<BasicIdentifiableTile2D>>,
+    generated: Option<GridMap2D<BasicIdentTileData>>,
 
-    border_rules: AdjacencyRules<BasicIdentifiableTile2D>,
-    identity_rules: AdjacencyRules<BasicIdentifiableTile2D>,
-    frequency_hints: FrequencyHints<BasicIdentifiableTile2D>,
+    border_rules: AdjacencyRules<BasicIdentTileData>,
+    identity_rules: AdjacencyRules<BasicIdentTileData>,
+    frequency_hints: FrequencyHints<BasicIdentTileData>,
 
     base: Base<Node>,
 }
@@ -156,8 +153,8 @@ impl TileGenerator {
 
         let frequency_hints = self.frequency_hints.clone();
 
-        let size = GridSize::new(width as u32, height as u32);
-        let builder = IdentTileTraitBuilder::<BasicIdentifiableTile2D>::default();
+        let size = GridSize::new_xy(width as u32, height as u32);
+        let builder = IdentTileTraitBuilder::<BasicIdentTileData>::default();
 
         self.handle = Some(thread::spawn(move || {
             const RETRY_COUNT: usize = 10;
@@ -239,5 +236,5 @@ impl TileGenerator {
 enum GenerationResult {
     RuntimeErr(String),
     Error(String),
-    Success(GridMap2D<BasicIdentifiableTile2D>),
+    Success(GridMap2D<BasicIdentTileData>),
 }

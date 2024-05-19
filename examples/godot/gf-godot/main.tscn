@@ -69,10 +69,8 @@ offset_top = 3.0
 offset_right = 1149.0
 offset_bottom = 495.0
 grow_horizontal = 0
-current_tab = 1
 
 [node name="Image" type="Panel" parent="TabContainer"]
-visible = false
 layout_mode = 2
 
 [node name="VSplitContainer" type="VSplitContainer" parent="TabContainer/Image"]
@@ -108,6 +106,7 @@ Choose one of the provided PNGs to generate the tilemap.
 Resulting [i]TileMap[/i] will have spaces between the tiles, to show the borders between tiles. "
 
 [node name="Generate" type="Panel" parent="TabContainer"]
+visible = false
 layout_mode = 2
 
 [node name="Size" type="VBoxContainer" parent="TabContainer/Generate"]

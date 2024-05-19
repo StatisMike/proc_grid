@@ -8,5 +8,8 @@ members = [
   "examples/collapse",
   "examples/godot/gf-rust",
   "examples/walker",
-  "examples/vis",
+  "examples/vis", 
+  
+  # Benchmarks
+  "grid_forge_benches",
 ]

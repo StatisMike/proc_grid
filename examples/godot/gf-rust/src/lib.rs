@@ -1,3 +1,5 @@
+//! Example shows `godot` feature of `grid_forge` when working with single-layered [`TileMap`](godot::engine::TileMap).
+
 use godot::init::*;
 
 pub mod tests;

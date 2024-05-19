@@ -7,8 +7,7 @@ use std::collections::HashSet;
 use crate::{
     error::BuilderError,
     map::{GridDir, GridMap2D, GridSize},
-    tile::GridTile2D,
-    GridPos2D,
+    tile::{GridPosition, GridTile, TileData},
 };
 
 /// Struct implementing the random walker algorithm, producing the collection of [GridPos2D]. To be created with
@@ -17,8 +16,8 @@ pub struct GridWalker2D<R>
 where
     R: Rng,
 {
-    current_pos: GridPos2D,
-    walked: HashSet<GridPos2D>,
+    current_pos: GridPosition,
+    walked: HashSet<GridPosition>,
     rng: R,
     dir_rng: Uniform<usize>,
     step_rng: Option<Uniform<usize>>,
@@ -50,7 +49,7 @@ where
         let mut walked = Vec::new();
 
         for _ in 1..step_size {
-            if let Some(pos) = GridDir::ALL[idx].march_step(&current_pos, &self.size) {
+            if let Some(pos) = GridDir::ALL_2D[idx].march_step(&current_pos, &self.size) {
                 current_pos = pos;
                 walked.push(pos);
             } else {
@@ -65,7 +64,7 @@ where
         true
     }
 
-    pub fn walked(&self) -> &HashSet<GridPos2D> {
+    pub fn walked(&self) -> &HashSet<GridPosition> {
         &self.walked
     }
 
@@ -74,9 +73,9 @@ where
     /// # Arguments
     ///
     /// - `tile_fun` - function which will generate the [GridTile2D]-implementing objects with specified positions.
-    pub fn gen_grid_map<T>(&self, tile_fn: fn(GridPos2D) -> T) -> GridMap2D<T>
+    pub fn gen_grid_map<Data>(&self, tile_fn: fn(GridPosition) -> GridTile<Data>) -> GridMap2D<Data>
     where
-        T: GridTile2D,
+        Data: TileData,
     {
         let mut map = GridMap2D::new(self.size);
 
@@ -86,11 +85,11 @@ where
         map
     }
 
-    pub fn set_current_pos(&mut self, current_pos: GridPos2D) {
+    pub fn set_current_pos(&mut self, current_pos: GridPosition) {
         self.current_pos = current_pos;
     }
 
-    pub fn current_pos(&self) -> GridPos2D {
+    pub fn current_pos(&self) -> GridPosition {
         self.current_pos
     }
 
@@ -104,7 +103,7 @@ pub struct GridWalker2DBuilder<R>
 where
     R: Rng,
 {
-    current_pos: Option<GridPos2D>,
+    current_pos: Option<GridPosition>,
     rng: Option<R>,
     size: Option<GridSize>,
     min_step_size: usize,
@@ -131,7 +130,7 @@ where
     R: Rng,
 {
     /// Set up starting position for the walker algorithm.
-    pub fn with_current_pos(mut self, current_pos: GridPos2D) -> Self {
+    pub fn with_current_pos(mut self, current_pos: GridPosition) -> Self {
         self.current_pos = Some(current_pos);
         self
     }
@@ -170,7 +169,8 @@ where
         let current_pos = if let Some(pos) = self.current_pos {
             pos
         } else {
-            self.size.unwrap().center()
+            let center = self.size.unwrap().center();
+            GridPosition::new_xy(center.0, center.1)
         };
 
         if self.rng.is_none() {
@@ -179,7 +179,7 @@ where
 
         error.try_throw()?;
 
-        let dir_rng = rand::distributions::Uniform::new(0, GridDir::ALL.len());
+        let dir_rng = rand::distributions::Uniform::new(0, GridDir::ALL_2D.len());
         let step_rng = self.get_step_rng();
 
         let mut walked = HashSet::new();

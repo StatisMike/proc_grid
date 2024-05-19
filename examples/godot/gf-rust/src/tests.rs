@@ -1,16 +1,15 @@
+//! Integration tests between `grid_forge` and Godot.
+
 use gd_rehearse::itest::gditest;
-use godot::{
-    builtin::Rect2i,
-    engine::{load, TileMap, TileSet},
-    obj::{Gd, NewAlloc},
-};
-use grid_forge::{
-    godot::godot::ops::{load_gridmap_from_tilemap_manual, write_gridmap_to_tilemap},
-    map::GridSize,
-    tile::identifiable::{
-        builders::IdentTileTraitBuilder, BasicIdentifiableTile2D, IdentifiableTile,
-    },
-};
+
+use godot::builtin::Rect2i;
+use godot::engine::{load, TileMap, TileSet};
+use godot::obj::{Gd, NewAlloc};
+
+use grid_forge::godot::ops::{load_gridmap_from_tilemap_manual, write_gridmap_to_tilemap};
+use grid_forge::map::GridSize;
+use grid_forge::tile::identifiable::builders::IdentTileTraitBuilder;
+use grid_forge::tile::identifiable::{BasicIdentTileData, IdentifiableTileData};
 
 use crate::tile_collections::TileCollections;
 
@@ -77,7 +76,7 @@ fn test_from_grindmap_identical() {
     let collection = get_test_collection();
     let cloned = collection.clone();
     let binding = collection.bind();
-    let builder = IdentTileTraitBuilder::<BasicIdentifiableTile2D>::default();
+    let builder = IdentTileTraitBuilder::<BasicIdentTileData>::default();
     let tileset = load::<TileSet>(TILESET_RESOURCE_PATH);
 
     let roads_map = binding.load_vis_map_from_path(ROADS_MAP_PATH).unwrap();
@@ -118,10 +117,12 @@ fn test_from_grindmap_identical() {
             roads_map
                 .get_tile_at_position(&position)
                 .unwrap()
+                .as_ref()
                 .tile_type_id(),
             second_roads
                 .get_tile_at_position(&position)
                 .unwrap()
+                .as_ref()
                 .tile_type_id()
         );
     }
@@ -131,10 +132,12 @@ fn test_from_grindmap_identical() {
             seas_map
                 .get_tile_at_position(&position)
                 .unwrap()
+                .as_ref()
                 .tile_type_id(),
             second_seas
                 .get_tile_at_position(&position)
                 .unwrap()
+                .as_ref()
                 .tile_type_id()
         );
     }
@@ -162,7 +165,7 @@ fn get_test_collection() -> Gd<TileCollections> {
 }
 
 fn size_from_rect(rect: Rect2i) -> GridSize {
-    GridSize::new(
+    GridSize::new_xy(
         (rect.size.x - rect.position.x) as u32,
         (rect.size.y - rect.position.y) as u32,
     )

@@ -1,22 +1,17 @@
 use std::fmt::Display;
 
-use crate::GridPos2D;
+use crate::tile::GridPosition;
 
+/// Error returned by operations on image representations of [`GridMap2D`](crate::map::GridMap2D).
 #[derive(Debug, Clone)]
 pub struct VisError<const WIDTH: usize, const HEIGHT: usize> {
     kind: VisErrorKind,
 }
 
 impl<const WIDTH: usize, const HEIGHT: usize> VisError<WIDTH, HEIGHT> {
-    pub(crate) fn new_nonexist(pos: GridPos2D) -> Self {
+    pub(crate) fn new_nonexist(pos: GridPosition) -> Self {
         Self {
             kind: VisErrorKind::NonExistingTile(pos),
-        }
-    }
-
-    pub(crate) fn new_tile(x: u32, y: u32) -> Self {
-        Self {
-            kind: VisErrorKind::WrongSizeTile { x, y },
         }
     }
 
@@ -38,7 +33,7 @@ impl<const WIDTH: usize, const HEIGHT: usize> VisError<WIDTH, HEIGHT> {
         }
     }
 
-    pub(crate) fn new_io(read: bool, tile_pos: GridPos2D, pixel_pos: (u32, u32)) -> Self {
+    pub(crate) fn new_io(read: bool, tile_pos: GridPosition, pixel_pos: (u32, u32)) -> Self {
         if read {
             Self {
                 kind: VisErrorKind::PixelRead {
@@ -63,9 +58,6 @@ impl<const WIDTH: usize, const HEIGHT: usize> Display for VisError<WIDTH, HEIGHT
           VisErrorKind::NonExistingTile(pos) => {
             write!(f, "tile at position: {pos:?} is not contained within used `VisCollection`. Make sure to register it first manually")
           }
-            VisErrorKind::WrongSizeTile { x, y } => {
-                write!(f, "expected tile pixel size (x: {WIDTH}; y: {HEIGHT}) is incompatible with actual image size: (x: {x}, y: {y})")
-            }
             VisErrorKind::WrongSizeGridLoad { x, y } => {
                 write!(f, "expected tile pixel size (x: {WIDTH}; y: {HEIGHT}) is incompatible with GridMap image size: (x: {x}, y: {y})")
             }
@@ -88,19 +80,15 @@ impl<const WIDTH: usize, const HEIGHT: usize> Display for VisError<WIDTH, HEIGHT
 
 #[derive(Debug, Clone, Copy)]
 enum VisErrorKind {
-    NonExistingTile(GridPos2D),
+    NonExistingTile(GridPosition),
     NoPixelsForIdent(u64),
     PixelRead {
-        tile_pos: GridPos2D,
+        tile_pos: GridPosition,
         pixel_pos: (u32, u32),
     },
     PixelWrite {
-        tile_pos: GridPos2D,
+        tile_pos: GridPosition,
         pixel_pos: (u32, u32),
-    },
-    WrongSizeTile {
-        x: u32,
-        y: u32,
     },
     WrongSizeGridLoad {
         x: u32,

@@ -1,18 +1,14 @@
-// This example shows general implementation of the `vis` feature, which allows generating image out of created `GridMap`.
-// This is very useful in development state, as before creating maps out of final desired GridTile it is best to test
-// out the algorithms used, but is rarely useful in final build.
+//! This example shows general implementation of the `vis` feature, which allows generating image out of created `GridMap`.
+//! This is very useful in development state, as before creating maps out of final desired GridTile it is best to test
+//! out the algorithms used, but is rarely useful in final build.
+//!
+//! Most examples use the `vis` feature to present visual representation of GridMap2D.
 
-// Most examples use the `vis` feature to present visual representation of GridMap2D.
+use grid_forge::map::*;
+use grid_forge::tile::{GridTile, TileData};
+use grid_forge::vis::ops::{init_map_image_buffer, write_gridmap_vis};
+use grid_forge::vis::{DefaultVisPixel, VisTileData};
 
-use grid_forge::{
-    map::{GridMap2D, GridSize},
-    tile::{
-        vis::{DefaultVisPixel, VisTile2D},
-        GridTile2D,
-    },
-    vis::ops::{init_map_image_buffer, write_gridmap_vis},
-    GridPos2D,
-};
 use image::imageops;
 use rand::{Rng, SeedableRng};
 
@@ -33,22 +29,13 @@ impl TileColor {
 
 // GridTile struct besides required GridPos2D holds also the created enum.
 struct TwoColoredTile {
-    pos: GridPos2D,
     color: TileColor,
 }
 
-impl GridTile2D for TwoColoredTile {
-    fn grid_position(&self) -> GridPos2D {
-        self.pos
-    }
-
-    fn set_grid_position(&mut self, position: GridPos2D) {
-        self.pos = position;
-    }
-}
+impl TileData for TwoColoredTile {}
 
 // Trait necessary
-impl VisTile2D<DefaultVisPixel, 1, 1> for TwoColoredTile {
+impl VisTileData<DefaultVisPixel, 1, 1> for TwoColoredTile {
     fn vis_pixels(&self) -> [[DefaultVisPixel; 1]; 1] {
         [[self.color.rgb()]]
     }
@@ -66,7 +53,7 @@ fn main() {
     let mut rng = rand_chacha::ChaChaRng::from_seed(seed);
 
     // Create an empty GridMap...
-    let size = GridSize::new(100, 100);
+    let size = GridSize::new_xy(100, 100);
     let mut map = GridMap2D::<TwoColoredTile>::new(size);
 
     // and fill it with colors at random.
@@ -76,7 +63,7 @@ fn main() {
         } else {
             TileColor::Green
         };
-        let tile = TwoColoredTile { pos, color };
+        let tile = GridTile::new(pos, TwoColoredTile { color });
         map.insert_tile(tile);
     }
 

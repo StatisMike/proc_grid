@@ -1,20 +1,20 @@
 use std::fmt::Display;
 
-use crate::GridPos2D;
+use crate::tile::GridPosition;
 
 #[derive(Debug)]
 pub struct CollapseError {
-    pos: GridPos2D,
+    pos: GridPosition,
     kind: CollapseErrorKind,
 }
 
 impl CollapseError {
-    pub(crate) fn new(pos: GridPos2D, kind: CollapseErrorKind) -> Self {
+    pub(crate) fn new(pos: GridPosition, kind: CollapseErrorKind) -> Self {
         Self { pos, kind }
     }
 
     pub(crate) fn from_result<T>(
-        result: Result<T, GridPos2D>,
+        result: Result<T, GridPosition>,
         kind: CollapseErrorKind,
     ) -> Result<T, Self> {
         match result {
@@ -23,7 +23,7 @@ impl CollapseError {
         }
     }
 
-    pub fn failed_pos(&self) -> GridPos2D {
+    pub fn failed_pos(&self) -> GridPosition {
         self.pos
     }
 }
