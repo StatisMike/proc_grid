@@ -1,23 +1,20 @@
-use std::{
-    sync::mpsc::{self, Receiver},
-    thread::{self, JoinHandle},
-};
+//! Implements `grid_forge` collapse procedural generation algorithm, allowing its usage within Godot app.
 
-use godot::{
-    builtin::{meta::ToGodot, Array, GString},
-    engine::{AcceptDialog, INode, Node, TileMap},
-    log::godot_warn,
-    obj::{Base, Gd, WithBaseField},
-    register::{godot_api, GodotClass},
-};
-use grid_forge::{
-    gen::collapse::{
-        AdjacencyAnalyzer, AdjacencyBorderAnalyzer, AdjacencyIdentityAnalyzer, AdjacencyRules,
-        CollapsibleResolver, EntrophyQueue, FrequencyHints, PositionQueue,
-    },
-    map::{GridMap2D, GridSize},
-    tile::identifiable::{builders::IdentTileTraitBuilder, BasicIdentTileData},
-};
+use std::sync::mpsc::{self, Receiver};
+use std::thread::{self, JoinHandle};
+
+use godot::builtin::meta::ToGodot;
+use godot::builtin::{Array, GString};
+use godot::engine::{AcceptDialog, INode, Node, TileMap};
+use godot::log::godot_warn;
+use godot::obj::{Base, Gd, WithBaseField};
+use godot::register::{godot_api, GodotClass};
+
+use grid_forge::gen::collapse::*;
+use grid_forge::map::*;
+use grid_forge::tile::identifiable::builders::IdentTileTraitBuilder;
+use grid_forge::tile::identifiable::BasicIdentTileData;
+
 use rand::thread_rng;
 
 use crate::tile_collections::TileCollections;

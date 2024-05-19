@@ -9,9 +9,7 @@ use super::{CollapseQueue, ResolverSelector};
 use crate::{
     gen::collapse::{frequency::FrequencyHints, tile::CollapsibleTileData},
     map::GridMap2D,
-    tile::{
-        identifiable::IdentifiableTileData, GridPosition, GridTile, GridTileRef, TileContainer,
-    },
+    tile::{identifiable::IdentifiableTileData, GridPosition, GridTile, TileContainer},
 };
 
 #[derive(Clone, Copy)]

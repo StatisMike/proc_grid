@@ -1,31 +1,28 @@
+//! Implements synchronized loading of `*.png` representation of tiles into `grid_forge` on the Rust side and
+//! [`TileSet`] on the Godot side.
+//!
+//! Parallel loading is made to make sure that the `tile_type_id` of [`BasicIdentTileData`] matches between
+//! [`VisCollection`] and [`GodotTileMapCollection`].
+
 use std::io::BufReader;
 
-use godot::{
-    builtin::GString,
-    engine::{
-        file_access::ModeFlags, AcceptDialog, FileAccess, GFile, TileMap, TileSet,
-        TileSetAtlasSource,
-    },
-    log::{godot_error, godot_warn},
-    obj::Gd,
-    register::{godot_api, GodotClass},
-};
+use godot::builtin::GString;
+use godot::engine::file_access::ModeFlags;
+use godot::engine::{AcceptDialog, FileAccess, GFile, TileMap, TileSet, TileSetAtlasSource};
+use godot::log::{godot_error, godot_warn};
+use godot::obj::Gd;
+use godot::register::{godot_api, GodotClass};
 
-use grid_forge::{
-    godot::godot::{
-        collection::{GodotTileMapCollection, GodotTileMapTileInfo},
-        ops::write_gridmap_to_tilemap,
-    },
-    map::GridMap2D,
-    tile::identifiable::{
-        builders::IdentTileTraitBuilder, collection::IdentTileCollection, BasicIdentTileData,
-    },
-    vis::{
-        collection::VisCollection,
-        ops::{check_grid_vis_size, load_gridmap_identifiable_manual},
-        read_tile, DefaultVisPixel, PixelWithDefault,
-    },
-};
+use grid_forge::godot::collection::{GodotTileMapCollection, GodotTileMapTileInfo};
+use grid_forge::godot::ops::write_gridmap_to_tilemap;
+use grid_forge::map::GridMap2D;
+use grid_forge::tile::identifiable::builders::IdentTileTraitBuilder;
+use grid_forge::tile::identifiable::collection::IdentTileCollection;
+use grid_forge::tile::identifiable::BasicIdentTileData;
+use grid_forge::vis::collection::VisCollection;
+use grid_forge::vis::ops::{check_grid_vis_size, load_gridmap_identifiable_manual};
+use grid_forge::vis::{read_tile, DefaultVisPixel, PixelWithDefault};
+
 use image::ImageFormat;
 
 /// TileCollections holds reference to chosen GodotTileset and and png tileset, gathering their information

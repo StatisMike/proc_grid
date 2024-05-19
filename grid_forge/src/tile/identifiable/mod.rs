@@ -12,7 +12,7 @@
 
 use self::builders::ConstructableViaIdentifierTile;
 
-use super::{GridPosition, GridTile, TileData};
+use super::TileData;
 
 pub mod builders;
 pub mod collection;
@@ -47,7 +47,7 @@ impl IdentifiableTileData for BasicIdentTileData {
 }
 
 impl ConstructableViaIdentifierTile for BasicIdentTileData {
-    fn tile_new(pos: GridPosition, tile_type_id: u64) -> GridTile<Self> {
-        GridTile::new(pos, BasicIdentTileData { tile_type_id })
+    fn tile_new(tile_type_id: u64) -> Self {
+        BasicIdentTileData { tile_type_id }
     }
 }

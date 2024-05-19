@@ -1,8 +1,6 @@
 use crate::{
     map::GridMap2D,
-    tile::{
-        identifiable::IdentifiableTileData, GridPosition, GridTile, GridTileRef, TileContainer,
-    },
+    tile::{identifiable::IdentifiableTileData, GridPosition, GridTile, TileContainer},
 };
 
 pub(crate) mod entrophy;

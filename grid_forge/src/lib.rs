@@ -9,7 +9,7 @@ pub(crate) mod ext;
 #[cfg(feature = "godot")]
 pub mod godot {
     use crate::ext;
-    pub use ext::godot;
+    pub use ext::godot::*;
 }
 
 #[cfg(feature = "vis")]

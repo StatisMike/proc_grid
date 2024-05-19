@@ -1,19 +1,15 @@
-use godot::{builtin::Rect2i, engine::TileMap, obj::Gd};
+use godot::builtin::Rect2i;
+use godot::engine::TileMap;
+use godot::obj::Gd;
 
-use crate::{
-    map::{GridMap2D, GridSize},
-    tile::{
-        identifiable::{
-            builders::IdentTileBuilder, collection::IdentTileCollection, IdentifiableTileData,
-        },
-        GridPosition,
-    },
-};
+use crate::map::{GridMap2D, GridSize};
+use crate::tile::identifiable::builders::IdentTileBuilder;
+use crate::tile::identifiable::collection::IdentTileCollection;
+use crate::tile::identifiable::IdentifiableTileData;
+use crate::tile::GridPosition;
 
-use super::{
-    collection::{GodotInfoBuilder, GodotTileMapCollection},
-    error::GodotTileError,
-};
+use super::collection::{GodotInfoBuilder, GodotTileMapCollection};
+use super::error::GodotTileError;
 
 pub fn load_gridmap_from_tilemap_auto<Data: IdentifiableTileData, B: IdentTileBuilder<Data>>(
     tilemap: &Gd<TileMap>,

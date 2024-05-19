@@ -1,12 +1,11 @@
-use grid_forge::{
-    gen::walker::GridWalker2DBuilder,
-    map::GridSize,
-    tile::{GridPosition, GridTile, TileData},
-    vis::{
-        ops::{init_map_image_buffer, write_gridmap_vis},
-        DefaultVisPixel, VisTileData,
-    },
-};
+//! Shows the usage of Random Walker generative algorithm.
+
+use grid_forge::gen::walker::GridWalker2DBuilder;
+use grid_forge::map::GridSize;
+use grid_forge::tile::{GridPosition, GridTile, TileData};
+use grid_forge::vis::ops::{init_map_image_buffer, write_gridmap_vis};
+use grid_forge::vis::{DefaultVisPixel, VisTileData};
+
 use image::imageops::resize;
 use rand::SeedableRng;
 

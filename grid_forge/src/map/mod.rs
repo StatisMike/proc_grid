@@ -376,19 +376,19 @@ impl<Data: TileData> GridMap2D<Data> {
             .collect()
     }
 
-        /// Destroys the GridMap, returning all tiles.
-        pub fn drain(mut self) -> Vec<GridTile<Data>> {
-            self.get_all_positions()
-                .iter()
-                .filter_map(|pos| {
-                    self.tiles
-                        .get_mut(*pos.x(), *pos.y())
-                        .unwrap()
-                        .take()
-                        .map(|data| GridTile::new(*pos, data))
-                })
-                .collect()
-        }
+    /// Destroys the GridMap, returning all tiles.
+    pub fn drain(mut self) -> Vec<GridTile<Data>> {
+        self.get_all_positions()
+            .iter()
+            .filter_map(|pos| {
+                self.tiles
+                    .get_mut(*pos.x(), *pos.y())
+                    .unwrap()
+                    .take()
+                    .map(|data| GridTile::new(*pos, data))
+            })
+            .collect()
+    }
 
     /// Fills empty positions using constructor function.
     pub fn fill_empty_using(&mut self, func: fn(GridPosition) -> GridTile<Data>) {

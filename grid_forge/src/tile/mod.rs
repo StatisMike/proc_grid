@@ -258,7 +258,7 @@ impl AddAssign for GridPosition {
 }
 
 /// Trait gathering the containers for [`TileData`] outside of the [`GridMap2D`](crate::map::GridMap2D).
-/// 
+///
 /// Allows accessing all the data not contained within tile data, making sense only in context of the grid map.
 pub trait TileContainer {
     fn grid_position(&self) -> GridPosition;

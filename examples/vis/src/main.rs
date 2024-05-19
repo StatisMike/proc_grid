@@ -1,17 +1,14 @@
-// This example shows general implementation of the `vis` feature, which allows generating image out of created `GridMap`.
-// This is very useful in development state, as before creating maps out of final desired GridTile it is best to test
-// out the algorithms used, but is rarely useful in final build.
+//! This example shows general implementation of the `vis` feature, which allows generating image out of created `GridMap`.
+//! This is very useful in development state, as before creating maps out of final desired GridTile it is best to test
+//! out the algorithms used, but is rarely useful in final build.
+//!
+//! Most examples use the `vis` feature to present visual representation of GridMap2D.
 
-// Most examples use the `vis` feature to present visual representation of GridMap2D.
+use grid_forge::map::*;
+use grid_forge::tile::{GridTile, TileData};
+use grid_forge::vis::ops::{init_map_image_buffer, write_gridmap_vis};
+use grid_forge::vis::{DefaultVisPixel, VisTileData};
 
-use grid_forge::{
-    map::{GridMap2D, GridSize},
-    tile::{GridTile, TileData},
-    vis::{
-        ops::{init_map_image_buffer, write_gridmap_vis},
-        DefaultVisPixel, VisTileData,
-    },
-};
 use image::imageops;
 use rand::{Rng, SeedableRng};
 
