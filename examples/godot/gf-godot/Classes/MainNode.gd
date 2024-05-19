@@ -45,7 +45,11 @@ func adjust_tilemap(use_gap: bool):
 	
 	var x_scale = max_width as float / x as float;
 	var y_scale = max_height as float / y as float;
-	var final_scale = min(x_scale as int, y_scale as int);
+	var final_scale = min(x_scale, y_scale);
+	var adjusted_scale = snappedf(final_scale, 0.1);
+	if (adjusted_scale > final_scale):
+		adjusted_scale -= 0.1;
+	
 	tilemap.scale = Vector2(final_scale, final_scale);
 
 func _on_tile_map_node_hovered(atlas_coords, tile_pos):
