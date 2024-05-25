@@ -1,4 +1,4 @@
-use std::ops::{Add, AddAssign};
+use std::ops::{Add, AddAssign, Sub};
 
 pub mod identifiable;
 
@@ -242,6 +242,19 @@ impl Add for GridPosition {
             Self::new_xyz(self.x + rhs.x, self.y + rhs.y, lz + rz)
         } else {
             Self::new_xy(self.x + rhs.x, self.y + rhs.y)
+        }
+    }
+}
+
+impl Sub for GridPosition {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        match (&self.z, &rhs.z) {
+            (None, None) => Self::new_xy(self.x - rhs.x, self.y - rhs.y),
+            (None, Some(z)) => Self::new_xyz(self.x - rhs.x, self.y - rhs.y, *z),
+            (Some(z), None) => Self::new_xyz(self.x - rhs.x, self.y - rhs.y, *z),
+            (Some(lz), Some(rz)) => Self::new_xyz(self.x - rhs.x, self.y - rhs.y, lz - rz),
         }
     }
 }

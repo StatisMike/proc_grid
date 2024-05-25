@@ -1,9 +1,12 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, collections::BTreeMap};
 
 use rand::Rng;
 
 use crate::{
-    gen::collapse::{frequency::FrequencyHints, tile::CollapsibleTileData},
+    gen::collapse::{
+        frequency::FrequencyHints,
+        tile::{CollapsibleData, CollapsibleTileData},
+    },
     map::GridMap2D,
     tile::{identifiable::IdentifiableTileData, GridPosition, GridTile, TileContainer},
 };
@@ -86,15 +89,16 @@ impl CollapseQueue for PositionQueue {
         self.positions.pop()
     }
 
-    fn initialize_queue(&mut self, tiles: &[GridTile<CollapsibleTileData>]) {
+    fn initialize_queue<Data: CollapsibleData>(&mut self, tiles: &[GridTile<Data>]) {
         for tile in tiles {
             self.update_queue(tile)
         }
     }
 
-    fn update_queue<Tile>(&mut self, tile: &Tile)
+    fn update_queue<Tile, Data>(&mut self, tile: &Tile)
     where
-        Tile: TileContainer + AsRef<CollapsibleTileData>,
+        Tile: TileContainer + AsRef<Data>,
+        Data: CollapsibleData,
     {
         if !self.positions.contains(&tile.grid_position()) {
             self.positions.push(tile.grid_position());
@@ -112,14 +116,14 @@ impl CollapseQueue for PositionQueue {
 }
 
 impl ResolverSelector for PositionQueue {
-    fn populate_inner_grid<Data: IdentifiableTileData, R: Rng>(
+    fn populate_inner_grid<R: Rng, Data: CollapsibleData>(
         &mut self,
         _rng: &mut R,
-        grid: &mut GridMap2D<CollapsibleTileData>,
+        grid: &mut GridMap2D<Data>,
         positions: &[GridPosition],
-        frequency: &FrequencyHints<Data>,
+        options_with_weights: BTreeMap<u64, u32>,
     ) {
-        let tiles = CollapsibleTileData::new_from_frequency(positions, frequency);
+        let tiles = Data::new_from_frequency(positions, options_with_weights);
         self.initialize_queue(&tiles);
         for tile in tiles {
             grid.insert_tile(tile);

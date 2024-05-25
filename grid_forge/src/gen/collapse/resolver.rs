@@ -11,7 +11,7 @@ use super::error::CollapseErrorKind;
 use super::frequency::FrequencyHints;
 use super::queue::CollapseQueue;
 use super::rules::AdjacencyRules;
-use super::tile::CollapsibleTileData;
+use super::tile::{CollapsibleData, CollapsibleTileData};
 use super::CollapseError;
 
 use rand::Rng;
@@ -81,7 +81,12 @@ where
         // Begin populating grid.
         let mut changed = VecDeque::<GridPosition>::new();
 
-        queue.populate_inner_grid(rng, &mut self.inner, positions, frequencies);
+        queue.populate_inner_grid(
+            rng,
+            &mut self.inner,
+            positions,
+            frequencies.get_all_weights_cloned(),
+        );
 
         for position in positions {
             if CollapseError::from_result(

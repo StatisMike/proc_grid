@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use crate::{
     map::GridMap2D,
     tile::{identifiable::IdentifiableTileData, GridPosition, GridTile, TileContainer},
@@ -13,25 +15,29 @@ pub use position::*;
 
 use rand::Rng;
 
-use super::{frequency::FrequencyHints, tile::CollapsibleTileData};
+use super::{
+    frequency::FrequencyHints,
+    tile::{CollapsibleData, CollapsibleTileData},
+};
 
 /// Trait shared by objects that handle the selecting algorithm for next tile to collapse within
 /// [`CollapsibleResolver`](crate::gen::collapse::CollapsibleResolver)
 #[allow(private_bounds)]
 pub trait CollapseQueue
 where
-    Self: Default + ResolverSelector,
+    Self: Default + ResolverSelector + Sized,
 {
     /// Pop next position for collapsing.
     fn get_next_position(&mut self) -> Option<GridPosition>;
 
     /// Initialize the queue based on provided tiles.
-    fn initialize_queue(&mut self, tiles: &[GridTile<CollapsibleTileData>]);
+    fn initialize_queue<T: CollapsibleData>(&mut self, tiles: &[GridTile<T>]);
 
     /// Update internal based on provided tile.
-    fn update_queue<Tile>(&mut self, tile: &Tile)
+    fn update_queue<Tile, Data>(&mut self, tile: &Tile)
     where
-        Tile: TileContainer + AsRef<CollapsibleTileData>;
+        Tile: TileContainer + AsRef<Data>,
+        Data: CollapsibleData;
 
     /// Checks the current size of the inner queue.
     fn len(&self) -> usize;
@@ -40,15 +46,15 @@ where
 }
 
 pub(crate) trait ResolverSelector {
-    fn populate_inner_grid<Data, R>(
+    fn populate_inner_grid<R, Data>(
         &mut self,
         rng: &mut R,
-        grid: &mut GridMap2D<CollapsibleTileData>,
+        grid: &mut GridMap2D<Data>,
         positions: &[GridPosition],
-        frequencies: &FrequencyHints<Data>,
+        options_with_weights: BTreeMap<u64, u32>,
     ) where
-        Data: IdentifiableTileData,
-        R: Rng;
+        R: Rng,
+        Data: CollapsibleData;
 
     fn needs_update_after_options_change(&self) -> bool {
         false

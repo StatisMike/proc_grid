@@ -1,3 +1,5 @@
+use std::vec::IntoIter;
+
 use grid::Grid;
 
 use crate::tile::{GridPosition, GridTile, GridTileRef, GridTileRefMut, TileContainer, TileData};
@@ -5,10 +7,10 @@ use crate::tile::{GridPosition, GridTile, GridTileRef, GridTileRefMut, TileConta
 #[repr(u8)]
 #[derive(PartialEq, Eq, Debug, Clone, Copy, Hash)]
 pub enum GridDir {
-    UP = 1,
-    DOWN = 2,
-    LEFT = 3,
-    RIGHT = 4,
+    UP = 0,
+    DOWN = 1,
+    LEFT = 2,
+    RIGHT = 3,
 }
 
 impl GridDir {
@@ -197,6 +199,7 @@ impl GridSize {
 /// handling them.
 ///
 /// Extend of created `GridMap` usage stems from additional traits that are implemented for collected objects.
+#[derive(Debug, Clone)]
 pub struct GridMap2D<Data: TileData> {
     pub(crate) size: GridSize,
     pub(crate) tiles: Grid<Option<Data>>,
@@ -225,6 +228,13 @@ impl<Data: TileData> GridMap2D<Data> {
                 .unwrap()
                 .as_ref(),
         )
+    }
+
+    pub fn get_tiles_at_positions(&self, positions: &[GridPosition]) -> Vec<GridTileRef<Data>> {
+        positions
+            .iter()
+            .filter_map(|position| self.get_tile_at_position(position))
+            .collect::<Vec<_>>()
     }
 
     /// Get tile at specified position mutably.
