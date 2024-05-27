@@ -1,17 +1,4 @@
-#![feature(test)]
-
-#[cfg(test)]
-pub mod collapsible;
-#[cfg(test)]
-pub mod vis_io;
-#[cfg(test)]
-pub mod walker;
-
-#[cfg(test)]
-pub mod overlap;
-
-mod utils {
-  use rand::SeedableRng;
+use rand::SeedableRng;
 use rand_chacha::ChaChaRng;
 
 #[derive(Debug)]
@@ -52,5 +39,4 @@ impl From<RngHelper> for ChaChaRng {
 
         rng
     }
-}
 }

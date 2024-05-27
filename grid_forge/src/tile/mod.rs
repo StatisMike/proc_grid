@@ -1,5 +1,7 @@
 use std::ops::{Add, AddAssign, Sub};
 
+use grid::Grid;
+
 pub mod identifiable;
 
 #[cfg(feature = "vis")]
@@ -231,6 +233,11 @@ impl GridPosition {
             }
         }
         out
+    }
+
+    /// Filter the `pos` vector, removing from it all positions contained within `to_filter`.
+    pub fn filter_positions(pos: &mut Vec<GridPosition>, to_filter: &[GridPosition]) {
+        pos.retain(|p| !to_filter.contains(p));
     }
 }
 

@@ -22,6 +22,7 @@ where
 {
     pub(crate) inner: GridMap2D<CollapsibleTileData>,
     tile_ids: Vec<u64>,
+    subscriber: Option<Box<dyn AdjacencyCollapseSubscriber>>,
     tile_type: PhantomData<Data>,
 }
 
@@ -33,8 +34,14 @@ where
         Self {
             inner: GridMap2D::new(size),
             tile_ids: Vec::new(),
+            subscriber: None,
             tile_type: PhantomData,
         }
+    }
+
+    pub fn with_subscriber(mut self, subscriber: Box<dyn AdjacencyCollapseSubscriber>) -> Self {
+        self.subscriber = Some(subscriber);
+        self
     }
 
     pub fn fill_with_collapsed(&mut self, tile_id: u64, positions: &[GridPosition]) {
@@ -76,7 +83,6 @@ where
     where
         R: Rng,
         Queue: CollapseQueue,
-        Data: IdentifiableTileData,
     {
         // Begin populating grid.
         let mut changed = VecDeque::<GridPosition>::new();
@@ -139,6 +145,11 @@ where
                 let collapsed_id = to_collapse.as_ref().tile_type_id();
                 if !self.tile_ids.contains(&collapsed_id) {
                     self.tile_ids.push(collapsed_id);
+                }
+                if let Some(subscriber) = self.subscriber.as_mut() {
+                    subscriber
+                        .as_mut()
+                        .on_collapse(&next_position, collapsed_id);
                 }
             }
 
@@ -350,4 +361,8 @@ where
 
         Ok(grid)
     }
+}
+
+pub trait AdjacencyCollapseSubscriber {
+    fn on_collapse(&mut self, position: &GridPosition, tile_type_id: u64);
 }

@@ -6,10 +6,14 @@ members = [
 
   # Examples:
   "examples/collapse",
+  "examples/overlap",
   "examples/godot/gf-rust",
   "examples/walker",
   "examples/vis", 
   
   # Benchmarks
   "grid_forge_benches",
+
+  # Tools for benchmarks and examples:
+  "grid_forge_tools"
 ]

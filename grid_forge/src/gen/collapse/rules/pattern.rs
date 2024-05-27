@@ -1,5 +1,5 @@
 use std::{
-    collections::{linked_list::Iter, HashMap, HashSet},
+    collections::HashMap,
     hash::{DefaultHasher, Hash, Hasher},
     marker::PhantomData,
 };
@@ -10,31 +10,24 @@ use crate::{
     tile::{identifiable::IdentifiableTileData, GridPosition, TileContainer},
 };
 
-pub type Pattern2D<const PATTERN_WIDTH: usize, const PATTERN_HEIGHT: usize> =
-    Pattern<PATTERN_WIDTH, PATTERN_HEIGHT, 1>;
+pub type Pattern2D<const P_X: usize, const P_Y: usize> = Pattern<P_X, P_Y, 1>;
 
 /// Pattern for Overlapping collapse algorithm.
 ///
 /// It describes the tiles present
 #[derive(Debug, Hash, PartialEq, Eq, Clone)]
-pub struct Pattern<
-    const PATTERN_WIDTH: usize,
-    const PATTERN_HEIGHT: usize,
-    const PATTERN_DEPTH: usize,
-> {
+pub struct Pattern<const P_X: usize, const P_Y: usize, const P_Z: usize> {
     pattern_id: u64,
     tile_type_id: u64,
-    tile_type_ids: [[[u64; PATTERN_WIDTH]; PATTERN_HEIGHT]; PATTERN_DEPTH],
+    tile_type_ids: [[[u64; P_X]; P_Y]; P_Z],
 }
 
-impl<const PATTERN_WIDTH: usize, const PATTERN_HEIGHT: usize, const PATTERN_DEPTH: usize>
-    Pattern<PATTERN_WIDTH, PATTERN_HEIGHT, PATTERN_DEPTH>
-{
+impl<const P_X: usize, const P_Y: usize, const P_Z: usize> Pattern<P_X, P_Y, P_Z> {
     pub(crate) fn new() -> Self {
         Self {
             pattern_id: 0,
             tile_type_id: 0,
-            tile_type_ids: [[[0; PATTERN_WIDTH]; PATTERN_HEIGHT]; PATTERN_DEPTH],
+            tile_type_ids: [[[0; P_X]; P_Y]; P_Z],
         }
     }
 
@@ -53,7 +46,7 @@ impl<const PATTERN_WIDTH: usize, const PATTERN_HEIGHT: usize, const PATTERN_DEPT
     }
 
     fn get_id_for_pos(&self, anchor_pos: &GridPosition, pos: &GridPosition) -> u64 {
-        if PATTERN_DEPTH == 1 {
+        if P_Z == 1 {
             self.tile_type_ids[0][*anchor_pos.y() as usize - *pos.y() as usize]
                 [*anchor_pos.x() as usize - *pos.x() as usize]
         } else {
@@ -65,7 +58,7 @@ impl<const PATTERN_WIDTH: usize, const PATTERN_HEIGHT: usize, const PATTERN_DEPT
     }
 
     fn set_id_for_pos(&mut self, anchor_pos: &GridPosition, pos: &GridPosition, tile_type_id: u64) {
-        if PATTERN_DEPTH == 1 {
+        if P_Z == 1 {
             self.tile_type_ids[0][(pos.y() - anchor_pos.y()) as usize]
                 [(pos.x() - anchor_pos.x()) as usize] = tile_type_id;
         } else {
@@ -96,12 +89,8 @@ where
     patterns: Vec<Pattern>,
 }
 
-impl<
-        Data: IdentifiableTileData,
-        const PATTERN_WIDTH: usize,
-        const PATTERN_HEIGHT: usize,
-        const PATTERN_DEPTH: usize,
-    > OverlappingAnalyzer<Data, Pattern<PATTERN_WIDTH, PATTERN_HEIGHT, PATTERN_DEPTH>>
+impl<Data: IdentifiableTileData, const P_X: usize, const P_Y: usize, const P_Z: usize>
+    OverlappingAnalyzer<Data, Pattern<P_X, P_Y, P_Z>>
 {
     pub fn new() -> Self {
         Self {
@@ -134,7 +123,7 @@ impl<
         &self,
         map: &GridMap2D<Data>,
         anchor_pos: &GridPosition,
-    ) -> Option<Pattern<PATTERN_WIDTH, PATTERN_HEIGHT, PATTERN_DEPTH>> {
+    ) -> Option<Pattern<P_X, P_Y, P_Z>> {
         if let Some(positions) = self.generate_pattern_positions(anchor_pos, map.size()) {
             let mut pattern = Pattern::new();
             let tiles = map.get_tiles_at_positions(&positions);
@@ -161,20 +150,15 @@ impl<
         size: &GridSize,
     ) -> Option<Vec<GridPosition>> {
         let mut to = *from;
-        to.add_xy(((PATTERN_WIDTH - 1) as u32, (PATTERN_HEIGHT - 1) as u32));
+        to.add_xy(((P_X - 1) as u32, (P_Y - 1) as u32));
         if !size.is_position_valid(&to) {
             return None;
         }
         Some(GridPosition::generate_rect_area(from, &to))
     }
 
-    pub fn generate_pattern_rules(
-        &self,
-    ) -> PatternRules<Pattern<PATTERN_WIDTH, PATTERN_HEIGHT, PATTERN_DEPTH>> {
-        let mut pattern_by_option: HashMap<
-            u64,
-            Vec<Pattern<PATTERN_WIDTH, PATTERN_HEIGHT, PATTERN_DEPTH>>,
-        > = HashMap::new();
+    pub fn generate_pattern_rules(&self) -> PatternRules<Pattern<P_X, P_Y, P_Z>> {
+        let mut pattern_by_option: HashMap<u64, Vec<Pattern<P_X, P_Y, P_Z>>> = HashMap::new();
         let mut pattern_weights = HashMap::new();
 
         for pattern in self.patterns.iter() {
@@ -290,17 +274,15 @@ mod test {
 
 // Pattern compatibility
 
-impl<const PATTERN_WIDTH: usize, const PATTERN_HEIGHT: usize, const PATTERN_DEPTH: usize>
-    Pattern<PATTERN_WIDTH, PATTERN_HEIGHT, PATTERN_DEPTH>
-{
+impl<const P_X: usize, const P_Y: usize, const P_Z: usize> Pattern<P_X, P_Y, P_Z> {
     fn compare_up(&self, other: &Self) -> bool {
-        if PATTERN_HEIGHT == 1 {
+        if P_Y == 1 {
             return true;
         }
-        for z in 0..PATTERN_DEPTH {
-            for y in 1..PATTERN_HEIGHT {
+        for z in 0..P_Z {
+            for y in 1..P_Y {
                 // Skip y = 0
-                for x in 0..PATTERN_WIDTH {
+                for x in 0..P_X {
                     if self.tile_type_ids[z][y][x] != other.tile_type_ids[z][y - 1][x] {
                         return false;
                     }
@@ -311,13 +293,13 @@ impl<const PATTERN_WIDTH: usize, const PATTERN_HEIGHT: usize, const PATTERN_DEPT
     }
 
     fn compare_down(&self, other: &Self) -> bool {
-        if PATTERN_HEIGHT == 1 {
+        if P_Y == 1 {
             return true;
         }
-        for z in 0..PATTERN_DEPTH {
-            for y in 0..PATTERN_HEIGHT - 1 {
-                // Skip y = PATTERN_HEIGHT - 1
-                for x in 0..PATTERN_WIDTH {
+        for z in 0..P_Z {
+            for y in 0..P_Y - 1 {
+                // Skip y = P_Y - 1
+                for x in 0..P_X {
                     if self.tile_type_ids[z][y][x] != other.tile_type_ids[z][y + 1][x] {
                         return false;
                     }
@@ -328,12 +310,12 @@ impl<const PATTERN_WIDTH: usize, const PATTERN_HEIGHT: usize, const PATTERN_DEPT
     }
 
     fn compare_left(&self, other: &Self) -> bool {
-        if PATTERN_WIDTH == 1 {
+        if P_X == 1 {
             return true;
         }
-        for z in 0..PATTERN_DEPTH {
-            for y in 0..PATTERN_HEIGHT {
-                for x in 1..PATTERN_WIDTH {
+        for z in 0..P_Z {
+            for y in 0..P_Y {
+                for x in 1..P_X {
                     // Skip x = 0
                     if self.tile_type_ids[z][y][x] != other.tile_type_ids[z][y][x - 1] {
                         return false;
@@ -345,13 +327,13 @@ impl<const PATTERN_WIDTH: usize, const PATTERN_HEIGHT: usize, const PATTERN_DEPT
     }
 
     fn compare_right(&self, other: &Self) -> bool {
-        if PATTERN_WIDTH == 1 {
+        if P_X == 1 {
             return true;
         }
-        for z in 0..PATTERN_DEPTH {
-            for y in 0..PATTERN_HEIGHT {
-                for x in 0..PATTERN_WIDTH - 1 {
-                    // Skip x = PATTERN_WIDTH - 1
+        for z in 0..P_Z {
+            for y in 0..P_Y {
+                for x in 0..P_X - 1 {
+                    // Skip x = P_X - 1
                     if self.tile_type_ids[z][y][x] != other.tile_type_ids[z][y][x + 1] {
                         return false;
                     }

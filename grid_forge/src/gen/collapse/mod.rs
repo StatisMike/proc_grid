@@ -12,7 +12,8 @@ use std::collections::{HashMap, HashSet};
 // Flattened reexports
 pub use error::CollapseError;
 pub use frequency::FrequencyHints;
-pub use overlapping::{analyzer::*, pattern::*, rules::*};
+use nohash::{IntMap, IntSet};
+pub use overlapping::{analyzer::*, pattern::*, frequency::*, resolver::*, tile::*};
 pub use queue::*;
 pub use resolver::CollapsibleResolver;
 pub use rules::*;
@@ -22,7 +23,7 @@ use crate::map::GridDir;
 
 #[derive(Clone, Debug, Default)]
 pub(crate) struct Adjacencies {
-    inner: Vec<HashSet<u64>>,
+    inner: Vec<IntSet<u64>>,
 }
 
 impl Adjacencies {
@@ -30,30 +31,33 @@ impl Adjacencies {
         let mut inner = Vec::new();
 
         for _ in 0..GridDir::ALL_2D.len() {
-            inner.push(HashSet::new());
+            inner.push(IntSet::default());
         }
 
         Self { inner }
     }
 
+    #[inline(always)]
     pub fn add_at_dir(&mut self, direction: GridDir, id: u64) {
         let v = self.inner.get_mut(direction as usize).unwrap();
         v.insert(id);
     }
 
-    pub fn is_at_dir(&self, direction: GridDir, id: u64) -> bool {
-        self.inner.get(direction as usize).unwrap().contains(&id)
+    #[inline(always)]
+    pub fn is_at_dir(&self, direction: &GridDir, id: &u64) -> bool {
+        self.inner.get(*direction as usize).unwrap().contains(id)
     }
 
-    pub fn any_at_dir(&self, direction: GridDir, ids: &[u64]) -> bool {
-        let bind = self.inner.get(direction as usize).unwrap();
+    #[inline(always)]
+    pub fn any_at_dir(&self, direction: &GridDir, ids: &[u64]) -> bool {
+        let bind = self.inner.get(*direction as usize).unwrap();
         ids.iter().any(|id| bind.contains(id))
     }
 }
 
 #[derive(Clone, Debug, Default)]
 pub(crate) struct AdjacencyTable {
-    inner: HashMap<u64, Adjacencies>,
+    inner: IntMap<u64, Adjacencies>,
 }
 
 impl AdjacencyTable {
@@ -70,15 +74,17 @@ impl AdjacencyTable {
         }
     }
 
-    pub fn check_adjacency(&self, el_id: u64, direction: GridDir, other_id: u64) -> bool {
-        if let Some(adjacencies) = self.inner.get(&el_id) {
+    // #[inline(always)]
+    pub fn check_adjacency(&self, el_id: &u64, direction: &GridDir, other_id: &u64) -> bool {
+        if let Some(adjacencies) = self.inner.get(el_id) {
             return adjacencies.is_at_dir(direction, other_id);
         }
         false
     }
 
-    pub fn check_adjacency_any(&self, el_id: u64, direction: GridDir, other_ids: &[u64]) -> bool {
-        if let Some(adjacencies) = self.inner.get(&el_id) {
+    // #[inline(always)]
+    pub fn check_adjacency_any(&self, el_id: &u64, direction: &GridDir, other_ids: &[u64]) -> bool {
+        if let Some(adjacencies) = self.inner.get(el_id) {
             return adjacencies.any_at_dir(direction, other_ids);
         }
         false

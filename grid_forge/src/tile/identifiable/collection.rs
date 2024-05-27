@@ -1,4 +1,3 @@
-use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::hash::{DefaultHasher, Hash, Hasher};
 
@@ -44,6 +43,14 @@ pub trait IdentTileCollection {
     /// Exposes reverse hashmap mutably. Necessary for other methods implementations.
     fn rev_mut(&mut self) -> &mut HashMap<u64, u64>;
 
+    /// Additional operation that will be done during addition of new `DATA` into the
+    /// collection. No-op by default.
+    fn on_add(&mut self, _data: &Self::DATA) {}
+
+    /// Additional operation that will be done during removal of old `DATA` from the
+    /// collection. No-op by default.
+    fn on_remove(&mut self, _data: &Self::DATA) {}
+
     /// Adds tile data without `tile_type_id` provided - it will be generated with [get_data_hash](IdentTileCollection::get_data_hash).
     /// If either data or the generated `tile_type_id` are already present in the collection, addition will be skipped, returning `false`.
     fn add_tile(&mut self, data: Self::DATA) -> bool {
@@ -60,7 +67,9 @@ pub trait IdentTileCollection {
         let mut changed = false;
         let hash = Self::generate_type_id(&data);
         if let Some(type_id) = self.rev_mut().remove(&hash) {
-            self.inner_mut().remove(&type_id);
+            if let Some(existing_data) = self.inner_mut().remove(&type_id) {
+                self.on_remove(&existing_data);
+            }
             changed = true;
         }
         if self.set_tile_data(hash, data).is_some() {
@@ -75,7 +84,9 @@ pub trait IdentTileCollection {
         let mut changed = false;
         let hash = Self::generate_type_id(data);
         if let Some(type_id) = self.rev_mut().remove(&hash) {
-            self.inner_mut().remove(&type_id);
+            if let Some(removed_data) = self.inner_mut().remove(&type_id) {
+                self.on_remove(&removed_data);
+            }
             changed = true;
         }
         if self.remove_tile_data(&hash).is_some() {
@@ -86,27 +97,26 @@ pub trait IdentTileCollection {
 
     /// Adds `data` for specified `tile_type_id`. If given `tile_type_id` is already present, no changes are made and returns `false`;
     fn add_tile_data(&mut self, tile_type_id: u64, data: Self::DATA) -> bool {
-        let changed = if let Entry::Vacant(e) = self.inner_mut().entry(tile_type_id) {
-            let data_hash = Self::generate_type_id(&data);
-            e.insert(data);
-            Some(data_hash)
-        } else {
-            None
-        };
-        if let Some(data_hash) = changed {
-            self.rev_mut().insert(data_hash, tile_type_id);
+        if self.inner().contains_key(&tile_type_id) {
+            return false;
         }
-        changed.is_some()
+        self.on_add(&data);
+        let data_hash = Self::generate_type_id(&data);
+        self.inner_mut().insert(tile_type_id, data);
+        self.rev_mut().insert(data_hash, tile_type_id);
+        true
     }
 
     /// Sets `data` for specified `tile_type_id`. Returns removed data stored for specified id, if present.
     fn set_tile_data(&mut self, tile_type_id: u64, data: Self::DATA) -> Option<Self::DATA> {
         let data_hash = Self::generate_type_id(&data);
+        self.on_add(&data);
         let existing_data = self.inner_mut().insert(tile_type_id, data);
         let existing_hash = existing_data
             .as_ref()
             .map(|data| Self::generate_type_id(data));
         if let Some(hash_to_remove) = existing_hash {
+            self.on_remove(existing_data.as_ref().unwrap());
             self.rev_mut().remove(&hash_to_remove);
         }
         self.rev_mut().insert(data_hash, tile_type_id);
@@ -118,6 +128,7 @@ pub trait IdentTileCollection {
     fn remove_tile_data(&mut self, tile_type_id: &u64) -> Option<Self::DATA> {
         let existing_data = self.inner_mut().remove(tile_type_id);
         if let Some(data_to_remove) = &existing_data {
+            self.on_remove(data_to_remove);
             self.remove_tile(data_to_remove);
         }
         existing_data

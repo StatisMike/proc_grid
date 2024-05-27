@@ -1,45 +1,38 @@
-use std::{
-    collections::HashMap,
-    hash::{DefaultHasher, Hash, Hasher},
-    marker::PhantomData,
-};
-
 use crate::{
-    gen::collapse::{Adjacencies, AdjacencyTable, FrequencyHints},
-    map::{GridDir, GridMap2D, GridSize},
-    tile::{identifiable::IdentifiableTileData, GridPosition, TileContainer},
+    map::GridMap2D,
+    tile::identifiable::IdentifiableTileData,
 };
 
 use super::{
     frequency::{PatternAdjacencyRules, PatternFrequencyHints},
-    pattern::{OverlappingPatternGrid, Pattern, PatternCollection},
+    pattern::{OverlappingPatternGrid, PatternCollection},
 };
 
-#[derive(Default)]
 pub struct OverlappingAnalyzer<
-    const PATTERN_WIDTH: usize,
-    const PATTERN_HEIGHT: usize,
-    const PATTERN_DEPTH: usize,
+    const P_X: usize,
+    const P_Y: usize,
+    const P_Z: usize,
     Data: IdentifiableTileData,
 > where
     Data: IdentifiableTileData,
 {
-    collection: PatternCollection<PATTERN_WIDTH, PATTERN_HEIGHT, PATTERN_DEPTH>,
-    frequency: PatternFrequencyHints<PATTERN_WIDTH, PATTERN_HEIGHT, PATTERN_DEPTH, Data>,
-    adjacency: PatternAdjacencyRules<PATTERN_WIDTH, PATTERN_HEIGHT, PATTERN_DEPTH, Data>,
+    collection: PatternCollection<P_X, P_Y, P_Z>,
+    frequency: PatternFrequencyHints<P_X, P_Y, P_Z, Data>,
+    adjacency: PatternAdjacencyRules<P_X, P_Y, P_Z, Data>,
 }
 
-impl<
-        const PATTERN_WIDTH: usize,
-        const PATTERN_HEIGHT: usize,
-        const PATTERN_DEPTH: usize,
-        Data: IdentifiableTileData,
-    > OverlappingAnalyzer<PATTERN_WIDTH, PATTERN_HEIGHT, PATTERN_DEPTH, Data>
+impl<const P_X: usize, const P_Y: usize, const P_Z: usize, Data: IdentifiableTileData>
+    Default for OverlappingAnalyzer<P_X, P_Y, P_Z, Data>
+where Data: IdentifiableTileData {
+    fn default() -> Self {
+        Self { collection: Default::default(), frequency: Default::default(), adjacency: Default::default() }
+    }
+}
+
+impl<const P_X: usize, const P_Y: usize, const P_Z: usize, Data: IdentifiableTileData>
+    OverlappingAnalyzer<P_X, P_Y, P_Z, Data>
 {
-    pub fn analyze_map(
-        &mut self,
-        map: &GridMap2D<Data>,
-    ) -> OverlappingPatternGrid<PATTERN_WIDTH, PATTERN_HEIGHT, PATTERN_DEPTH> {
+    pub fn analyze_map(&mut self, map: &GridMap2D<Data>) -> OverlappingPatternGrid<P_X, P_Y, P_Z> {
         let grid = OverlappingPatternGrid::from_map(map, &mut self.collection);
         self.frequency.analyze_pattern_grid(&grid);
         self.adjacency.analyze_collection(&self.collection);
@@ -47,21 +40,15 @@ impl<
         grid
     }
 
-    pub fn get_collection(
-        &self,
-    ) -> &PatternCollection<PATTERN_WIDTH, PATTERN_HEIGHT, PATTERN_DEPTH> {
+    pub fn get_collection(&self) -> &PatternCollection<P_X, P_Y, P_Z> {
         &self.collection
     }
 
-    pub fn get_frequency(
-        &self,
-    ) -> &PatternFrequencyHints<PATTERN_WIDTH, PATTERN_HEIGHT, PATTERN_DEPTH, Data> {
+    pub fn get_frequency(&self) -> &PatternFrequencyHints<P_X, P_Y, P_Z, Data> {
         &self.frequency
     }
 
-    pub fn get_adjacency(
-        &self,
-    ) -> &PatternAdjacencyRules<PATTERN_WIDTH, PATTERN_HEIGHT, PATTERN_DEPTH, Data> {
+    pub fn get_adjacency(&self) -> &PatternAdjacencyRules<P_X, P_Y, P_Z, Data> {
         &self.adjacency
     }
 }

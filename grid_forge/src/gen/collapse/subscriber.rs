@@ -1,13 +1,3 @@
-use crate::tile::identifiable::IdentifiableTileData;
-
-use super::CollapsibleTileData;
-
-pub trait CollapsibleResolverSubscriber {
-    fn on_collapse<Ref>(&mut self, collapsed: &Ref)
-    where
-        Ref: AsRef<CollapsibleTileData>;
-}
-
 #[cfg(feature = "vis")]
 mod vis {
     use std::sync::Mutex;

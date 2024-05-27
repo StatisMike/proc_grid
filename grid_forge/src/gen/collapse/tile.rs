@@ -235,7 +235,7 @@ pub trait CollapsibleData: IdentifiableTileData {
         positions: &[GridPosition],
         options_with_weights: BTreeMap<u64, u32>,
     ) -> Vec<GridTile<Self>> {
-        let rng_range = Uniform::<f32>::new(0., 0.00001);
+        let rng_range = Self::entrophy_uniform();
         let weight_sum: u32 = options_with_weights.values().sum();
         let weight_log_sum = options_with_weights
             .values()
@@ -287,5 +287,9 @@ pub trait CollapsibleData: IdentifiableTileData {
     /// Associate function to calculate entrophy.
     fn calc_entrophy_ext(weight_sum: u32, weight_log_sum: f32) -> f32 {
         (weight_sum as f32).log2() - weight_log_sum / (weight_sum as f32)
+    }
+
+    fn entrophy_uniform() -> Uniform<f32> {
+        Uniform::<f32>::new(0., 0.00001)
     }
 }

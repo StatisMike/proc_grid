@@ -15,10 +15,7 @@ pub use position::*;
 
 use rand::Rng;
 
-use super::{
-    frequency::FrequencyHints,
-    tile::{CollapsibleData, CollapsibleTileData},
-};
+use super::tile::CollapsibleData;
 
 /// Trait shared by objects that handle the selecting algorithm for next tile to collapse within
 /// [`CollapsibleResolver`](crate::gen::collapse::CollapsibleResolver)

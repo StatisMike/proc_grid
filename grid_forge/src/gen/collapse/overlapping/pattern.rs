@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     hash::{DefaultHasher, Hash, Hasher},
 };
 
@@ -15,44 +15,35 @@ use crate::{
 pub trait OverlappingPattern: private::Sealed {}
 
 /// [Pattern] for two-dimensional grids.
-pub type Pattern2D<const PATTERN_WIDTH: usize, const PATTERN_HEIGHT: usize> =
-    Pattern<PATTERN_WIDTH, PATTERN_HEIGHT, 1>;
+pub type Pattern2D<const P_X: usize, const P_Y: usize> = Pattern<P_X, P_Y, 1>;
 
 /// Pattern for Overlapping collapse algorithm.
 ///
 /// It describes the identifiable tiles present in
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct Pattern<
-    const PATTERN_WIDTH: usize,
-    const PATTERN_HEIGHT: usize,
-    const PATTERN_DEPTH: usize,
-> {
+pub struct Pattern<const P_X: usize, const P_Y: usize, const P_Z: usize> {
     pub(crate) pattern_id: u64,
     pub(crate) tile_type_id: u64,
-    pub(crate) tile_type_ids: [[[u64; PATTERN_WIDTH]; PATTERN_HEIGHT]; PATTERN_DEPTH],
+    pub(crate) tile_type_ids: [[[u64; P_X]; P_Y]; P_Z],
 }
 
-impl<const PATTERN_WIDTH: usize, const PATTERN_HEIGHT: usize, const PATTERN_DEPTH: usize> Hash
-    for Pattern<PATTERN_WIDTH, PATTERN_HEIGHT, PATTERN_DEPTH>
-{
+impl<const P_X: usize, const P_Y: usize, const P_Z: usize> Hash for Pattern<P_X, P_Y, P_Z> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.tile_type_ids.hash(state);
     }
 }
 
-impl<const PATTERN_WIDTH: usize, const PATTERN_HEIGHT: usize, const PATTERN_DEPTH: usize>
-    OverlappingPattern for Pattern<PATTERN_WIDTH, PATTERN_HEIGHT, PATTERN_DEPTH>
+impl<const P_X: usize, const P_Y: usize, const P_Z: usize> OverlappingPattern
+    for Pattern<P_X, P_Y, P_Z>
 {
 }
 
-impl<const PATTERN_WIDTH: usize, const PATTERN_HEIGHT: usize, const PATTERN_DEPTH: usize>
-    Pattern<PATTERN_WIDTH, PATTERN_HEIGHT, PATTERN_DEPTH>
-{
+impl<const P_X: usize, const P_Y: usize, const P_Z: usize> Pattern<P_X, P_Y, P_Z> {
     pub(crate) fn new() -> Self {
         Self {
             pattern_id: 0,
             tile_type_id: 0,
-            tile_type_ids: [[[0; PATTERN_WIDTH]; PATTERN_HEIGHT]; PATTERN_DEPTH],
+            tile_type_ids: [[[0; P_X]; P_Y]; P_Z],
         }
     }
 
@@ -71,7 +62,7 @@ impl<const PATTERN_WIDTH: usize, const PATTERN_HEIGHT: usize, const PATTERN_DEPT
     }
 
     pub(crate) fn get_id_for_pos(&self, anchor_pos: &GridPosition, pos: &GridPosition) -> u64 {
-        if PATTERN_DEPTH == 1 {
+        if P_Z == 1 {
             self.tile_type_ids[0][*anchor_pos.y() as usize - *pos.y() as usize]
                 [*anchor_pos.x() as usize - *pos.x() as usize]
         } else {
@@ -88,7 +79,7 @@ impl<const PATTERN_WIDTH: usize, const PATTERN_HEIGHT: usize, const PATTERN_DEPT
         pos: &GridPosition,
         tile_type_id: u64,
     ) {
-        if PATTERN_DEPTH == 1 {
+        if P_Z == 1 {
             self.tile_type_ids[0][(pos.y() - anchor_pos.y()) as usize]
                 [(pos.x() - anchor_pos.x()) as usize] = tile_type_id;
         } else {
@@ -108,14 +99,34 @@ impl<const PATTERN_WIDTH: usize, const PATTERN_HEIGHT: usize, const PATTERN_DEPT
         }
     }
 
+    pub(crate) fn other_tile_positions(anchor_pos: &GridPosition) -> Vec<GridPosition> {
+        let mut out = Vec::new();
+        for x_off in 0..P_X {
+            for y_off in 0..P_Y {
+                for z_off in 0..P_Z {
+                    if x_off == 0 && y_off == 0 && z_off == 0 {
+                        continue;
+                    }
+                    out.push({
+                        let mut pos = *anchor_pos;
+                        pos.add_xy((x_off as u32, y_off as u32));
+                        pos.add_z(z_off as u32);
+                        pos
+                    })
+                }
+            }
+        }
+        out
+    }
+
     // ------ Comparison methods ------ //
     fn compare_up(&self, other: &Self) -> bool {
-        if PATTERN_HEIGHT == 1 {
+        if P_Y == 1 {
             return true;
         }
-        for z in 0..PATTERN_DEPTH {
-            for y in 0..PATTERN_HEIGHT - 1 {
-                for x in 0..PATTERN_WIDTH {
+        for z in 0..P_Z {
+            for y in 0..P_Y - 1 {
+                for x in 0..P_X {
                     if self.tile_type_ids[z][y][x] != other.tile_type_ids[z][y + 1][x] {
                         return false;
                     }
@@ -126,12 +137,12 @@ impl<const PATTERN_WIDTH: usize, const PATTERN_HEIGHT: usize, const PATTERN_DEPT
     }
 
     fn compare_down(&self, other: &Self) -> bool {
-        if PATTERN_HEIGHT == 1 {
+        if P_Y == 1 {
             return true;
         }
-        for z in 0..PATTERN_DEPTH {
-            for y in 1..PATTERN_HEIGHT {
-                for x in 0..PATTERN_WIDTH {
+        for z in 0..P_Z {
+            for y in 1..P_Y {
+                for x in 0..P_X {
                     if self.tile_type_ids[z][y][x] != other.tile_type_ids[z][y - 1][x] {
                         return false;
                     }
@@ -142,12 +153,12 @@ impl<const PATTERN_WIDTH: usize, const PATTERN_HEIGHT: usize, const PATTERN_DEPT
     }
 
     fn compare_left(&self, other: &Self) -> bool {
-        if PATTERN_WIDTH == 1 {
+        if P_X == 1 {
             return true;
         }
-        for z in 0..PATTERN_DEPTH {
-            for y in 0..PATTERN_HEIGHT {
-                for x in 0..PATTERN_WIDTH - 1 {
+        for z in 0..P_Z {
+            for y in 0..P_Y {
+                for x in 0..P_X - 1 {
                     if self.tile_type_ids[z][y][x] != other.tile_type_ids[z][y][x + 1] {
                         return false;
                     }
@@ -158,12 +169,12 @@ impl<const PATTERN_WIDTH: usize, const PATTERN_HEIGHT: usize, const PATTERN_DEPT
     }
 
     fn compare_right(&self, other: &Self) -> bool {
-        if PATTERN_WIDTH == 1 {
+        if P_X == 1 {
             return true;
         }
-        for z in 0..PATTERN_DEPTH {
-            for y in 0..PATTERN_HEIGHT {
-                for x in 1..PATTERN_WIDTH {
+        for z in 0..P_Z {
+            for y in 0..P_Y {
+                for x in 1..P_X {
                     if self.tile_type_ids[z][y][x] != other.tile_type_ids[z][y][x - 1] {
                         return false;
                     }
@@ -174,12 +185,12 @@ impl<const PATTERN_WIDTH: usize, const PATTERN_HEIGHT: usize, const PATTERN_DEPT
     }
 
     fn compare_deeper(&self, other: &Self) -> bool {
-        if PATTERN_DEPTH == 1 {
+        if P_Z == 1 {
             return true;
         }
-        for z in 0..PATTERN_DEPTH - 1 {
-            for y in 0..PATTERN_HEIGHT {
-                for x in 0..PATTERN_WIDTH {
+        for z in 0..P_Z - 1 {
+            for y in 0..P_Y {
+                for x in 0..P_X {
                     if self.tile_type_ids[z][y][x] != other.tile_type_ids[z + 1][y][x] {
                         return false;
                     }
@@ -190,12 +201,12 @@ impl<const PATTERN_WIDTH: usize, const PATTERN_HEIGHT: usize, const PATTERN_DEPT
     }
 
     fn compare_shallower(&self, other: &Self) -> bool {
-        if PATTERN_DEPTH == 1 {
+        if P_Z == 1 {
             return true;
         }
-        for z in 1..PATTERN_DEPTH {
-            for y in 0..PATTERN_HEIGHT {
-                for x in 0..PATTERN_WIDTH {
+        for z in 1..P_Z {
+            for y in 0..P_Y {
+                for x in 0..P_X {
                     if self.tile_type_ids[z][y][x] != other.tile_type_ids[z - 1][y][x] {
                         return false;
                     }
@@ -208,19 +219,29 @@ impl<const PATTERN_WIDTH: usize, const PATTERN_HEIGHT: usize, const PATTERN_DEPT
 
 #[derive(Debug, Default, Clone)]
 /// Collection holding all found patterns.
-pub struct PatternCollection<
-    const PATTERN_WIDTH: usize,
-    const PATTERN_HEIGHT: usize,
-    const PATTERN_DEPTH: usize,
-> {
-    inner: HashMap<u64, Pattern<PATTERN_WIDTH, PATTERN_HEIGHT, PATTERN_DEPTH>>,
+pub struct PatternCollection<const P_X: usize, const P_Y: usize, const P_Z: usize> {
+    inner: HashMap<u64, Pattern<P_X, P_Y, P_Z>>,
     rev: HashMap<u64, u64>,
+    by_tile_id: HashMap<u64, HashSet<u64>>,
 }
 
-impl<const PATTERN_WIDTH: usize, const PATTERN_HEIGHT: usize, const PATTERN_DEPTH: usize>
-    IdentTileCollection for PatternCollection<PATTERN_WIDTH, PATTERN_HEIGHT, PATTERN_DEPTH>
+impl<const P_X: usize, const P_Y: usize, const P_Z: usize> PatternCollection<P_X, P_Y, P_Z> {
+    pub fn get_patterns_for_tile(&self, tile_type_id: u64) -> Vec<&Pattern<P_X, P_Y, P_Z>> {
+        if let Some(patterns) = self.by_tile_id.get(&tile_type_id) {
+            patterns
+                .iter()
+                .filter_map(|pattern_id| self.inner.get(pattern_id))
+                .collect::<Vec<_>>()
+        } else {
+            Vec::new()
+        }
+    }
+}
+
+impl<const P_X: usize, const P_Y: usize, const P_Z: usize> IdentTileCollection
+    for PatternCollection<P_X, P_Y, P_Z>
 {
-    type DATA = Pattern<PATTERN_WIDTH, PATTERN_HEIGHT, PATTERN_DEPTH>;
+    type DATA = Pattern<P_X, P_Y, P_Z>;
 
     fn inner(&self) -> &std::collections::HashMap<u64, Self::DATA> {
         &self.inner
@@ -236,6 +257,23 @@ impl<const PATTERN_WIDTH: usize, const PATTERN_HEIGHT: usize, const PATTERN_DEPT
 
     fn rev_mut(&mut self) -> &mut std::collections::HashMap<u64, u64> {
         &mut self.rev
+    }
+
+    fn on_add(&mut self, data: &Self::DATA) {
+        match self.by_tile_id.entry(data.tile_type_id) {
+            std::collections::hash_map::Entry::Occupied(mut e) => {
+                e.get_mut().insert(data.pattern_id);
+            }
+            std::collections::hash_map::Entry::Vacant(e) => {
+                e.insert(HashSet::from_iter([data.pattern_id]));
+            }
+        }
+    }
+
+    fn on_remove(&mut self, data: &Self::DATA) {
+        if let Some(set) = self.by_tile_id.get_mut(&data.tile_type_id) {
+            set.remove(&data.pattern_id);
+        }
     }
 }
 
@@ -254,21 +292,15 @@ impl TileData for PatternTileData {}
 
 /// Grid containing pattern data derived from original [`GridMap2D`].
 #[derive(Debug, Clone)]
-pub struct OverlappingPatternGrid<
-    const PATTERN_WIDTH: usize,
-    const PATTERN_HEIGHT: usize,
-    const PATTERN_DEPTH: usize,
-> {
+pub struct OverlappingPatternGrid<const P_X: usize, const P_Y: usize, const P_Z: usize> {
     inner: GridMap2D<PatternTileData>,
 }
 
-impl<const PATTERN_WIDTH: usize, const PATTERN_HEIGHT: usize, const PATTERN_DEPTH: usize>
-    OverlappingPatternGrid<PATTERN_WIDTH, PATTERN_HEIGHT, PATTERN_DEPTH>
-{
+impl<const P_X: usize, const P_Y: usize, const P_Z: usize> OverlappingPatternGrid<P_X, P_Y, P_Z> {
     /// Prepare new instance out of [`GridMap2D`], populating provided [`PatternCollection`] in the process.
     pub fn from_map<Data: IdentifiableTileData>(
         map: &GridMap2D<Data>,
-        collection: &mut PatternCollection<PATTERN_WIDTH, PATTERN_HEIGHT, PATTERN_DEPTH>,
+        collection: &mut PatternCollection<P_X, P_Y, P_Z>,
     ) -> Self {
         let mut instance = Self {
             inner: GridMap2D::new(*map.size()),
@@ -304,7 +336,7 @@ impl<const PATTERN_WIDTH: usize, const PATTERN_HEIGHT: usize, const PATTERN_DEPT
         &self,
         map: &GridMap2D<Data>,
         anchor_pos: &GridPosition,
-    ) -> Option<Pattern<PATTERN_WIDTH, PATTERN_HEIGHT, PATTERN_DEPTH>> {
+    ) -> Option<Pattern<P_X, P_Y, P_Z>> {
         if let Some(positions) = self.generate_pattern_positions(anchor_pos, map.size()) {
             let mut pattern = Pattern::new();
             let tiles = map.get_tiles_at_positions(&positions);
@@ -331,7 +363,7 @@ impl<const PATTERN_WIDTH: usize, const PATTERN_HEIGHT: usize, const PATTERN_DEPT
         size: &GridSize,
     ) -> Option<Vec<GridPosition>> {
         let mut to = *from;
-        to.add_xy(((PATTERN_WIDTH - 1) as u32, (PATTERN_HEIGHT - 1) as u32));
+        to.add_xy(((P_X - 1) as u32, (P_Y - 1) as u32));
         if !size.is_position_valid(&to) {
             return None;
         }
@@ -344,8 +376,5 @@ mod private {
 
     pub trait Sealed {}
 
-    impl<const PATTERN_WIDTH: usize, const PATTERN_HEIGHT: usize, const PATTERN_DEPTH: usize> Sealed
-        for Pattern<PATTERN_WIDTH, PATTERN_HEIGHT, PATTERN_DEPTH>
-    {
-    }
+    impl<const P_X: usize, const P_Y: usize, const P_Z: usize> Sealed for Pattern<P_X, P_Y, P_Z> {}
 }
