@@ -1,23 +1,16 @@
 mod error;
-mod frequency;
 mod overlapping;
 mod queue;
-mod resolver;
-mod rules;
-mod subscriber;
 mod tile;
-
-use std::collections::{HashMap, HashSet};
+mod adjacency;
 
 // Flattened reexports
 pub use error::CollapseError;
-pub use frequency::FrequencyHints;
 use nohash::{IntMap, IntSet};
 pub use overlapping::{analyzer::*, pattern::*, frequency::*, resolver::*, tile::*};
+pub use adjacency::{resolver::*, frequency::*, rules::*, tile::*};
 pub use queue::*;
-pub use resolver::CollapsibleResolver;
-pub use rules::*;
-pub use tile::CollapsibleTileData;
+pub use tile::*;
 
 use crate::map::GridDir;
 

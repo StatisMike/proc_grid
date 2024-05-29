@@ -2,14 +2,9 @@ use std::{cmp::Ordering, collections::BTreeMap};
 
 use rand::Rng;
 
-use crate::{
-    gen::collapse::{
-        frequency::FrequencyHints,
-        tile::{CollapsibleData, CollapsibleTileData},
-    },
-    map::GridMap2D,
-    tile::{identifiable::IdentifiableTileData, GridPosition, GridTile, TileContainer},
-};
+use crate::tile::{GridPosition, GridTile, TileContainer};
+use crate::gen::collapse::tile::CollapsibleData;
+use crate::map::GridMap2D;
 
 use super::{CollapseQueue, ResolverSelector};
 

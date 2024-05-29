@@ -1,17 +1,13 @@
 use std::collections::BTreeMap;
 
-use crate::{
-    map::GridMap2D,
-    tile::{identifiable::IdentifiableTileData, GridPosition, GridTile, TileContainer},
-};
+use crate::map::GridMap2D;
+use crate::tile::{GridPosition, GridTile, TileContainer};
 
 pub(crate) mod entrophy;
 pub(crate) mod position;
 
 pub use entrophy::EntrophyQueue;
 pub use position::*;
-// pub (crate) use entrophy::*;
-// pub (crate) use position::*;
 
 use rand::Rng;
 

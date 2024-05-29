@@ -9,7 +9,7 @@ use crate::{
     gen::collapse::{
         error::CollapseErrorKind,
         tile::CollapsibleData,
-        CollapseError, CollapseQueue, CollapsibleTileData,
+        CollapseError, CollapseQueue,
     }, map::{GridDir, GridMap2D, GridSize}, tile::{
         identifiable::{
             builders::{IdentTileBuilder, TileBuilderError},
@@ -478,8 +478,6 @@ impl<const P_X: usize, const P_Y: usize, const P_Z: usize>
         Ok(())
     }
 }
-
-impl GridMap2D<CollapsibleTileData> {}
 
 pub trait PatternCollapseSubscriber {
     fn on_collapse(&mut self, position: &GridPosition, tile_type_id: u64, pattern_id: u64);

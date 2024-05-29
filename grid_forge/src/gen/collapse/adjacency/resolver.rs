@@ -1,18 +1,19 @@
 use std::collections::VecDeque;
 use std::marker::PhantomData;
 
+use crate::gen::collapse::CollapsibleData;
 use crate::map::{GridDir, GridMap2D, GridSize};
 use crate::tile::identifiable::builders::{IdentTileBuilder, TileBuilderError};
 use crate::tile::identifiable::IdentifiableTileData;
 use crate::tile::GridPosition;
 use crate::tile::TileContainer;
 
-use super::error::CollapseErrorKind;
+use crate::gen::collapse::error::{CollapseError, CollapseErrorKind};
+use crate::gen::collapse::queue::CollapseQueue;
+
 use super::frequency::FrequencyHints;
-use super::queue::CollapseQueue;
 use super::rules::AdjacencyRules;
-use super::tile::{CollapsibleData, CollapsibleTileData};
-use super::CollapseError;
+use super::tile::CollapsibleTileData;
 
 use rand::Rng;
 

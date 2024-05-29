@@ -144,8 +144,8 @@ impl<const P_X: usize, const P_Y: usize, const P_Z: usize> IdentifiableTileData
 impl<const P_X: usize, const P_Y: usize, const P_Z: usize> CollapsibleData
     for CollapsiblePatternTileData<P_X, P_Y, P_Z>
 {
-    fn is_collapsed(&self) -> bool {
-        self.tile_type_id.is_some()
+    fn collapse_id(&self) -> Option<u64> {
+        self.pattern_id
     }
 
     fn new_collapsed_tile(
@@ -173,11 +173,13 @@ impl<const P_X: usize, const P_Y: usize, const P_Z: usize> CollapsibleData
         !self.options_with_weights.is_empty()
     }
 
-    fn remove_option(&mut self, tile_id: u64) {
+    fn remove_option(&mut self, tile_id: u64) -> bool {
         if let Some(weight) = self.options_with_weights.remove(&tile_id) {
             self.weight_sum -= weight;
-            self.weight_log_sum -= (weight as f32) * (weight as f32).log2()
+            self.weight_log_sum -= (weight as f32) * (weight as f32).log2();
+            return true
         }
+        false
     }
 
     fn new_uncollapsed_tile(

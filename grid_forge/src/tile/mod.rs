@@ -1,7 +1,5 @@
 use std::ops::{Add, AddAssign, Sub};
 
-use grid::Grid;
-
 pub mod identifiable;
 
 #[cfg(feature = "vis")]

@@ -6,14 +6,9 @@ use std::{
 use rand::Rng;
 
 use super::{CollapseQueue, ResolverSelector};
-use crate::{
-    gen::collapse::{
-        frequency::FrequencyHints,
-        tile::{CollapsibleData, CollapsibleTileData},
-    },
-    map::GridMap2D,
-    tile::{identifiable::IdentifiableTileData, GridPosition, GridTile, TileContainer},
-};
+use crate::gen::collapse::tile::CollapsibleData;
+use crate::map::GridMap2D;
+use crate::tile::{GridPosition, GridTile, TileContainer};
 
 #[derive(Clone, Copy)]
 pub(crate) struct EntrophyItem {

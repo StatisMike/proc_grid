@@ -3,16 +3,17 @@ use std::{
     hash::{DefaultHasher, Hash, Hasher},
 };
 
-use crate::{
-    gen::collapse::{tile::CollapsibleData, CollapsibleTileData},
-    map::{GridDir, GridMap2D, GridSize},
-    tile::{
-        identifiable::{collection::IdentTileCollection, IdentifiableTileData},
-        GridPosition, TileContainer, TileData,
-    },
-};
+use crate::map::{GridDir, GridMap2D, GridSize};
+use crate::tile::{GridPosition, TileContainer, TileData};
+use crate::tile::identifiable::collection::IdentTileCollection;
+use crate::tile::identifiable::IdentifiableTileData;
 
-pub trait OverlappingPattern: private::Sealed {}
+pub trait OverlappingPattern: private::Sealed {
+    const WIDTH: usize;
+    const HEIGHT: usize;
+    const DEPTH: usize;
+
+}
 
 /// [Pattern] for two-dimensional grids.
 pub type Pattern2D<const P_X: usize, const P_Y: usize> = Pattern<P_X, P_Y, 1>;
@@ -36,6 +37,9 @@ impl<const P_X: usize, const P_Y: usize, const P_Z: usize> Hash for Pattern<P_X,
 impl<const P_X: usize, const P_Y: usize, const P_Z: usize> OverlappingPattern
     for Pattern<P_X, P_Y, P_Z>
 {
+    const WIDTH: usize = P_X;
+    const HEIGHT: usize = P_Y;
+    const DEPTH: usize = P_Z;
 }
 
 impl<const P_X: usize, const P_Y: usize, const P_Z: usize> Pattern<P_X, P_Y, P_Z> {
@@ -44,20 +48,6 @@ impl<const P_X: usize, const P_Y: usize, const P_Z: usize> Pattern<P_X, P_Y, P_Z
             pattern_id: 0,
             tile_type_id: 0,
             tile_type_ids: [[[0; P_X]; P_Y]; P_Z],
-        }
-    }
-
-    pub(crate) fn is_compatible_tile<Ref: AsRef<CollapsibleTileData> + TileContainer>(
-        &self,
-        anchor_pos: &GridPosition,
-        tile: &Ref,
-    ) -> bool {
-        if tile.as_ref().is_collapsed() {
-            self.get_id_for_pos(anchor_pos, &tile.grid_position()) == tile.as_ref().tile_type_id()
-        } else {
-            tile.as_ref()
-                .options_with_weights
-                .contains_key(&self.get_id_for_pos(anchor_pos, &tile.grid_position()))
         }
     }
 
