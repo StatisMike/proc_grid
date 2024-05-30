@@ -13,7 +13,4 @@ members = [
   
   # Benchmarks
   "grid_forge_benches",
-
-  # Tools for benchmarks and examples:
-  "grid_forge_tools"
 ]
