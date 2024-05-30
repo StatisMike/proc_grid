@@ -9,6 +9,7 @@ use godot::engine::{AcceptDialog, INode, Node, TileMap};
 use godot::log::godot_warn;
 use godot::obj::{Base, Gd, WithBaseField};
 use godot::register::{godot_api, GodotClass};
+use singular::Analyzer;
 
 use grid_forge::gen::collapse::*;
 use grid_forge::map::*;
@@ -33,9 +34,9 @@ pub struct TileGenerator {
     channel: Option<Receiver<GenerationResult>>,
     generated: Option<GridMap2D<BasicIdentTileData>>,
 
-    border_rules: AdjacencyRules<BasicIdentTileData>,
-    identity_rules: AdjacencyRules<BasicIdentTileData>,
-    frequency_hints: FrequencyHints<BasicIdentTileData>,
+    border_rules: singular::AdjacencyRules<BasicIdentTileData>,
+    identity_rules: singular::AdjacencyRules<BasicIdentTileData>,
+    frequency_hints: singular::FrequencyHints<BasicIdentTileData>,
 
     base: Base<Node>,
 }
@@ -118,19 +119,19 @@ impl TileGenerator {
             }
         }
 
-        let mut analyzer = AdjacencyBorderAnalyzer::default();
+        let mut analyzer = singular::BorderAnalyzer::default();
         for map in grid_maps.iter() {
             analyzer.analyze(map);
         }
         self.border_rules = analyzer.adjacency().clone();
 
-        let mut analyzer = AdjacencyIdentityAnalyzer::default();
+        let mut analyzer = singular::IdentityAnalyzer::default();
         for map in grid_maps.iter() {
             analyzer.analyze(map)
         }
         self.identity_rules = analyzer.adjacency().clone();
 
-        let mut frequency_hints = FrequencyHints::default();
+        let mut frequency_hints = singular::FrequencyHints::default();
 
         for map in grid_maps.iter() {
             frequency_hints.analyze_grid_map(map);
@@ -161,7 +162,7 @@ impl TileGenerator {
 
             let mut iter = 0;
             let mut rng = thread_rng();
-            let mut resolver = CollapsibleResolver::new(size);
+            let mut resolver = singular::Resolver::new(size);
 
             loop {
                 let result = if queue == 0 {

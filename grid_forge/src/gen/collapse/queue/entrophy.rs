@@ -1,16 +1,14 @@
 use std::{
     cmp::Ordering,
-    collections::{BTreeSet, HashMap},
+    collections::{BTreeMap, BTreeSet, HashMap},
 };
 
 use rand::Rng;
 
 use super::{CollapseQueue, ResolverSelector};
-use crate::{
-    gen::collapse::{frequency::FrequencyHints, tile::CollapsibleTileData},
-    map::GridMap2D,
-    tile::{identifiable::IdentifiableTileData, GridPosition, GridTile, TileContainer},
-};
+use crate::gen::collapse::tile::CollapsibleTileData;
+use crate::map::GridMap2D;
+use crate::tile::{GridPosition, GridTile, TileContainer};
 
 #[derive(Clone, Copy)]
 pub(crate) struct EntrophyItem {
@@ -84,9 +82,10 @@ impl CollapseQueue for EntrophyQueue {
         None
     }
 
-    fn update_queue<Tile>(&mut self, tile: &Tile)
+    fn update_queue<Tile, Data>(&mut self, tile: &Tile)
     where
-        Tile: TileContainer + AsRef<CollapsibleTileData>,
+        Tile: TileContainer + AsRef<Data>,
+        Data: CollapsibleTileData,
     {
         let item = EntrophyItem::new(tile.grid_position(), tile.as_ref().calc_entrophy());
         if let Some(existing_entrophy) = self.by_pos.remove(&item.pos) {
@@ -105,7 +104,7 @@ impl CollapseQueue for EntrophyQueue {
         self.by_entrophy.is_empty()
     }
 
-    fn initialize_queue(&mut self, tiles: &[GridTile<CollapsibleTileData>]) {
+    fn initialize_queue<T: CollapsibleTileData>(&mut self, tiles: &[GridTile<T>]) {
         for element in tiles {
             self.update_queue(element)
         }
@@ -113,15 +112,14 @@ impl CollapseQueue for EntrophyQueue {
 }
 
 impl ResolverSelector for EntrophyQueue {
-    fn populate_inner_grid<Data: IdentifiableTileData, R: Rng>(
+    fn populate_inner_grid<R: Rng, Data: CollapsibleTileData>(
         &mut self,
         rng: &mut R,
-        grid: &mut GridMap2D<CollapsibleTileData>,
+        grid: &mut GridMap2D<Data>,
         positions: &[GridPosition],
-        frequency: &FrequencyHints<Data>,
+        options_with_weights: BTreeMap<u64, u32>,
     ) {
-        let tiles =
-            CollapsibleTileData::new_from_frequency_with_entrophy(rng, positions, frequency);
+        let tiles = Data::new_from_frequency_with_entrophy(rng, positions, options_with_weights);
 
         self.initialize_queue(&tiles);
 

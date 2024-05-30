@@ -30,6 +30,7 @@ use grid_forge::tile::GridPosition;
 use grid_forge::vis::collection::VisCollection;
 use grid_forge::vis::ops::*;
 use grid_forge::vis::DefaultVisPixel;
+use singular::Analyzer;
 
 use rand::SeedableRng;
 
@@ -60,17 +61,17 @@ fn main() {
     let roads_grid = load_gridmap_identifiable_auto(&roads_img, &mut collection, &builder).unwrap();
 
     // Construct border-based adjacency analyzer and analyze the maps.
-    let mut border_analyzer = AdjacencyBorderAnalyzer::default();
+    let mut border_analyzer = singular::BorderAnalyzer::default();
     border_analyzer.analyze(&seas_grid);
     border_analyzer.analyze(&roads_grid);
 
     // Construct identify-based adjacency analyzer and analyze the maps.
-    let mut ident_analyzer = AdjacencyIdentityAnalyzer::default();
+    let mut ident_analyzer = singular::IdentityAnalyzer::default();
     ident_analyzer.analyze(&seas_grid);
     ident_analyzer.analyze(&roads_grid);
 
     // Generate frequency hints on basis of provided tiles
-    let mut frequency_hints = FrequencyHints::default();
+    let mut frequency_hints = singular::FrequencyHints::default();
     frequency_hints.analyze_grid_map(&seas_grid);
     frequency_hints.analyze_grid_map(&roads_grid);
 
@@ -88,7 +89,7 @@ fn main() {
 
     // Create new grid with CollapsibleResolver.
     let size = GridSize::new_xy(50, 50);
-    let mut resolver = CollapsibleResolver::new(size);
+    let mut resolver = singular::Resolver::new(size);
 
     // We will generate the map in few parts, so we can prepare the positions arrays.
     let all_positions = size.get_all_possible_positions();

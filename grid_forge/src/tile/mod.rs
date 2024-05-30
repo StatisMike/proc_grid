@@ -1,4 +1,4 @@
-use std::ops::{Add, AddAssign};
+use std::ops::{Add, AddAssign, Sub};
 
 pub mod identifiable;
 
@@ -232,6 +232,11 @@ impl GridPosition {
         }
         out
     }
+
+    /// Filter the `pos` vector, removing from it all positions contained within `to_filter`.
+    pub fn filter_positions(pos: &mut Vec<GridPosition>, to_filter: &[GridPosition]) {
+        pos.retain(|p| !to_filter.contains(p));
+    }
 }
 
 impl Add for GridPosition {
@@ -242,6 +247,19 @@ impl Add for GridPosition {
             Self::new_xyz(self.x + rhs.x, self.y + rhs.y, lz + rz)
         } else {
             Self::new_xy(self.x + rhs.x, self.y + rhs.y)
+        }
+    }
+}
+
+impl Sub for GridPosition {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        match (&self.z, &rhs.z) {
+            (None, None) => Self::new_xy(self.x - rhs.x, self.y - rhs.y),
+            (None, Some(z)) => Self::new_xyz(self.x - rhs.x, self.y - rhs.y, *z),
+            (Some(z), None) => Self::new_xyz(self.x - rhs.x, self.y - rhs.y, *z),
+            (Some(lz), Some(rz)) => Self::new_xyz(self.x - rhs.x, self.y - rhs.y, lz - rz),
         }
     }
 }
