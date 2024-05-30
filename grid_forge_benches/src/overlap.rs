@@ -4,7 +4,11 @@ use rand_chacha::ChaChaRng;
 use test::Bencher;
 
 use grid_forge::{
-    gen::collapse::{EntrophyQueue, OverlappingAnalyzer, OverlappingResolver, Pattern2D, PositionQueue}, map::GridSize, tile::identifiable::{builders::IdentTileTraitBuilder, BasicIdentTileData}, vis::{collection::VisCollection, ops::load_gridmap_identifiable_auto, DefaultVisPixel}
+    gen::collapse::overlap::*,
+    gen::collapse::*,
+    map::GridSize,
+    tile::identifiable::{builders::IdentTileTraitBuilder, BasicIdentTileData},
+    vis::{collection::VisCollection, ops::load_gridmap_identifiable_auto, DefaultVisPixel},
 };
 
 use crate::utils::RngHelper;
@@ -22,7 +26,7 @@ fn analyze_10x10_pattern_2x2(bencher: &mut Bencher) {
     let grid = load_gridmap_identifiable_auto(&img, &mut collection, &builder).unwrap();
 
     bencher.iter(|| {
-        let mut analyzer = OverlappingAnalyzer::<2, 2, 1, BasicIdentTileData>::default();
+        let mut analyzer = Analyzer::<OverlappingPattern2D<2, 2>, BasicIdentTileData>::default();
         analyzer.analyze_map(&grid);
     })
 }
@@ -37,24 +41,21 @@ fn analyze_10x10_pattern_3x3(bencher: &mut Bencher) {
     let grid = load_gridmap_identifiable_auto(&img, &mut collection, &builder).unwrap();
 
     bencher.iter(|| {
-        let mut analyzer = OverlappingAnalyzer::<3, 3, 1, BasicIdentTileData>::default();
+        let mut analyzer = Analyzer::<OverlappingPattern2D<3, 3>, BasicIdentTileData>::default();
         analyzer.analyze_map(&grid);
     })
 }
 
 #[bench]
 fn generate_10x10_pattern_3x3_position(bencher: &mut Bencher) {
-
     let builder = IdentTileTraitBuilder::<BasicIdentTileData>::default();
 
     let mut vis_collection = VisCollection::<DefaultVisPixel, 4, 4>::default();
 
-    let mut analyzer = OverlappingAnalyzer::<3, 3, 1, BasicIdentTileData>::default();
+    let mut analyzer = Analyzer::<OverlappingPattern2D<3, 3>, BasicIdentTileData>::default();
 
     for path in &[MAP_10X10, MAP_20X20] {
-        let img = image::open(path)
-        .unwrap()
-        .into_rgb8();
+        let img = image::open(path).unwrap().into_rgb8();
 
         let grid = load_gridmap_identifiable_auto(&img, &mut vis_collection, &builder).unwrap();
 
@@ -67,63 +68,62 @@ fn generate_10x10_pattern_3x3_position(bencher: &mut Bencher) {
 
     let size = GridSize::new_xy(10, 10);
     let positions = size.get_all_possible_positions();
-
 
     bencher.iter(|| {
         let mut rng: ChaChaRng = RngHelper::init_str("overlap_bench", 1).with_pos(57).into();
 
-        let mut resolver = OverlappingResolver::new(size);
-        resolver.generate(
-            &mut rng,
-            &positions,
-            PositionQueue::default(),
-            pattern_collection,
-            pattern_freq,
-            pattern_rules,
-        ).unwrap();
+        let mut resolver = Resolver::new(size);
+        resolver
+            .generate(
+                &mut rng,
+                &positions,
+                PositionQueue::default(),
+                pattern_collection,
+                pattern_freq,
+                pattern_rules,
+            )
+            .unwrap();
     });
-
 }
 
-#[bench]
-fn generate_10x10_pattern_3x3_entrophy_2(bencher: &mut Bencher) {
+// #[bench]
+// fn generate_10x10_pattern_3x3_entrophy_2(bencher: &mut Bencher) {
 
-    let builder = IdentTileTraitBuilder::<BasicIdentTileData>::default();
+//     let builder = IdentTileTraitBuilder::<BasicIdentTileData>::default();
 
-    let mut vis_collection = VisCollection::<DefaultVisPixel, 4, 4>::default();
+//     let mut vis_collection = VisCollection::<DefaultVisPixel, 4, 4>::default();
 
-    let mut analyzer = OverlappingAnalyzer::<3, 3, 1, BasicIdentTileData>::default();
+//     let mut analyzer = OverlappingAnalyzer::<Pattern2D<3,3>, BasicIdentTileData>::default();
 
-    for path in &[MAP_10X10, MAP_20X20] {
-        let img = image::open(path)
-        .unwrap()
-        .into_rgb8();
+//     for path in &[MAP_10X10, MAP_20X20] {
+//         let img = image::open(path)
+//         .unwrap()
+//         .into_rgb8();
 
-        let grid = load_gridmap_identifiable_auto(&img, &mut vis_collection, &builder).unwrap();
+//         let grid = load_gridmap_identifiable_auto(&img, &mut vis_collection, &builder).unwrap();
 
-        analyzer.analyze_map(&grid);
-    }
+//         analyzer.analyze_map(&grid);
+//     }
 
-    let pattern_rules = analyzer.get_adjacency();
-    let pattern_collection = analyzer.get_collection();
-    let pattern_freq = analyzer.get_frequency();
+//     let pattern_rules = analyzer.get_adjacency();
+//     let pattern_collection = analyzer.get_collection();
+//     let pattern_freq = analyzer.get_frequency();
 
-    let size = GridSize::new_xy(10, 10);
-    let positions = size.get_all_possible_positions();
+//     let size = GridSize::new_xy(10, 10);
+//     let positions = size.get_all_possible_positions();
 
+//     bencher.iter(|| {
+//         let mut rng: ChaChaRng = RngHelper::init_str("overlap_bench", 1).into();
 
-    bencher.iter(|| {
-        let mut rng: ChaChaRng = RngHelper::init_str("overlap_bench", 1).into();
+//         let mut resolver = OverlappingResolver::new(size);
+//         resolver.generate(
+//             &mut rng,
+//             &positions,
+//             EntrophyQueue::new(3),
+//             pattern_collection,
+//             pattern_freq,
+//             pattern_rules,
+//         ).unwrap();
+//     });
 
-        let mut resolver = OverlappingResolver::new(size);
-        resolver.generate(
-            &mut rng,
-            &positions,
-            EntrophyQueue::new(3),
-            pattern_collection,
-            pattern_freq,
-            pattern_rules,
-        ).unwrap();
-    });
-
-}
+// }

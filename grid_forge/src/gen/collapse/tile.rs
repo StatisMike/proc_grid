@@ -19,7 +19,7 @@ impl IdentifiableTileData for CollapsedTileData {
 }
 
 /// Trait shared by [`TileData`] used within collapsible generative algorithms.
-pub trait CollapsibleData: IdentifiableTileData {
+pub trait CollapsibleTileData: IdentifiableTileData {
     fn have_options(&self) -> bool;
 
     fn remove_option(&mut self, tile_id: u64) -> bool;

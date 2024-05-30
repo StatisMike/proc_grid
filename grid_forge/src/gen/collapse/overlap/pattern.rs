@@ -1,57 +1,96 @@
-use std::{
-    collections::{HashMap, HashSet},
-    hash::{DefaultHasher, Hash, Hasher},
-};
+use std::collections::{HashMap, HashSet};
+use std::hash::{DefaultHasher, Hash, Hasher};
+use std::marker::PhantomData;
 
 use crate::map::{GridDir, GridMap2D, GridSize};
-use crate::tile::{GridPosition, TileContainer, TileData};
 use crate::tile::identifiable::collection::IdentTileCollection;
 use crate::tile::identifiable::IdentifiableTileData;
+use crate::tile::{GridPosition, TileContainer, TileData};
 
-pub trait OverlappingPattern: private::Sealed {
-    const WIDTH: usize;
-    const HEIGHT: usize;
-    const DEPTH: usize;
-
-}
-
-/// [Pattern] for two-dimensional grids.
-pub type Pattern2D<const P_X: usize, const P_Y: usize> = Pattern<P_X, P_Y, 1>;
-
-/// Pattern for Overlapping collapse algorithm.
+/// Pattern used in Overlapping Collapse algorithm.
 ///
-/// It describes the identifiable tiles present in
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub struct Pattern<const P_X: usize, const P_Y: usize, const P_Z: usize> {
-    pub(crate) pattern_id: u64,
-    pub(crate) tile_type_id: u64,
-    pub(crate) tile_type_ids: [[[u64; P_X]; P_Y]; P_Z],
+/// To declare the size of pattern to use, specify the dimensionality by providing [`OverlappingPattern2D`] or
+/// [`OverlappingPattern3D`] type signature in the dependent type declarations. Sizes of 2 and 3 tiles are the most
+/// efficient and provide most interesting outputs, though it all depends of the structute in the input grids.
+///
+/// Specifying a size of `1` in all directions will provide totally random outputs. For the single-tiled collapsible
+/// generative algorithm the [`adjacency`](crate::gen::collapse::adjacency)-based should be always preferred.
+///
+/// It is comprised of `tile_type_ids` of all tiles found in the range of the pattern, where the one present at `[0][0][0]`
+/// position is considered the *main* tile, and all others are *secondary* tiles.
+///
+/// Algorithm selecting a pattern to be present in some place will result in the *main* tile to be placed there, while
+/// *secondary* tiles are there to check compatibility beetween two different `OverlappingPattern`s.
+#[allow(private_bounds)]
+pub trait OverlappingPattern
+where
+    Self: Clone + PartialEq + Eq + Hash + std::fmt::Debug + private::SealedPattern,
+{
+    /// Size of the pattern on the `x` axis.
+    const X_LEN: usize;
+
+    /// Size of the pattern on the `y` axis.
+    const Y_LEN: usize;
+
+    /// Size of the pattern on the `z` axis.
+    const Z_LEN: usize;
+
+    /// Retrieves pattern identifier.
+    fn pattern_id(&self) -> u64;
+
+    /// Retrieves `tile_type_id` of pattern primary tile.
+    fn tile_type_id(&self) -> u64;
+
+    /// Gets `tile_type_id` for a [`TileData`] of a tile present in the pattern, given the [`GridPosition`] of the
+    /// primary tile (`anchor_pos`) and specific position (`pos`).
+    ///
+    /// # Panic
+    /// This method will panic if the `pos` is located beyond boundaries of the pattern.
+    fn get_id_for_pos(&self, anchor_pos: &GridPosition, pos: &GridPosition) -> u64;
+
+    /// Checks compatibility between two patterns is specified direction.
+    fn is_compatible_with(&self, other: &Self, direction: GridDir) -> bool;
+
+    /// Retrieves positions of the secondary tiles of the pattern.
+    fn secondary_tile_positions(anchor_pos: &GridPosition) -> Vec<GridPosition>;
 }
 
-impl<const P_X: usize, const P_Y: usize, const P_Z: usize> Hash for Pattern<P_X, P_Y, P_Z> {
+/// [OverlappingPattern] for two-dimensional grids.
+pub type OverlappingPattern2D<const X_LEN: usize, const Y_LEN: usize> =
+    OverlappingPattern3D<X_LEN, Y_LEN, 1>;
+
+/// [OverlappingPattern] for three-dimensional grids.
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct OverlappingPattern3D<const X_LEN: usize, const Y_LEN: usize, const Z_LEN: usize> {
+    pattern_id: u64,
+    tile_type_id: u64,
+    tile_type_ids: [[[u64; X_LEN]; Y_LEN]; Z_LEN],
+}
+
+impl<const P_X: usize, const P_Y: usize, const P_Z: usize> Hash
+    for OverlappingPattern3D<P_X, P_Y, P_Z>
+{
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.tile_type_ids.hash(state);
     }
 }
 
 impl<const P_X: usize, const P_Y: usize, const P_Z: usize> OverlappingPattern
-    for Pattern<P_X, P_Y, P_Z>
+    for OverlappingPattern3D<P_X, P_Y, P_Z>
 {
-    const WIDTH: usize = P_X;
-    const HEIGHT: usize = P_Y;
-    const DEPTH: usize = P_Z;
-}
+    const X_LEN: usize = P_X;
+    const Y_LEN: usize = P_Y;
+    const Z_LEN: usize = P_Z;
 
-impl<const P_X: usize, const P_Y: usize, const P_Z: usize> Pattern<P_X, P_Y, P_Z> {
-    pub(crate) fn new() -> Self {
-        Self {
-            pattern_id: 0,
-            tile_type_id: 0,
-            tile_type_ids: [[[0; P_X]; P_Y]; P_Z],
-        }
+    fn pattern_id(&self) -> u64 {
+        self.pattern_id
     }
 
-    pub(crate) fn get_id_for_pos(&self, anchor_pos: &GridPosition, pos: &GridPosition) -> u64 {
+    fn tile_type_id(&self) -> u64 {
+        self.tile_type_id
+    }
+
+    fn get_id_for_pos(&self, anchor_pos: &GridPosition, pos: &GridPosition) -> u64 {
         if P_Z == 1 {
             self.tile_type_ids[0][*anchor_pos.y() as usize - *pos.y() as usize]
                 [*anchor_pos.x() as usize - *pos.x() as usize]
@@ -63,24 +102,7 @@ impl<const P_X: usize, const P_Y: usize, const P_Z: usize> Pattern<P_X, P_Y, P_Z
         }
     }
 
-    pub(crate) fn set_id_for_pos(
-        &mut self,
-        anchor_pos: &GridPosition,
-        pos: &GridPosition,
-        tile_type_id: u64,
-    ) {
-        if P_Z == 1 {
-            self.tile_type_ids[0][(pos.y() - anchor_pos.y()) as usize]
-                [(pos.x() - anchor_pos.x()) as usize] = tile_type_id;
-        } else {
-            self.tile_type_ids[(pos.z().expect("cannot get `z` from `anchor_pos`")
-                - anchor_pos.z().expect("cannot get `z` from `pos`"))
-                as usize][(pos.y() - anchor_pos.y()) as usize]
-                [(pos.x() - anchor_pos.x()) as usize] = tile_type_id;
-        }
-    }
-
-    pub(crate) fn is_compatible_with(&self, other: &Self, direction: GridDir) -> bool {
+    fn is_compatible_with(&self, other: &Self, direction: GridDir) -> bool {
         match direction {
             GridDir::UP => self.compare_up(other),
             GridDir::DOWN => self.compare_down(other),
@@ -89,7 +111,7 @@ impl<const P_X: usize, const P_Y: usize, const P_Z: usize> Pattern<P_X, P_Y, P_Z
         }
     }
 
-    pub(crate) fn other_tile_positions(anchor_pos: &GridPosition) -> Vec<GridPosition> {
+    fn secondary_tile_positions(anchor_pos: &GridPosition) -> Vec<GridPosition> {
         let mut out = Vec::new();
         for x_off in 0..P_X {
             for y_off in 0..P_Y {
@@ -108,7 +130,9 @@ impl<const P_X: usize, const P_Y: usize, const P_Z: usize> Pattern<P_X, P_Y, P_Z
         }
         out
     }
+}
 
+impl<const P_X: usize, const P_Y: usize, const P_Z: usize> OverlappingPattern3D<P_X, P_Y, P_Z> {
     // ------ Comparison methods ------ //
     fn compare_up(&self, other: &Self) -> bool {
         if P_Y == 1 {
@@ -207,16 +231,26 @@ impl<const P_X: usize, const P_Y: usize, const P_Z: usize> Pattern<P_X, P_Y, P_Z
     }
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 /// Collection holding all found patterns.
-pub struct PatternCollection<const P_X: usize, const P_Y: usize, const P_Z: usize> {
-    inner: HashMap<u64, Pattern<P_X, P_Y, P_Z>>,
+pub struct PatternCollection<P: OverlappingPattern> {
+    inner: HashMap<u64, P>,
     rev: HashMap<u64, u64>,
     by_tile_id: HashMap<u64, HashSet<u64>>,
 }
 
-impl<const P_X: usize, const P_Y: usize, const P_Z: usize> PatternCollection<P_X, P_Y, P_Z> {
-    pub fn get_patterns_for_tile(&self, tile_type_id: u64) -> Vec<&Pattern<P_X, P_Y, P_Z>> {
+impl<P: OverlappingPattern> Default for PatternCollection<P> {
+    fn default() -> Self {
+        Self {
+            inner: Default::default(),
+            rev: Default::default(),
+            by_tile_id: Default::default(),
+        }
+    }
+}
+
+impl<P: OverlappingPattern> PatternCollection<P> {
+    pub fn get_patterns_for_tile(&self, tile_type_id: u64) -> Vec<&P> {
         if let Some(patterns) = self.by_tile_id.get(&tile_type_id) {
             patterns
                 .iter()
@@ -228,10 +262,8 @@ impl<const P_X: usize, const P_Y: usize, const P_Z: usize> PatternCollection<P_X
     }
 }
 
-impl<const P_X: usize, const P_Y: usize, const P_Z: usize> IdentTileCollection
-    for PatternCollection<P_X, P_Y, P_Z>
-{
-    type DATA = Pattern<P_X, P_Y, P_Z>;
+impl<P: OverlappingPattern> IdentTileCollection for PatternCollection<P> {
+    type DATA = P;
 
     fn inner(&self) -> &std::collections::HashMap<u64, Self::DATA> {
         &self.inner
@@ -250,19 +282,19 @@ impl<const P_X: usize, const P_Y: usize, const P_Z: usize> IdentTileCollection
     }
 
     fn on_add(&mut self, data: &Self::DATA) {
-        match self.by_tile_id.entry(data.tile_type_id) {
+        match self.by_tile_id.entry(data.tile_type_id()) {
             std::collections::hash_map::Entry::Occupied(mut e) => {
-                e.get_mut().insert(data.pattern_id);
+                e.get_mut().insert(data.pattern_id());
             }
             std::collections::hash_map::Entry::Vacant(e) => {
-                e.insert(HashSet::from_iter([data.pattern_id]));
+                e.insert(HashSet::from_iter([data.pattern_id()]));
             }
         }
     }
 
     fn on_remove(&mut self, data: &Self::DATA) {
-        if let Some(set) = self.by_tile_id.get_mut(&data.tile_type_id) {
-            set.remove(&data.pattern_id);
+        if let Some(set) = self.by_tile_id.get_mut(&data.tile_type_id()) {
+            set.remove(&data.pattern_id());
         }
     }
 }
@@ -282,25 +314,27 @@ impl TileData for PatternTileData {}
 
 /// Grid containing pattern data derived from original [`GridMap2D`].
 #[derive(Debug, Clone)]
-pub struct OverlappingPatternGrid<const P_X: usize, const P_Y: usize, const P_Z: usize> {
+pub struct OverlappingPatternGrid<P: OverlappingPattern> {
     inner: GridMap2D<PatternTileData>,
+    phantom: PhantomData<fn(P)>,
 }
 
-impl<const P_X: usize, const P_Y: usize, const P_Z: usize> OverlappingPatternGrid<P_X, P_Y, P_Z> {
+impl<P: OverlappingPattern> OverlappingPatternGrid<P> {
     /// Prepare new instance out of [`GridMap2D`], populating provided [`PatternCollection`] in the process.
     pub fn from_map<Data: IdentifiableTileData>(
         map: &GridMap2D<Data>,
-        collection: &mut PatternCollection<P_X, P_Y, P_Z>,
+        collection: &mut PatternCollection<P>,
     ) -> Self {
         let mut instance = Self {
             inner: GridMap2D::new(*map.size()),
+            phantom: PhantomData,
         };
 
         for position in map.get_all_positions() {
             if let Some(pattern) = instance.create_pattern(map, &position) {
                 let tile = PatternTileData::WithPattern {
-                    tile_type_id: pattern.tile_type_id,
-                    pattern_id: pattern.pattern_id,
+                    tile_type_id: pattern.tile_type_id(),
+                    pattern_id: pattern.pattern_id(),
                 };
                 collection.add_tile(pattern);
                 instance.inner.insert_data(&position, tile);
@@ -326,9 +360,9 @@ impl<const P_X: usize, const P_Y: usize, const P_Z: usize> OverlappingPatternGri
         &self,
         map: &GridMap2D<Data>,
         anchor_pos: &GridPosition,
-    ) -> Option<Pattern<P_X, P_Y, P_Z>> {
+    ) -> Option<P> {
         if let Some(positions) = self.generate_pattern_positions(anchor_pos, map.size()) {
-            let mut pattern = Pattern::new();
+            let mut pattern = P::empty();
             let tiles = map.get_tiles_at_positions(&positions);
             for tile in tiles {
                 pattern.set_id_for_pos(
@@ -337,11 +371,7 @@ impl<const P_X: usize, const P_Y: usize, const P_Z: usize> OverlappingPatternGri
                     tile.as_ref().tile_type_id(),
                 );
             }
-            pattern.tile_type_id = pattern.tile_type_ids[0][0][0];
-
-            let mut hasher = DefaultHasher::default();
-            pattern.hash(&mut hasher);
-            pattern.pattern_id = hasher.finish();
+            pattern.finalize();
             return Some(pattern);
         }
         None
@@ -353,7 +383,7 @@ impl<const P_X: usize, const P_Y: usize, const P_Z: usize> OverlappingPatternGri
         size: &GridSize,
     ) -> Option<Vec<GridPosition>> {
         let mut to = *from;
-        to.add_xy(((P_X - 1) as u32, (P_Y - 1) as u32));
+        to.add_xy(((P::X_LEN - 1) as u32, (P::Y_LEN - 1) as u32));
         if !size.is_position_valid(&to) {
             return None;
         }
@@ -364,7 +394,54 @@ impl<const P_X: usize, const P_Y: usize, const P_Z: usize> OverlappingPatternGri
 mod private {
     use super::*;
 
-    pub trait Sealed {}
+    /// Trait making the [`OverlappingPattern`] non-implementable outside of the crate and keeping the mutability
+    /// methods private to the crate.
+    pub(crate) trait SealedPattern {
+        fn empty() -> Self;
 
-    impl<const P_X: usize, const P_Y: usize, const P_Z: usize> Sealed for Pattern<P_X, P_Y, P_Z> {}
+        fn set_id_for_pos(
+            &mut self,
+            anchor_pos: &GridPosition,
+            pos: &GridPosition,
+            tile_type_id: u64,
+        );
+
+        fn finalize(&mut self);
+    }
+
+    impl<const P_X: usize, const P_Y: usize, const P_Z: usize> SealedPattern
+        for OverlappingPattern3D<P_X, P_Y, P_Z>
+    {
+        fn empty() -> Self {
+            Self {
+                pattern_id: 0,
+                tile_type_id: 0,
+                tile_type_ids: [[[0; P_X]; P_Y]; P_Z],
+            }
+        }
+
+        fn set_id_for_pos(
+            &mut self,
+            anchor_pos: &GridPosition,
+            pos: &GridPosition,
+            tile_type_id: u64,
+        ) {
+            if P_Z == 1 {
+                self.tile_type_ids[0][(pos.y() - anchor_pos.y()) as usize]
+                    [(pos.x() - anchor_pos.x()) as usize] = tile_type_id;
+            } else {
+                self.tile_type_ids[(pos.z().expect("cannot get `z` from `anchor_pos`")
+                    - anchor_pos.z().expect("cannot get `z` from `pos`"))
+                    as usize][(pos.y() - anchor_pos.y()) as usize]
+                    [(pos.x() - anchor_pos.x()) as usize] = tile_type_id;
+            }
+        }
+
+        fn finalize(&mut self) {
+            let mut hasher = DefaultHasher::default();
+            self.hash(&mut hasher);
+            self.pattern_id = hasher.finish();
+            self.tile_type_id = self.tile_type_ids[0][0][0];
+        }
+    }
 }

@@ -1,12 +1,11 @@
-use std::{collections::HashMap, marker::PhantomData};
+use std::collections::{BTreeMap, HashMap};
+use std::marker::PhantomData;
 
-use crate::{
-    map::{GridDir, GridMap2D},
-    tile::identifiable::IdentifiableTileData,
-    tile::GridPosition,
-};
+use crate::map::{GridDir, GridMap2D};
+use crate::tile::identifiable::IdentifiableTileData;
+use crate::tile::{GridPosition, TileContainer};
 
-pub trait AdjacencyAnalyzer<Data>
+pub trait Analyzer<Data>
 where
     Data: IdentifiableTileData,
 {
@@ -93,7 +92,7 @@ where
     }
 }
 
-pub struct AdjacencyIdentityAnalyzer<Data>
+pub struct IdentityAnalyzer<Data>
 where
     Data: IdentifiableTileData,
 {
@@ -101,7 +100,7 @@ where
     adjacency_rules: AdjacencyRules<Data>,
 }
 
-impl<Data> Default for AdjacencyIdentityAnalyzer<Data>
+impl<Data> Default for IdentityAnalyzer<Data>
 where
     Data: IdentifiableTileData,
 {
@@ -113,7 +112,7 @@ where
     }
 }
 
-impl<Data> AdjacencyIdentityAnalyzer<Data>
+impl<Data> IdentityAnalyzer<Data>
 where
     Data: IdentifiableTileData,
 {
@@ -136,7 +135,7 @@ where
     }
 }
 
-impl<Data> AdjacencyAnalyzer<Data> for AdjacencyIdentityAnalyzer<Data>
+impl<Data> Analyzer<Data> for IdentityAnalyzer<Data>
 where
     Data: IdentifiableTileData,
 {
@@ -155,7 +154,7 @@ where
     }
 }
 
-pub struct AdjacencyBorderAnalyzer<Data>
+pub struct BorderAnalyzer<Data>
 where
     Data: IdentifiableTileData,
 {
@@ -167,7 +166,7 @@ where
     border_types: HashMap<u64, Vec<(u64, GridDir)>>,
 }
 
-impl<Data> Default for AdjacencyBorderAnalyzer<Data>
+impl<Data> Default for BorderAnalyzer<Data>
 where
     Data: IdentifiableTileData,
 {
@@ -181,7 +180,7 @@ where
     }
 }
 
-impl<Data> AdjacencyAnalyzer<Data> for AdjacencyBorderAnalyzer<Data>
+impl<Data> Analyzer<Data> for BorderAnalyzer<Data>
 where
     Data: IdentifiableTileData,
 {
@@ -202,7 +201,7 @@ where
     }
 }
 
-impl<Data> AdjacencyBorderAnalyzer<Data>
+impl<Data> BorderAnalyzer<Data>
 where
     Data: IdentifiableTileData,
 {
@@ -416,6 +415,81 @@ where
         Self {
             borders: HashMap::new(),
             phantom: PhantomData::<Data>,
+        }
+    }
+}
+
+/// Frequency hints for the *adjacency-based* generative algorithm.
+///
+/// Describes the frequency of occurence of all distinct tiles. Can be generated automatically while analyzing sample
+/// maps, or specified manually for each `tile_type_id` via [`set_weight_for_tile`](Self::set_weight_for_tile) method.
+#[derive(Debug)]
+pub struct FrequencyHints<Data>
+where
+    Data: IdentifiableTileData,
+{
+    weights: BTreeMap<u64, u32>,
+    id_type: PhantomData<Data>,
+}
+
+impl<Data> Clone for FrequencyHints<Data>
+where
+    Data: IdentifiableTileData,
+{
+    fn clone(&self) -> Self {
+        Self {
+            weights: self.weights.clone(),
+            id_type: PhantomData::<Data>,
+        }
+    }
+}
+
+impl<T> Default for FrequencyHints<T>
+where
+    T: IdentifiableTileData,
+{
+    fn default() -> Self {
+        Self {
+            weights: BTreeMap::new(),
+            id_type: PhantomData::<T>,
+        }
+    }
+}
+
+impl<Data> FrequencyHints<Data>
+where
+    Data: IdentifiableTileData,
+{
+    pub fn set_weight_for_tile<Tile>(&mut self, tile: &Tile, weight: u32)
+    where
+        Tile: TileContainer + AsRef<Data>,
+    {
+        let entry = self
+            .weights
+            .entry(tile.as_ref().tile_type_id())
+            .or_default();
+        *entry = weight;
+    }
+
+    pub fn count_tile<Tile>(&mut self, tile: &Tile)
+    where
+        Tile: TileContainer + AsRef<Data>,
+    {
+        if let Some(count) = self.weights.get_mut(&tile.as_ref().tile_type_id()) {
+            *count += 1;
+        } else {
+            self.weights.insert(tile.as_ref().tile_type_id(), 1);
+        }
+    }
+
+    pub(crate) fn get_all_weights_cloned(&self) -> BTreeMap<u64, u32> {
+        self.weights.clone()
+    }
+
+    pub fn analyze_grid_map(&mut self, map: &GridMap2D<Data>) {
+        for position in map.get_all_positions() {
+            let reference = map.get_tile_at_position(&position).unwrap();
+            self.count_tile(&reference)
         }
     }
 }

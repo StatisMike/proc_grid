@@ -6,7 +6,7 @@ use std::{
 use rand::Rng;
 
 use super::{CollapseQueue, ResolverSelector};
-use crate::gen::collapse::tile::CollapsibleData;
+use crate::gen::collapse::tile::CollapsibleTileData;
 use crate::map::GridMap2D;
 use crate::tile::{GridPosition, GridTile, TileContainer};
 
@@ -85,7 +85,7 @@ impl CollapseQueue for EntrophyQueue {
     fn update_queue<Tile, Data>(&mut self, tile: &Tile)
     where
         Tile: TileContainer + AsRef<Data>,
-        Data: CollapsibleData,
+        Data: CollapsibleTileData,
     {
         let item = EntrophyItem::new(tile.grid_position(), tile.as_ref().calc_entrophy());
         if let Some(existing_entrophy) = self.by_pos.remove(&item.pos) {
@@ -104,7 +104,7 @@ impl CollapseQueue for EntrophyQueue {
         self.by_entrophy.is_empty()
     }
 
-    fn initialize_queue<T: CollapsibleData>(&mut self, tiles: &[GridTile<T>]) {
+    fn initialize_queue<T: CollapsibleTileData>(&mut self, tiles: &[GridTile<T>]) {
         for element in tiles {
             self.update_queue(element)
         }
@@ -112,7 +112,7 @@ impl CollapseQueue for EntrophyQueue {
 }
 
 impl ResolverSelector for EntrophyQueue {
-    fn populate_inner_grid<R: Rng, Data: CollapsibleData>(
+    fn populate_inner_grid<R: Rng, Data: CollapsibleTileData>(
         &mut self,
         rng: &mut R,
         grid: &mut GridMap2D<Data>,

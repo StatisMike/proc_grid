@@ -4,7 +4,7 @@ use rand_chacha::ChaChaRng;
 #[derive(Debug)]
 pub struct RngHelper {
     seed: [u8; 32],
-    pos: Option<u128>
+    pos: Option<u128>,
 }
 
 impl RngHelper {
@@ -17,10 +17,7 @@ impl RngHelper {
             }
         }
 
-        Self {
-            seed,
-            pos: None
-        }
+        Self { seed, pos: None }
     }
 
     pub fn with_pos(mut self, pos: u128) -> Self {

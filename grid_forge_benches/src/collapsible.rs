@@ -1,6 +1,7 @@
 extern crate test;
 
 use grid_forge::{
+    gen::collapse::singular::*,
     gen::collapse::*,
     map::GridSize,
     tile::identifiable::{builders::IdentTileTraitBuilder, BasicIdentTileData},
@@ -22,7 +23,7 @@ fn analyze_adjacency_identity_10x10(bencher: &mut Bencher) {
     let seas_grid = load_gridmap_identifiable_auto(&seas_img, &mut collection, &builder).unwrap();
 
     bencher.iter(|| {
-        let mut analyzer = AdjacencyIdentityAnalyzer::default();
+        let mut analyzer = IdentityAnalyzer::default();
         analyzer.analyze(&seas_grid);
     });
 }
@@ -39,7 +40,7 @@ fn analyze_adjacency_border_10x10(bencher: &mut Bencher) {
     let seas_grid = load_gridmap_identifiable_auto(&seas_img, &mut collection, &builder).unwrap();
 
     bencher.iter(|| {
-        let mut analyzer = AdjacencyBorderAnalyzer::default();
+        let mut analyzer = BorderAnalyzer::default();
         analyzer.analyze(&seas_grid);
     });
 }
@@ -60,7 +61,7 @@ fn gen_identity_position_10x10(bencher: &mut Bencher) {
         .into_rgb8();
     let roads_grid = load_gridmap_identifiable_auto(&roads_img, &mut collection, &builder).unwrap();
 
-    let mut analyzer = AdjacencyIdentityAnalyzer::default();
+    let mut analyzer = IdentityAnalyzer::default();
     analyzer.analyze(&seas_grid);
     analyzer.analyze(&roads_grid);
 
@@ -78,7 +79,7 @@ fn gen_identity_position_10x10(bencher: &mut Bencher) {
 
         let mut rng = ChaChaRng::from_seed(seed);
 
-        let mut resolver = CollapsibleResolver::new(size);
+        let mut resolver = Resolver::new(size);
         resolver
             .generate(
                 &mut rng,
@@ -107,7 +108,7 @@ fn gen_identity_entrophy_10x10(bencher: &mut Bencher) {
         .into_rgb8();
     let roads_grid = load_gridmap_identifiable_auto(&roads_img, &mut collection, &builder).unwrap();
 
-    let mut analyzer = AdjacencyIdentityAnalyzer::default();
+    let mut analyzer = IdentityAnalyzer::default();
     analyzer.analyze(&seas_grid);
     analyzer.analyze(&roads_grid);
 
@@ -125,7 +126,7 @@ fn gen_identity_entrophy_10x10(bencher: &mut Bencher) {
 
         let mut rng = ChaChaRng::from_seed(seed);
 
-        let mut resolver = CollapsibleResolver::new(size);
+        let mut resolver = Resolver::new(size);
         resolver
             .generate(
                 &mut rng,
@@ -154,7 +155,7 @@ fn gen_border_position_10x10(bencher: &mut Bencher) {
         .into_rgb8();
     let roads_grid = load_gridmap_identifiable_auto(&roads_img, &mut collection, &builder).unwrap();
 
-    let mut analyzer = AdjacencyBorderAnalyzer::default();
+    let mut analyzer = BorderAnalyzer::default();
     analyzer.analyze(&seas_grid);
     analyzer.analyze(&roads_grid);
 
@@ -172,7 +173,7 @@ fn gen_border_position_10x10(bencher: &mut Bencher) {
 
         let mut rng = ChaChaRng::from_seed(seed);
 
-        let mut resolver = CollapsibleResolver::new(size);
+        let mut resolver = Resolver::new(size);
         resolver
             .generate(
                 &mut rng,
@@ -201,7 +202,7 @@ fn gen_border_entrophy_10x10(bencher: &mut Bencher) {
         .into_rgb8();
     let roads_grid = load_gridmap_identifiable_auto(&roads_img, &mut collection, &builder).unwrap();
 
-    let mut analyzer = AdjacencyBorderAnalyzer::default();
+    let mut analyzer = BorderAnalyzer::default();
     analyzer.analyze(&seas_grid);
     analyzer.analyze(&roads_grid);
 
@@ -219,7 +220,7 @@ fn gen_border_entrophy_10x10(bencher: &mut Bencher) {
 
         let mut rng = ChaChaRng::from_seed(seed);
 
-        let mut resolver = CollapsibleResolver::new(size);
+        let mut resolver = Resolver::new(size);
         resolver
             .generate(
                 &mut rng,
@@ -248,7 +249,7 @@ fn gen_border_entrophy_propagate_1_10x10(bencher: &mut Bencher) {
         .into_rgb8();
     let roads_grid = load_gridmap_identifiable_auto(&roads_img, &mut collection, &builder).unwrap();
 
-    let mut analyzer = AdjacencyBorderAnalyzer::default();
+    let mut analyzer = BorderAnalyzer::default();
     analyzer.analyze(&seas_grid);
     analyzer.analyze(&roads_grid);
 
@@ -266,7 +267,7 @@ fn gen_border_entrophy_propagate_1_10x10(bencher: &mut Bencher) {
 
         let mut rng = ChaChaRng::from_seed(seed);
 
-        let mut resolver = CollapsibleResolver::new(size);
+        let mut resolver = Resolver::new(size);
         resolver
             .generate(
                 &mut rng,
@@ -295,7 +296,7 @@ fn gen_identity_entrophy_propagate_1_10x10(bencher: &mut Bencher) {
         .into_rgb8();
     let roads_grid = load_gridmap_identifiable_auto(&roads_img, &mut collection, &builder).unwrap();
 
-    let mut analyzer = AdjacencyIdentityAnalyzer::default();
+    let mut analyzer = IdentityAnalyzer::default();
     analyzer.analyze(&seas_grid);
     analyzer.analyze(&roads_grid);
 
@@ -313,7 +314,7 @@ fn gen_identity_entrophy_propagate_1_10x10(bencher: &mut Bencher) {
 
         let mut rng = ChaChaRng::from_seed(seed);
 
-        let mut resolver = CollapsibleResolver::new(size);
+        let mut resolver = Resolver::new(size);
         resolver
             .generate(
                 &mut rng,

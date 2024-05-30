@@ -1,50 +1,44 @@
-use std::{
-    collections::{BTreeMap, HashSet, VecDeque},
-    marker::PhantomData,
-};
+use std::collections::{BTreeMap, HashSet, VecDeque};
+use std::marker::PhantomData;
 
-use rand::{distributions::Distribution, Rng};
+use rand::distributions::Distribution;
+use rand::Rng;
 
-use crate::{
-    gen::collapse::{
-        error::CollapseErrorKind,
-        tile::CollapsibleData,
-        CollapseError, CollapseQueue,
-    }, map::{GridDir, GridMap2D, GridSize}, tile::{
-        identifiable::{
-            builders::{IdentTileBuilder, TileBuilderError},
-            collection::IdentTileCollection,
-            IdentifiableTileData,
-        },
-        GridPosition, TileContainer,
-    }
-};
+use crate::gen::collapse::error::{CollapseError, CollapseErrorKind};
+use crate::gen::collapse::queue::CollapseQueue;
+use crate::gen::collapse::tile::CollapsibleTileData;
+use crate::map::{GridDir, GridMap2D, GridSize};
 
-use super::{
-    frequency::{PatternAdjacencyRules, PatternFrequencyHints},
-    pattern::{Pattern, PatternCollection},
-    tile::CollapsiblePatternTileData,
-};
+use crate::tile::identifiable::builders::{IdentTileBuilder, TileBuilderError};
+use crate::tile::identifiable::collection::IdentTileCollection;
+use crate::tile::identifiable::IdentifiableTileData;
+use crate::tile::{GridPosition, TileContainer};
 
-pub struct OverlappingResolver<const P_X: usize, const P_Y: usize, const P_Z: usize, Data>
+use super::analyzer::{AdjacencyRules, FrequencyHints};
+use super::pattern::{OverlappingPattern, PatternCollection};
+use super::tile::CollapsiblePattern;
+
+pub struct Resolver<P, Data>
 where
+    P: OverlappingPattern,
     Data: IdentifiableTileData,
 {
-    grid: CollapsibleGrid<CollapsiblePatternTileData<P_X, P_Y, P_Z>>,
+    grid: CollapsibleGrid<CollapsiblePattern<P>>,
     subscriber: Option<Box<dyn PatternCollapseSubscriber>>,
     data_type: PhantomData<*const Data>,
 }
 
-impl<const P_X: usize, const P_Y: usize, const P_Z: usize, Data> OverlappingResolver<P_X, P_Y, P_Z, Data>
+impl<P, Data> Resolver<P, Data>
 where
+    P: OverlappingPattern,
     Data: IdentifiableTileData,
 {
     pub fn new(size: GridSize) -> Self {
-      Self {
-        grid: CollapsibleGrid::new(size),
-        subscriber: None,
-        data_type: PhantomData
-      }
+        Self {
+            grid: CollapsibleGrid::new(size),
+            subscriber: None,
+            data_type: PhantomData,
+        }
     }
 
     pub fn with_subscriber(mut self, subscriber: Box<dyn PatternCollapseSubscriber>) -> Self {
@@ -57,9 +51,9 @@ where
         rng: &mut R,
         positions: &[GridPosition],
         mut queue: Queue,
-        collection: &PatternCollection<P_X, P_Y, P_Z>,
-        frequency: &PatternFrequencyHints<P_X, P_Y, P_Z, Data>,
-        adjacency: &PatternAdjacencyRules<P_X, P_Y, P_Z, Data>,
+        collection: &PatternCollection<P>,
+        frequency: &FrequencyHints<P, Data>,
+        adjacency: &AdjacencyRules<P, Data>,
     ) -> Result<(), CollapseError>
     where
         R: Rng,
@@ -145,7 +139,10 @@ where
 
             if collapsed {
                 let pattern_id = to_collapse.as_ref().pattern_id.unwrap();
-                let tile_type_id = collection.get_tile_data(&pattern_id).unwrap().tile_type_id;
+                let tile_type_id = collection
+                    .get_tile_data(&pattern_id)
+                    .unwrap()
+                    .tile_type_id();
                 to_collapse.as_mut().tile_type_id = Some(tile_type_id);
                 self.grid.insert_tile_type_id(tile_type_id);
                 if let Some(subscriber) = self.subscriber.as_mut() {
@@ -195,9 +192,9 @@ where
     }
 
     fn remove_non_valid_pattern_options(
-        grid: &mut CollapsibleGrid<CollapsiblePatternTileData<P_X, P_Y, P_Z>>,
+        grid: &mut CollapsibleGrid<CollapsiblePattern<P>>,
         pos: &GridPosition,
-        adjacency: &PatternAdjacencyRules<P_X, P_Y, P_Z, Data>,
+        adjacency: &AdjacencyRules<P, Data>,
         omit_positions_unless_changed: &[GridPosition],
         changed: &VecDeque<GridPosition>,
         collapsed_only: bool,
@@ -247,11 +244,10 @@ where
                         .copied()
                         .collect::<Vec<_>>();
                     for option in tile.inner().options_with_weights.keys() {
-                        if !adjacency.as_ref().check_adjacency_any(
-                            option,
-                            dir,
-                            &neighbour_options,
-                        ) {
+                        if !adjacency
+                            .as_ref()
+                            .check_adjacency_any(option, dir, &neighbour_options)
+                        {
                             options_to_remove.push(*option);
                         }
                     }
@@ -278,10 +274,10 @@ where
     }
 
     fn propagate_from<Queue>(
-        grid: &mut CollapsibleGrid<CollapsiblePatternTileData<P_X, P_Y, P_Z>>,
+        grid: &mut CollapsibleGrid<CollapsiblePattern<P>>,
         pos: GridPosition,
         queue: &mut Queue,
-        adjacency: &PatternAdjacencyRules<P_X, P_Y, P_Z, Data>,
+        adjacency: &AdjacencyRules<P, Data>,
         changed: &mut VecDeque<GridPosition>,
     ) -> Result<(), GridPosition>
     where
@@ -352,19 +348,22 @@ where
         Ok(())
     }
 
-    pub fn build_grid<OutData: IdentifiableTileData, B: IdentTileBuilder<OutData>>(&self, builder: &B) -> Result<GridMap2D<OutData>, TileBuilderError> {
-      self.grid.build_grid(builder)
+    pub fn build_grid<OutData: IdentifiableTileData, B: IdentTileBuilder<OutData>>(
+        &self,
+        builder: &B,
+    ) -> Result<GridMap2D<OutData>, TileBuilderError> {
+        self.grid.build_grid(builder)
     }
 }
 
-pub struct CollapsibleGrid<Data: CollapsibleData> {
+pub struct CollapsibleGrid<Data: CollapsibleTileData> {
     pub(crate) any_uncollapsed: bool,
     pub(crate) collapsed_added: HashSet<GridPosition>,
     pub(crate) grid: GridMap2D<Data>,
     tile_type_ids: HashSet<u64>,
 }
 
-impl<Data: CollapsibleData> CollapsibleGrid<Data> {
+impl<Data: CollapsibleTileData> CollapsibleGrid<Data> {
     pub fn new(size: GridSize) -> Self {
         Self {
             any_uncollapsed: false,
@@ -413,9 +412,7 @@ impl<Data: CollapsibleData> CollapsibleGrid<Data> {
     }
 }
 
-impl<const P_X: usize, const P_Y: usize, const P_Z: usize>
-    CollapsibleGrid<CollapsiblePatternTileData<P_X, P_Y, P_Z>>
-{
+impl<P: OverlappingPattern> CollapsibleGrid<CollapsiblePattern<P>> {
     pub fn need_pattern_population(&self) -> bool {
         !self.collapsed_added.is_empty()
     }
@@ -432,10 +429,10 @@ impl<const P_X: usize, const P_Y: usize, const P_Z: usize>
     pub fn populate_patterns<Data: IdentifiableTileData, R: Rng>(
         &mut self,
         rng: &mut R,
-        collection: &PatternCollection<P_X, P_Y, P_Z>,
-        frequency: &PatternFrequencyHints<P_X, P_Y, P_Z, Data>,
+        collection: &PatternCollection<P>,
+        frequency: &FrequencyHints<P, Data>,
     ) -> Result<(), GridPosition> {
-        let entrophy_uniform = CollapsiblePatternTileData::<P_X, P_Y, P_Z>::entrophy_uniform();
+        let entrophy_uniform = CollapsiblePattern::<P>::entrophy_uniform();
 
         for position in self.collapsed_added.iter() {
             let mut possible_patterns = Vec::new();
@@ -446,7 +443,7 @@ impl<const P_X: usize, const P_Y: usize, const P_Z: usize>
                 .as_ref()
                 .tile_type_id();
             'pat_loop: for pattern in collection.get_patterns_for_tile(tile_type_id) {
-                for pos_to_check in Pattern::<P_X, P_Y, P_Z>::other_tile_positions(position) {
+                for pos_to_check in P::secondary_tile_positions(position) {
                     if let Some(Some(tile_type_id)) = self
                         .grid
                         .get_tile_at_position(&pos_to_check)
@@ -457,7 +454,7 @@ impl<const P_X: usize, const P_Y: usize, const P_Z: usize>
                         }
                     }
                 }
-                possible_patterns.push(pattern.pattern_id);
+                possible_patterns.push(pattern.pattern_id());
             }
             if possible_patterns.is_empty() {
                 return Err(*position);

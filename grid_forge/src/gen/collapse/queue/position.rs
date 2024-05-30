@@ -2,9 +2,9 @@ use std::{cmp::Ordering, collections::BTreeMap};
 
 use rand::Rng;
 
-use crate::tile::{GridPosition, GridTile, TileContainer};
-use crate::gen::collapse::tile::CollapsibleData;
+use crate::gen::collapse::tile::CollapsibleTileData;
 use crate::map::GridMap2D;
+use crate::tile::{GridPosition, GridTile, TileContainer};
 
 use super::{CollapseQueue, ResolverSelector};
 
@@ -84,7 +84,7 @@ impl CollapseQueue for PositionQueue {
         self.positions.pop()
     }
 
-    fn initialize_queue<Data: CollapsibleData>(&mut self, tiles: &[GridTile<Data>]) {
+    fn initialize_queue<Data: CollapsibleTileData>(&mut self, tiles: &[GridTile<Data>]) {
         for tile in tiles {
             self.update_queue(tile)
         }
@@ -93,7 +93,7 @@ impl CollapseQueue for PositionQueue {
     fn update_queue<Tile, Data>(&mut self, tile: &Tile)
     where
         Tile: TileContainer + AsRef<Data>,
-        Data: CollapsibleData,
+        Data: CollapsibleTileData,
     {
         if !self.positions.contains(&tile.grid_position()) {
             self.positions.push(tile.grid_position());
@@ -111,7 +111,7 @@ impl CollapseQueue for PositionQueue {
 }
 
 impl ResolverSelector for PositionQueue {
-    fn populate_inner_grid<R: Rng, Data: CollapsibleData>(
+    fn populate_inner_grid<R: Rng, Data: CollapsibleTileData>(
         &mut self,
         _rng: &mut R,
         grid: &mut GridMap2D<Data>,

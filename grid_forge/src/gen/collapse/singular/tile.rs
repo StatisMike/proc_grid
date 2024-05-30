@@ -2,11 +2,17 @@ use std::collections::BTreeMap;
 
 use rand::Rng;
 
-use crate::{gen::collapse::{error::CollapseErrorKind, AdjacencyRules, CollapseError, CollapsibleData}, map::GridDir, tile::{identifiable::IdentifiableTileData, GridPosition, GridTile, GridTileRefMut, TileContainer, TileData}};
+use crate::gen::collapse::error::{CollapseError, CollapseErrorKind};
+use crate::gen::collapse::tile::CollapsibleTileData;
+use crate::map::GridDir;
+use crate::tile::identifiable::IdentifiableTileData;
+use crate::tile::{GridPosition, GridTile, GridTileRefMut, TileContainer, TileData};
+
+use super::AdjacencyRules;
 
 /// Tile with options that can be collapsed into one of them.
 #[derive(Clone)]
-pub struct CollapsibleTileData {
+pub struct CollapsibleTile {
     pub(crate) tile_id: Option<u64>,
     pub(crate) options_with_weights: BTreeMap<u64, u32>,
     weight_sum: u32,
@@ -14,16 +20,16 @@ pub struct CollapsibleTileData {
     entrophy_noise: f32,
 }
 
-impl TileData for CollapsibleTileData {}
+impl TileData for CollapsibleTile {}
 
-impl IdentifiableTileData for CollapsibleTileData {
+impl IdentifiableTileData for CollapsibleTile {
     fn tile_type_id(&self) -> u64 {
         self.tile_id
             .expect("tried to retrieve `tile_id` of uncollapsed tile")
     }
 }
 
-impl CollapsibleTileData {
+impl CollapsibleTile {
     pub fn new_collapsed(tile_id: u64) -> Self {
         Self {
             tile_id: Some(tile_id),
@@ -34,15 +40,12 @@ impl CollapsibleTileData {
         }
     }
 
-    pub fn new_uncollapsed_tile(
-        position: GridPosition,
-        data: CollapsibleTileData,
-    ) -> GridTile<Self> {
+    pub fn new_uncollapsed_tile(position: GridPosition, data: CollapsibleTile) -> GridTile<Self> {
         GridTile::new(position, data)
     }
 }
 
-impl CollapsibleData for CollapsibleTileData {
+impl CollapsibleTileData for CollapsibleTile {
     fn collapse_id(&self) -> Option<u64> {
         self.tile_id
     }
@@ -101,7 +104,7 @@ impl CollapsibleData for CollapsibleTileData {
     }
 }
 
-impl<'a> GridTileRefMut<'a, CollapsibleTileData> {
+impl<'a> GridTileRefMut<'a, CollapsibleTile> {
     pub fn collapse<R: Rng>(&mut self, rng: &mut R) -> Result<bool, CollapseError> {
         if self.inner().is_collapsed() {
             return Ok(false);

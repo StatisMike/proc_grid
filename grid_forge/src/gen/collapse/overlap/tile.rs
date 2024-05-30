@@ -1,35 +1,29 @@
 use std::collections::BTreeMap;
+use std::marker::PhantomData;
 
 use rand::Rng;
 
-use crate::{
-    gen::collapse::{error::CollapseErrorKind, tile::CollapsibleData, CollapseError},
-    map::GridDir,
-    tile::{
-        identifiable::{collection::IdentTileCollection, IdentifiableTileData},
-        GridPosition, GridTile, GridTileRefMut, TileContainer, TileData,
-    },
-};
+use crate::gen::collapse::error::{CollapseError, CollapseErrorKind};
+use crate::gen::collapse::tile::CollapsibleTileData;
+use crate::map::GridDir;
+use crate::tile::identifiable::IdentifiableTileData;
+use crate::tile::{GridPosition, GridTile, GridTileRefMut, TileContainer, TileData};
 
-use super::{frequency::PatternAdjacencyRules, pattern::PatternCollection};
+use super::{analyzer::AdjacencyRules, pattern::OverlappingPattern};
 
-pub struct CollapsiblePatternTileData<const P_X: usize, const P_Y: usize, const P_Z: usize> {
+pub struct CollapsiblePattern<P: OverlappingPattern> {
     pub(crate) tile_type_id: Option<u64>,
     pub(crate) pattern_id: Option<u64>,
     pub(crate) options_with_weights: BTreeMap<u64, u32>,
     weight_sum: u32,
     weight_log_sum: f32,
     entrophy_noise: f32,
+    phantom: PhantomData<P>,
 }
 
-impl<const P_X: usize, const P_Y: usize, const P_Z: usize> TileData
-    for CollapsiblePatternTileData<P_X, P_Y, P_Z>
-{
-}
+impl<P: OverlappingPattern> TileData for CollapsiblePattern<P> {}
 
-impl<const P_X: usize, const P_Y: usize, const P_Z: usize>
-    CollapsiblePatternTileData<P_X, P_Y, P_Z>
-{
+impl<P: OverlappingPattern> CollapsiblePattern<P> {
     pub fn set_weights(&mut self, options_with_weights: BTreeMap<u64, u32>, entrophy_noise: f32) {
         self.options_with_weights = options_with_weights;
         self.weight_sum = self.options_with_weights.values().sum();
@@ -42,9 +36,7 @@ impl<const P_X: usize, const P_Y: usize, const P_Z: usize>
     }
 }
 
-impl<const P_X: usize, const P_Y: usize, const P_Z: usize>
-    GridTileRefMut<'_, CollapsiblePatternTileData<P_X, P_Y, P_Z>>
-{
+impl<P: OverlappingPattern> GridTileRefMut<'_, CollapsiblePattern<P>> {
     pub fn collapse<R: Rng>(&mut self, rng: &mut R) -> Result<bool, CollapseError> {
         if self.as_ref().pattern_id.is_some() {
             return Ok(false);
@@ -78,7 +70,7 @@ impl<const P_X: usize, const P_Y: usize, const P_Z: usize>
     /// Resolve with regard to adjacency rules if neighbour is collapsed.
     pub(crate) fn resolve_options_neighbour_collapsed<Data>(
         &mut self,
-        adjacency: &PatternAdjacencyRules<P_X, P_Y, P_Z, Data>,
+        adjacency: &AdjacencyRules<P, Data>,
         dir: GridDir,
         neighbour_tile_id: u64,
     ) -> Result<Vec<u64>, GridPosition>
@@ -106,7 +98,7 @@ impl<const P_X: usize, const P_Y: usize, const P_Z: usize>
     /// Resolve with regard to adjacency rules if neighbour is not collapsed.
     pub(crate) fn resolve_options_neighbour_uncollapsed<Data>(
         &mut self,
-        adjacency: &PatternAdjacencyRules<P_X, P_Y, P_Z, Data>,
+        adjacency: &AdjacencyRules<P, Data>,
         dir: GridDir,
         neighbour_options: &[u64],
     ) -> Result<Vec<u64>, GridPosition>
@@ -115,7 +107,9 @@ impl<const P_X: usize, const P_Y: usize, const P_Z: usize>
     {
         let mut to_remove = Vec::new();
         for option in self.as_ref().options_with_weights.keys() {
-            if !adjacency.as_ref().check_adjacency_any(option, &dir, neighbour_options)
+            if !adjacency
+                .as_ref()
+                .check_adjacency_any(option, &dir, neighbour_options)
             {
                 to_remove.push(*option);
             }
@@ -130,9 +124,7 @@ impl<const P_X: usize, const P_Y: usize, const P_Z: usize>
     }
 }
 
-impl<const P_X: usize, const P_Y: usize, const P_Z: usize> IdentifiableTileData
-    for CollapsiblePatternTileData<P_X, P_Y, P_Z>
-{
+impl<P: OverlappingPattern> IdentifiableTileData for CollapsiblePattern<P> {
     fn tile_type_id(&self) -> u64 {
         if let Some(id) = self.tile_type_id {
             return id;
@@ -141,9 +133,7 @@ impl<const P_X: usize, const P_Y: usize, const P_Z: usize> IdentifiableTileData
     }
 }
 
-impl<const P_X: usize, const P_Y: usize, const P_Z: usize> CollapsibleData
-    for CollapsiblePatternTileData<P_X, P_Y, P_Z>
-{
+impl<P: OverlappingPattern> CollapsibleTileData for CollapsiblePattern<P> {
     fn collapse_id(&self) -> Option<u64> {
         self.pattern_id
     }
@@ -161,6 +151,7 @@ impl<const P_X: usize, const P_Y: usize, const P_Z: usize> CollapsibleData
                 weight_sum: 0,
                 weight_log_sum: 0.,
                 entrophy_noise: 0.,
+                phantom: PhantomData,
             },
         )
     }
@@ -177,7 +168,7 @@ impl<const P_X: usize, const P_Y: usize, const P_Z: usize> CollapsibleData
         if let Some(weight) = self.options_with_weights.remove(&tile_id) {
             self.weight_sum -= weight;
             self.weight_log_sum -= (weight as f32) * (weight as f32).log2();
-            return true
+            return true;
         }
         false
     }
@@ -198,6 +189,7 @@ impl<const P_X: usize, const P_Y: usize, const P_Z: usize> CollapsibleData
                 weight_sum,
                 weight_log_sum,
                 entrophy_noise,
+                phantom: PhantomData,
             },
         )
     }

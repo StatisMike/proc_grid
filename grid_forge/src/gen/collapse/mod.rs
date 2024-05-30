@@ -1,16 +1,15 @@
 mod error;
-mod overlapping;
+pub mod overlap;
 mod queue;
+pub mod singular;
 mod tile;
-mod adjacency;
 
 // Flattened reexports
 pub use error::CollapseError;
-use nohash::{IntMap, IntSet};
-pub use overlapping::{analyzer::*, pattern::*, frequency::*, resolver::*, tile::*};
-pub use adjacency::{resolver::*, frequency::*, rules::*, tile::*};
 pub use queue::*;
 pub use tile::*;
+
+use nohash::{IntMap, IntSet};
 
 use crate::map::GridDir;
 
