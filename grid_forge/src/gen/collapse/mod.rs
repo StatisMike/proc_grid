@@ -4,8 +4,11 @@ mod queue;
 pub mod singular;
 mod tile;
 
+use std::ops::{Index, IndexMut};
+
 // Flattened reexports
 pub use error::CollapseError;
+use grid::Grid;
 pub use queue::*;
 pub use tile::*;
 
@@ -47,13 +50,21 @@ impl Adjacencies {
     }
 }
 
+impl Index<GridDir> for Adjacencies {
+    type Output = IntSet<u64>;
+
+    fn index(&self, index: GridDir) -> &Self::Output {
+        &self.inner[index as usize]
+    }
+}
+
 #[derive(Clone, Debug, Default)]
-pub(crate) struct AdjacencyTable {
+pub struct AdjacencyTable {
     inner: IntMap<u64, Adjacencies>,
 }
 
 impl AdjacencyTable {
-    pub fn insert_adjacency(&mut self, el_id: u64, direction: GridDir, adj_id: u64) {
+    pub(crate) fn insert_adjacency(&mut self, el_id: u64, direction: GridDir, adj_id: u64) {
         match self.inner.entry(el_id) {
             std::collections::hash_map::Entry::Occupied(mut e) => {
                 e.get_mut().add_at_dir(direction, adj_id)
@@ -66,19 +77,67 @@ impl AdjacencyTable {
         }
     }
 
-    // #[inline(always)]
-    pub fn check_adjacency(&self, el_id: &u64, direction: &GridDir, other_id: &u64) -> bool {
+    pub(crate) fn all_ids(&self) -> Vec<u64> {
+        self.inner.keys().copied().collect()
+    }
+
+    pub(crate) fn check_adjacency(&self, el_id: &u64, direction: &GridDir, other_id: &u64) -> bool {
         if let Some(adjacencies) = self.inner.get(el_id) {
             return adjacencies.is_at_dir(direction, other_id);
         }
         false
     }
 
-    // #[inline(always)]
-    pub fn check_adjacency_any(&self, el_id: &u64, direction: &GridDir, other_ids: &[u64]) -> bool {
+    pub(crate) fn check_adjacency_any(
+        &self,
+        el_id: &u64,
+        direction: &GridDir,
+        other_ids: &[u64],
+    ) -> bool {
         if let Some(adjacencies) = self.inner.get(el_id) {
             return adjacencies.any_at_dir(direction, other_ids);
         }
         false
+    }
+
+    pub(crate) fn get_all_adjacencies_in_direction(
+        &self,
+        el_id: &u64,
+        direction: &GridDir,
+    ) -> impl Iterator<Item = &u64> {
+        self.inner
+            .get(el_id)
+            .expect("cannot get adjacencies for provided `el_id`")[*direction]
+            .iter()
+    }
+}
+
+#[derive(Clone)]
+pub(crate) struct DirectionTable<T> {
+    table: Vec<T>,
+}
+
+impl<T: Default> Default for DirectionTable<T> {
+    fn default() -> Self {
+        let mut table = Vec::new();
+
+        for _ in 0..GridDir::ALL_2D.len() {
+            table.push(T::default())
+        }
+        Self { table }
+    }
+}
+
+impl<T> IndexMut<GridDir> for DirectionTable<T> {
+    fn index_mut(&mut self, index: GridDir) -> &mut Self::Output {
+        &mut self.table[index as usize]
+    }
+}
+
+impl<T> Index<GridDir> for DirectionTable<T> {
+    type Output = T;
+
+    fn index(&self, index: GridDir) -> &Self::Output {
+        &self.table[index as usize]
     }
 }

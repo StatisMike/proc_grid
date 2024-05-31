@@ -21,10 +21,9 @@ use crate::tile::{GridPosition, TileContainer, TileData};
 ///
 /// Algorithm selecting a pattern to be present in some place will result in the *main* tile to be placed there, while
 /// *secondary* tiles are there to check compatibility beetween two different `OverlappingPattern`s.
-#[allow(private_bounds)]
 pub trait OverlappingPattern
 where
-    Self: Clone + PartialEq + Eq + Hash + std::fmt::Debug + private::SealedPattern,
+    Self: Clone + PartialEq + Eq + Hash + std::fmt::Debug + private::Sealed,
 {
     /// Size of the pattern on the `x` axis.
     const X_LEN: usize;
@@ -396,7 +395,7 @@ mod private {
 
     /// Trait making the [`OverlappingPattern`] non-implementable outside of the crate and keeping the mutability
     /// methods private to the crate.
-    pub(crate) trait SealedPattern {
+    pub trait Sealed {
         fn empty() -> Self;
 
         fn set_id_for_pos(
@@ -409,7 +408,7 @@ mod private {
         fn finalize(&mut self);
     }
 
-    impl<const P_X: usize, const P_Y: usize, const P_Z: usize> SealedPattern
+    impl<const P_X: usize, const P_Y: usize, const P_Z: usize> Sealed
         for OverlappingPattern3D<P_X, P_Y, P_Z>
     {
         fn empty() -> Self {

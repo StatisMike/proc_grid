@@ -5,8 +5,8 @@ use std::{
 
 use rand::Rng;
 
-use super::{CollapseQueue, ResolverSelector};
-use crate::gen::collapse::tile::CollapsibleTileData;
+use super::{CollapseQueue, Propagator};
+use crate::gen::collapse::{tile::CollapsibleTileData, AdjacencyTable};
 use crate::map::GridMap2D;
 use crate::tile::{GridPosition, GridTile, TileContainer};
 
@@ -51,6 +51,7 @@ impl Ord for EntrophyItem {
 pub struct EntrophyQueue {
     by_entrophy: BTreeSet<EntrophyItem>,
     by_pos: HashMap<GridPosition, f32>,
+    propagator: Propagator,
     propagation_range: u32,
 }
 
@@ -68,6 +69,7 @@ impl Default for EntrophyQueue {
         Self {
             by_entrophy: BTreeSet::new(),
             by_pos: HashMap::new(),
+            propagator: Propagator::default(),
             propagation_range: 5,
         }
     }
@@ -111,15 +113,21 @@ impl CollapseQueue for EntrophyQueue {
     }
 }
 
-impl ResolverSelector for EntrophyQueue {
+impl super::private::Sealed for EntrophyQueue {
     fn populate_inner_grid<R: Rng, Data: CollapsibleTileData>(
         &mut self,
         rng: &mut R,
         grid: &mut GridMap2D<Data>,
         positions: &[GridPosition],
+        adjacency_table: &AdjacencyTable,
         options_with_weights: BTreeMap<u64, u32>,
     ) {
-        let tiles = Data::new_from_frequency_with_entrophy(rng, positions, options_with_weights);
+        let tiles = Data::new_from_frequency_with_entrophy(
+            rng,
+            positions,
+            adjacency_table,
+            options_with_weights,
+        );
 
         self.initialize_queue(&tiles);
 

@@ -24,6 +24,7 @@
 
 use std::time::Instant;
 
+use grid_forge::gen::collapse::overlap::*;
 use grid_forge::gen::collapse::*;
 use grid_forge::map::GridSize;
 use grid_forge::tile::identifiable::builders::IdentTileTraitBuilder;
@@ -49,8 +50,7 @@ fn main() {
     // of each tile as number of pixels in image buffer.
     let mut collection = VisCollection::<DefaultVisPixel, 4, 4>::default();
 
-    let mut analyzer =
-        overlap::Analyzer::<overlap::OverlappingPattern2D<3, 3>, BasicIdentTileData>::default();
+    let mut analyzer = Analyzer::<OverlappingPattern2D<3, 3>, BasicIdentTileData>::default();
 
     println!("{}, analyzing seas img", start.elapsed().as_secs_f32());
 
@@ -94,7 +94,7 @@ fn main() {
 
     // Create new grid with CollapsibleResolver.
     let size = GridSize::new_xy(10, 10);
-    let mut resolver = overlap::Resolver::new(size);
+    let mut resolver = Resolver::new(size);
 
     let positions = size.get_all_possible_positions();
 

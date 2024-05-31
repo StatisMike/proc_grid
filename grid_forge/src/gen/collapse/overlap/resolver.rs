@@ -6,7 +6,9 @@ use rand::Rng;
 
 use crate::gen::collapse::error::{CollapseError, CollapseErrorKind};
 use crate::gen::collapse::queue::CollapseQueue;
+use crate::gen::collapse::tile::private::Sealed;
 use crate::gen::collapse::tile::CollapsibleTileData;
+use crate::gen::collapse::Propagator;
 use crate::map::{GridDir, GridMap2D, GridSize};
 
 use crate::tile::identifiable::builders::{IdentTileBuilder, TileBuilderError};
@@ -14,7 +16,7 @@ use crate::tile::identifiable::collection::IdentTileCollection;
 use crate::tile::identifiable::IdentifiableTileData;
 use crate::tile::{GridPosition, TileContainer};
 
-use super::analyzer::{AdjacencyRules, FrequencyHints};
+use super::analyzer::{AdjacencyRules, Analyzer, FrequencyHints};
 use super::pattern::{OverlappingPattern, PatternCollection};
 use super::tile::CollapsiblePattern;
 
@@ -46,6 +48,27 @@ where
         self
     }
 
+    pub fn generate_analyzer<R, Queue>(
+        &mut self,
+        rng: &mut R,
+        positions: &[GridPosition],
+        queue: Queue,
+        analyzer: &Analyzer<P, Data>,
+    ) -> Result<(), CollapseError>
+    where
+        R: Rng,
+        Queue: CollapseQueue,
+    {
+        self.generate(
+            rng,
+            positions,
+            queue,
+            analyzer.get_collection(),
+            analyzer.get_frequency(),
+            analyzer.get_adjacency(),
+        )
+    }
+
     pub fn generate<R, Queue>(
         &mut self,
         rng: &mut R,
@@ -59,6 +82,8 @@ where
         R: Rng,
         Queue: CollapseQueue,
     {
+        let mut propagator = Propagator::default();
+        
         // Begin populating grid.
         let mut changed = VecDeque::<GridPosition>::new();
 
@@ -74,6 +99,7 @@ where
             rng,
             &mut self.grid.grid,
             positions,
+            adjacency.inner(),
             frequency.get_all_weights_cloned(),
         );
 

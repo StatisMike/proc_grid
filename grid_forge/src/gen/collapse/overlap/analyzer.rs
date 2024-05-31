@@ -166,6 +166,10 @@ where
             }
         }
     }
+
+    pub(crate) fn inner(&self) -> &AdjacencyTable {
+        &self.inner
+    }
 }
 
 impl<P, Data> AsRef<AdjacencyTable> for AdjacencyRules<P, Data>

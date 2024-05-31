@@ -91,6 +91,7 @@ where
             rng,
             &mut self.inner,
             positions,
+            adjacencies.inner(),
             frequencies.get_all_weights_cloned(),
         );
 

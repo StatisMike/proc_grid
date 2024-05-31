@@ -1,9 +1,12 @@
 use std::collections::{BTreeMap, HashMap};
 use std::marker::PhantomData;
 
+use crate::gen::collapse::AdjacencyTable;
 use crate::map::{GridDir, GridMap2D};
 use crate::tile::identifiable::IdentifiableTileData;
 use crate::tile::{GridPosition, TileContainer};
+
+use super::tile;
 
 pub trait Analyzer<Data>
 where
@@ -19,7 +22,7 @@ pub struct AdjacencyRules<Data>
 where
     Data: IdentifiableTileData,
 {
-    inner: HashMap<u64, InnerAdjacency>,
+    inner: AdjacencyTable,
     id_type: PhantomData<Data>,
 }
 
@@ -41,7 +44,7 @@ where
 {
     fn default() -> Self {
         Self {
-            inner: HashMap::new(),
+            inner: AdjacencyTable::default(),
             id_type: PhantomData::<Data>,
         }
     }
@@ -65,17 +68,12 @@ where
     }
 
     pub(crate) fn add_adjacency_raw(&mut self, tile_id: u64, adjacent_id: u64, direction: GridDir) {
-        let adjacents = self.inner.entry(tile_id).or_default();
-
-        adjacents.add_option(adjacent_id, direction);
+        self.inner.insert_adjacency(tile_id, direction, adjacent_id);
     }
 
     pub(crate) fn is_valid_raw(&self, tile_id: u64, adjacent_id: u64, direction: GridDir) -> bool {
-        if let Some(rules) = self.inner.get(&tile_id) {
-            rules.is_in_options(adjacent_id, direction)
-        } else {
-            false
-        }
+        self.inner
+            .check_adjacency(&tile_id, &direction, &adjacent_id)
     }
 
     pub(crate) fn is_valid_raw_any(
@@ -84,11 +82,12 @@ where
         adjacent_options: &[u64],
         direction: GridDir,
     ) -> bool {
-        if let Some(rules) = self.inner.get(&tile_id) {
-            rules.is_in_options_any(adjacent_options, direction)
-        } else {
-            false
-        }
+        self.inner
+            .check_adjacency_any(&tile_id, &direction, adjacent_options)
+    }
+
+    pub(crate) fn inner(&self) -> &AdjacencyTable {
+        &self.inner
     }
 }
 

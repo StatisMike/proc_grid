@@ -4,7 +4,8 @@ use std::marker::PhantomData;
 use rand::Rng;
 
 use crate::gen::collapse::error::{CollapseError, CollapseErrorKind};
-use crate::gen::collapse::tile::CollapsibleTileData;
+use crate::gen::collapse::tile::*;
+use crate::gen::collapse::WaysToBeOption;
 use crate::map::GridDir;
 use crate::tile::identifiable::IdentifiableTileData;
 use crate::tile::{GridPosition, GridTile, GridTileRefMut, TileContainer, TileData};
@@ -15,10 +16,11 @@ pub struct CollapsiblePattern<P: OverlappingPattern> {
     pub(crate) tile_type_id: Option<u64>,
     pub(crate) pattern_id: Option<u64>,
     pub(crate) options_with_weights: BTreeMap<u64, u32>,
+    ways_to_be_pattern: WaysToBeOption,
     weight_sum: u32,
     weight_log_sum: f32,
     entrophy_noise: f32,
-    phantom: PhantomData<P>,
+    pattern_type: PhantomData<P>,
 }
 
 impl<P: OverlappingPattern> TileData for CollapsiblePattern<P> {}
@@ -133,6 +135,35 @@ impl<P: OverlappingPattern> IdentifiableTileData for CollapsiblePattern<P> {
     }
 }
 
+impl<P: OverlappingPattern> private::Sealed for CollapsiblePattern<P> {
+    fn new_uncollapsed_tile(
+        position: crate::tile::GridPosition,
+        options_with_weights: BTreeMap<u64, u32>,
+        ways_to_be_option: WaysToBeOption,
+        weight_sum: u32,
+        weight_log_sum: f32,
+        entrophy_noise: f32,
+    ) -> GridTile<Self> {
+        GridTile::new(
+            position,
+            Self {
+                tile_type_id: None,
+                pattern_id: None,
+                options_with_weights,
+                ways_to_be_pattern: ways_to_be_option,
+                weight_sum,
+                weight_log_sum,
+                entrophy_noise,
+                pattern_type: PhantomData,
+            },
+        )
+    }
+
+    fn ways_to_be_option(&mut self) -> &mut WaysToBeOption {
+        &mut self.ways_to_be_pattern
+    }
+}
+
 impl<P: OverlappingPattern> CollapsibleTileData for CollapsiblePattern<P> {
     fn collapse_id(&self) -> Option<u64> {
         self.pattern_id
@@ -148,10 +179,11 @@ impl<P: OverlappingPattern> CollapsibleTileData for CollapsiblePattern<P> {
                 tile_type_id: Some(tile_id),
                 pattern_id: None,
                 options_with_weights: BTreeMap::new(),
+                ways_to_be_pattern: WaysToBeOption::empty(),
                 weight_sum: 0,
                 weight_log_sum: 0.,
                 entrophy_noise: 0.,
-                phantom: PhantomData,
+                pattern_type: PhantomData,
             },
         )
     }
@@ -171,26 +203,5 @@ impl<P: OverlappingPattern> CollapsibleTileData for CollapsiblePattern<P> {
             return true;
         }
         false
-    }
-
-    fn new_uncollapsed_tile(
-        position: crate::tile::GridPosition,
-        options_with_weights: BTreeMap<u64, u32>,
-        weight_sum: u32,
-        weight_log_sum: f32,
-        entrophy_noise: f32,
-    ) -> GridTile<Self> {
-        GridTile::new(
-            position,
-            Self {
-                tile_type_id: None,
-                pattern_id: None,
-                options_with_weights: options_with_weights.clone(),
-                weight_sum,
-                weight_log_sum,
-                entrophy_noise,
-                phantom: PhantomData,
-            },
-        )
     }
 }

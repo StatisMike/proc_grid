@@ -3,7 +3,8 @@ use std::collections::BTreeMap;
 use rand::Rng;
 
 use crate::gen::collapse::error::{CollapseError, CollapseErrorKind};
-use crate::gen::collapse::tile::CollapsibleTileData;
+use crate::gen::collapse::tile::*;
+use crate::gen::collapse::WaysToBeOption;
 use crate::map::GridDir;
 use crate::tile::identifiable::IdentifiableTileData;
 use crate::tile::{GridPosition, GridTile, GridTileRefMut, TileContainer, TileData};
@@ -15,6 +16,7 @@ use super::AdjacencyRules;
 pub struct CollapsibleTile {
     pub(crate) tile_id: Option<u64>,
     pub(crate) options_with_weights: BTreeMap<u64, u32>,
+    ways_to_be_option: WaysToBeOption,
     weight_sum: u32,
     weight_log_sum: f32,
     entrophy_noise: f32,
@@ -34,6 +36,7 @@ impl CollapsibleTile {
         Self {
             tile_id: Some(tile_id),
             options_with_weights: BTreeMap::new(),
+            ways_to_be_option: WaysToBeOption::empty(),
             weight_sum: 0,
             weight_log_sum: 0.,
             entrophy_noise: 0.,
@@ -42,6 +45,33 @@ impl CollapsibleTile {
 
     pub fn new_uncollapsed_tile(position: GridPosition, data: CollapsibleTile) -> GridTile<Self> {
         GridTile::new(position, data)
+    }
+}
+
+impl private::Sealed for CollapsibleTile {
+    fn new_uncollapsed_tile(
+        position: GridPosition,
+        options_with_weights: BTreeMap<u64, u32>,
+        ways_to_be_option: WaysToBeOption,
+        weight_sum: u32,
+        weight_log_sum: f32,
+        entrophy_noise: f32,
+    ) -> GridTile<Self> {
+        GridTile::new(
+            position,
+            Self {
+                tile_id: None,
+                options_with_weights,
+                ways_to_be_option,
+                weight_sum,
+                weight_log_sum,
+                entrophy_noise,
+            },
+        )
+    }
+
+    fn ways_to_be_option(&mut self) -> &mut WaysToBeOption {
+        &mut self.ways_to_be_option
     }
 }
 
@@ -73,6 +103,7 @@ impl CollapsibleTileData for CollapsibleTile {
             Self {
                 tile_id: Some(tile_id),
                 options_with_weights: BTreeMap::new(),
+                ways_to_be_option: WaysToBeOption::empty(),
                 weight_sum: 0,
                 weight_log_sum: 0.,
                 entrophy_noise: 0.,
@@ -82,25 +113,6 @@ impl CollapsibleTileData for CollapsibleTile {
 
     fn calc_entrophy(&self) -> f32 {
         Self::calc_entrophy_ext(self.weight_sum, self.weight_log_sum) + self.entrophy_noise
-    }
-
-    fn new_uncollapsed_tile(
-        position: GridPosition,
-        options_with_weights: BTreeMap<u64, u32>,
-        weight_sum: u32,
-        weight_log_sum: f32,
-        entrophy_noise: f32,
-    ) -> GridTile<Self> {
-        GridTile::new(
-            position,
-            Self {
-                tile_id: None,
-                options_with_weights,
-                weight_sum,
-                weight_log_sum,
-                entrophy_noise,
-            },
-        )
     }
 }
 
