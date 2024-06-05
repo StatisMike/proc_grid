@@ -1,21 +1,24 @@
-use std::collections::BTreeMap;
+use std::marker::PhantomData;
 
 use rand::Rng;
 
-use crate::gen::collapse::error::{CollapseError, CollapseErrorKind};
-use crate::gen::collapse::tile::*;
-use crate::gen::collapse::WaysToBeOption;
-use crate::map::GridDir;
+use crate::gen::collapse::error::CollapsedGridError;
+use crate::gen::collapse::grid::CollapsibleGrid;
+use crate::gen::collapse::option::{PerOptionData, WaysToBeOption};
+use crate::gen::collapse::{self, tile::*, CollapsedGrid, PropagateItem};
+use crate::map::{GridMap2D, GridSize};
+use crate::tile::identifiable::builders::IdentTileBuilder;
+use crate::tile::identifiable::collection::IdentTileCollection;
 use crate::tile::identifiable::IdentifiableTileData;
-use crate::tile::{GridPosition, GridTile, GridTileRefMut, TileContainer, TileData};
+use crate::tile::{GridPosition, GridTile, TileContainer, TileData};
 
-use super::AdjacencyRules;
+use super::{AdjacencyRules, FrequencyHints};
 
 /// Tile with options that can be collapsed into one of them.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct CollapsibleTile {
-    pub(crate) tile_id: Option<u64>,
-    pub(crate) options_with_weights: BTreeMap<u64, u32>,
+    collapsed_option: Option<usize>,
+    num_possible_options: usize,
     ways_to_be_option: WaysToBeOption,
     weight_sum: u32,
     weight_log_sum: f32,
@@ -24,44 +27,29 @@ pub struct CollapsibleTile {
 
 impl TileData for CollapsibleTile {}
 
-impl IdentifiableTileData for CollapsibleTile {
-    fn tile_type_id(&self) -> u64 {
-        self.tile_id
-            .expect("tried to retrieve `tile_id` of uncollapsed tile")
-    }
-}
-
-impl CollapsibleTile {
-    pub fn new_collapsed(tile_id: u64) -> Self {
-        Self {
-            tile_id: Some(tile_id),
-            options_with_weights: BTreeMap::new(),
-            ways_to_be_option: WaysToBeOption::empty(),
-            weight_sum: 0,
-            weight_log_sum: 0.,
-            entrophy_noise: 0.,
-        }
+impl crate::gen::collapse::tile::private::Sealed for CollapsibleTile {
+    fn remove_option(&mut self, weights: (u32, f32)) {
+        self.num_possible_options -= 1;
+        self.weight_sum -= weights.0;
+        self.weight_log_sum -= weights.1;
     }
 
-    pub fn new_uncollapsed_tile(position: GridPosition, data: CollapsibleTile) -> GridTile<Self> {
-        GridTile::new(position, data)
-    }
-}
-
-impl private::Sealed for CollapsibleTile {
     fn new_uncollapsed_tile(
         position: GridPosition,
-        options_with_weights: BTreeMap<u64, u32>,
+        num_possible_options: usize,
         ways_to_be_option: WaysToBeOption,
         weight_sum: u32,
         weight_log_sum: f32,
         entrophy_noise: f32,
-    ) -> GridTile<Self> {
+    ) -> GridTile<Self>
+    where
+        Self: TileData,
+    {
         GridTile::new(
             position,
             Self {
-                tile_id: None,
-                options_with_weights,
+                collapsed_option: None,
+                num_possible_options,
                 ways_to_be_option,
                 weight_sum,
                 weight_log_sum,
@@ -73,137 +61,238 @@ impl private::Sealed for CollapsibleTile {
     fn ways_to_be_option(&mut self) -> &mut WaysToBeOption {
         &mut self.ways_to_be_option
     }
+
+    fn collapse<R: Rng>(
+        &mut self,
+        rng: &mut R,
+        options_data: &PerOptionData,
+    ) -> Option<Vec<usize>> {
+        let random = rng.gen_range(0..self.weight_sum);
+        let mut current_sum = 0;
+        let mut chosen = None;
+        let mut out = Vec::new();
+        for option_idx in self.ways_to_be_option().iter_possible() {
+            current_sum += options_data.get_weights(option_idx).0;
+            if chosen.is_some() || random > current_sum {
+                out.push(option_idx);
+                continue;
+            }
+            chosen = Some(option_idx);
+        }
+        assert!(chosen.is_some(), "option should always be chosen!");
+        self.collapsed_option = chosen;
+        self.num_possible_options = 0;
+        self.weight_sum = 0;
+        self.weight_log_sum = 0.;
+        Some(out)
+    }
 }
 
 impl CollapsibleTileData for CollapsibleTile {
-    fn collapse_id(&self) -> Option<u64> {
-        self.tile_id
-    }
-
-    fn have_options(&self) -> bool {
-        !self.options_with_weights.is_empty()
-    }
-
-    fn remove_option(&mut self, tile_id: u64) -> bool {
-        if let Some(weight) = self.options_with_weights.remove(&tile_id) {
-            self.weight_sum -= weight;
-            self.weight_log_sum -= (weight as f32) * (weight as f32).log2();
-            return true;
-        }
-        false
-    }
-
-    fn is_collapsed(&self) -> bool {
-        self.tile_id.is_some()
-    }
-
-    fn new_collapsed_tile(position: GridPosition, tile_id: u64) -> GridTile<Self> {
-        GridTile::new(
-            position,
-            Self {
-                tile_id: Some(tile_id),
-                options_with_weights: BTreeMap::new(),
-                ways_to_be_option: WaysToBeOption::empty(),
-                weight_sum: 0,
-                weight_log_sum: 0.,
-                entrophy_noise: 0.,
-            },
-        )
+    fn collapse_idx(&self) -> Option<usize> {
+        self.collapsed_option
     }
 
     fn calc_entrophy(&self) -> f32 {
         Self::calc_entrophy_ext(self.weight_sum, self.weight_log_sum) + self.entrophy_noise
     }
+
+    fn num_compatible_options(&self) -> usize {
+        self.num_possible_options
+    }
+
+    fn new_collapsed_data(option_idx: usize) -> Self {
+        Self {
+            collapsed_option: Some(option_idx),
+            num_possible_options: 0,
+            ways_to_be_option: WaysToBeOption::default(),
+            weight_sum: 0,
+            weight_log_sum: 0.,
+            entrophy_noise: 0.,
+        }
+    }
 }
 
-impl<'a> GridTileRefMut<'a, CollapsibleTile> {
-    pub fn collapse<R: Rng>(&mut self, rng: &mut R) -> Result<bool, CollapseError> {
-        if self.inner().is_collapsed() {
-            return Ok(false);
+pub struct CollapsibleTileGrid<Tile: IdentifiableTileData> {
+    pub(crate) grid: GridMap2D<CollapsibleTile>,
+    pub(crate) option_data: PerOptionData,
+    tile_type: PhantomData<Tile>,
+}
+
+impl<Tile: IdentifiableTileData> CollapsibleGrid<Tile> for CollapsibleTileGrid<Tile> {
+    fn new_empty(
+        size: GridSize,
+        frequencies: &FrequencyHints<Tile>,
+        adjacencies: &AdjacencyRules<Tile>,
+    ) -> Self {
+        let mut option_data = PerOptionData::default();
+        option_data.populate(&frequencies.get_all_weights_cloned(), adjacencies.inner());
+
+        Self {
+            grid: GridMap2D::new(size),
+            option_data,
+            tile_type: PhantomData,
         }
-        if !self.inner().have_options() {
-            return Err(CollapseError::new(
-                self.grid_position(),
-                CollapseErrorKind::Collapse,
+    }
+
+    fn new_from_collapsed(
+        collapsed: &CollapsedGrid,
+        frequencies: &FrequencyHints<Tile>,
+        adjacencies: &AdjacencyRules<Tile>,
+    ) -> Result<Self, CollapsedGridError> {
+        let mut option_data = PerOptionData::default();
+        option_data.populate(&frequencies.get_all_weights_cloned(), adjacencies.inner());
+
+        let missing_ids = collapsed
+            .tile_type_ids()
+            .filter(|id| !option_data.inner().keys().any(|k| k == *id))
+            .copied()
+            .collect::<Vec<_>>();
+
+        if !missing_ids.is_empty() {
+            return Err(CollapsedGridError::new_missing(missing_ids));
+        }
+
+        let mut grid = GridMap2D::new(*collapsed.as_ref().size());
+
+        for tile in collapsed.as_ref().iter_tiles() {
+            grid.insert_data(
+                &tile.grid_position(),
+                CollapsibleTile::new_collapsed_data(
+                    *option_data
+                        .get_tile_data(&tile.as_ref().tile_type_id())
+                        .expect("cannot get `option_idx`"),
+                ),
+            );
+        }
+
+        Ok(Self {
+            grid,
+            option_data,
+            tile_type: PhantomData,
+        })
+    }
+
+    fn change(
+        self,
+        frequencies: &FrequencyHints<Tile>,
+        adjacencies: &AdjacencyRules<Tile>,
+    ) -> Result<Self, CollapsedGridError> {
+        let collapsed = self.retrieve_collapsed();
+
+        Self::new_from_collapsed(&collapsed, frequencies, adjacencies)
+    }
+
+    fn populate_from_collapsed(
+        &mut self,
+        collapsed: &CollapsedGrid,
+    ) -> Result<(), CollapsedGridError> {
+        if !self
+            .grid
+            .size
+            .is_contained_within(collapsed.as_ref().size())
+        {
+            return Err(CollapsedGridError::new_wrong_size(
+                collapsed.as_ref().size,
+                self.grid.size,
             ));
         }
-        let mut current_sum = 0;
-        let mut chosen_option = Option::<u64>::None;
-        let random = rng.gen_range(0..=self.inner().weight_sum);
 
-        for (option_id, option_weight) in self.inner().options_with_weights.iter() {
-            current_sum += option_weight;
-            if random <= current_sum {
-                chosen_option = Some(*option_id);
-                break;
-            }
+        let missing_ids = collapsed
+            .tile_type_ids()
+            .filter(|id| !self.option_data.inner().keys().any(|k| k == *id))
+            .copied()
+            .collect::<Vec<_>>();
+
+        if !missing_ids.is_empty() {
+            return Err(CollapsedGridError::new_missing(missing_ids));
         }
 
-        if let Some(option) = chosen_option {
-            self.inner_mut().tile_id = Some(option);
-            Ok(true)
-        } else {
-            unreachable!("should be always possible to collapse!")
+        for tile in collapsed.as_ref().iter_tiles() {
+            self.grid.insert_data(
+                &tile.grid_position(),
+                CollapsibleTile::new_collapsed_data(
+                    *self
+                        .option_data
+                        .get_tile_data(&tile.as_ref().tile_type_id())
+                        .expect("cannot get `option_idx`"),
+                ),
+            );
         }
+
+        Ok(())
     }
 
-    pub fn remove_option(&mut self, tile_id: u64) {
-        if let Some(weight) = self.as_mut().options_with_weights.remove(&tile_id) {
-            self.as_mut().weight_sum -= weight;
-            self.as_mut().weight_log_sum -= (weight as f32) * (weight as f32).log2()
+    fn retrieve_collapsed(&self) -> CollapsedGrid {
+        let mut out = CollapsedGrid::new(*self.grid.size());
+
+        for tile in self.grid.iter_tiles() {
+            if !tile.as_ref().is_collapsed() {
+                continue;
+            }
+            out.insert_data(
+                &tile.grid_position(),
+                CollapsedTileData::new(
+                    self.option_data
+                        .get_tile_type_id(
+                            &tile
+                                .as_ref()
+                                .collapse_idx()
+                                .expect("cannot get collapse idx"),
+                        )
+                        .expect("cannot get option id for collapse idx"),
+                ),
+            );
         }
+
+        out
     }
 
-    /// Resolve with regard to adjacency rules if neighbour is collapsed.
-    pub(crate) fn resolve_options_neighbour_collapsed<Data>(
-        &mut self,
-        adjacency: &AdjacencyRules<Data>,
-        dir: GridDir,
-        neighbour_tile_id: u64,
-    ) -> Result<Vec<u64>, GridPosition>
-    where
-        Data: IdentifiableTileData,
-    {
-        let mut to_remove = Vec::new();
-        for option in self.as_ref().options_with_weights.keys() {
-            if !adjacency.is_valid_raw(*option, neighbour_tile_id, dir) {
-                to_remove.push(*option);
+    fn retrieve_ident<T: IdentifiableTileData, B: IdentTileBuilder<T>>(
+        &self,
+        builder: &B,
+    ) -> Result<GridMap2D<T>, CollapsedGridError> {
+        let mut out = GridMap2D::new(*self.grid.size());
+
+        for tile in self.grid.iter_tiles() {
+            if !tile.as_ref().is_collapsed() {
+                continue;
             }
+            out.insert_tile(
+                builder.build_tile_unchecked(
+                    tile.grid_position(),
+                    self.option_data
+                        .get_tile_type_id(
+                            &tile
+                                .as_ref()
+                                .collapse_idx()
+                                .expect("cannot get collapse idx"),
+                        )
+                        .expect("cannot get option id for collapse idx"),
+                ),
+            );
         }
-        for tile_id in to_remove.iter() {
-            self.remove_option(*tile_id);
-        }
-        if !self.as_ref().have_options() {
-            return Err(self.grid_position());
-        }
-        Ok(to_remove)
+
+        Ok(out)
+    }
+}
+
+impl<Tile: IdentifiableTileData> collapse::grid::private::Sealed<CollapsibleTile>
+    for CollapsibleTileGrid<Tile>
+{
+    fn _option_data(&self) -> &PerOptionData {
+        &self.option_data
     }
 
-    /// Resolve with regard to adjacency rules if neighbour is not collapsed.
-    pub(crate) fn resolve_options_neighbour_uncollapsed<Data>(
-        &mut self,
-        adjacency: &AdjacencyRules<Data>,
-        dir: GridDir,
-        neighbour_options: &[u64],
-    ) -> Result<Vec<u64>, GridPosition>
-    where
-        Data: IdentifiableTileData,
-    {
-        let mut to_remove = Vec::new();
-        for option in self.as_ref().options_with_weights.keys() {
-            if neighbour_options
-                .iter()
-                .all(|neighbour_option| !adjacency.is_valid_raw(*option, *neighbour_option, dir))
-            {
-                to_remove.push(*option);
-            }
-        }
-        for tile_id in to_remove.iter() {
-            self.remove_option(*tile_id);
-        }
-        if !self.as_ref().have_options() {
-            return Err(self.grid_position());
-        }
-        Ok(to_remove)
+    fn _grid_mut(&mut self) -> &mut GridMap2D<CollapsibleTile> {
+        &mut self.grid
+    }
+
+    fn _grid(&self) -> &GridMap2D<CollapsibleTile> {
+        &self.grid
+    }
+
+    fn _get_initial_propagate_items(&self, to_collapse: &[GridPosition]) -> Vec<PropagateItem> {
+        collapse::grid::get_initial_propagate_items(to_collapse, &self.grid, &self.option_data)
     }
 }

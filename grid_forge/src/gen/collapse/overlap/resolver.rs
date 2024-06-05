@@ -14,7 +14,7 @@ use crate::map::{GridDir, GridMap2D, GridSize};
 use crate::tile::identifiable::builders::{IdentTileBuilder, TileBuilderError};
 use crate::tile::identifiable::collection::IdentTileCollection;
 use crate::tile::identifiable::IdentifiableTileData;
-use crate::tile::{GridPosition, TileContainer};
+use crate::tile::{GridPosition, GridTileRef, TileContainer};
 
 use super::analyzer::{AdjacencyRules, Analyzer, FrequencyHints};
 use super::pattern::{OverlappingPattern, PatternCollection};
@@ -83,7 +83,7 @@ where
         Queue: CollapseQueue,
     {
         let mut propagator = Propagator::default();
-        
+
         // Begin populating grid.
         let mut changed = VecDeque::<GridPosition>::new();
 
@@ -389,6 +389,18 @@ pub struct CollapsibleGrid<Data: CollapsibleTileData> {
     tile_type_ids: HashSet<u64>,
 }
 
+impl<Data: CollapsibleTileData> AsRef<GridMap2D<Data>> for CollapsibleGrid<Data> {
+    fn as_ref(&self) -> &GridMap2D<Data> {
+        &self.grid
+    }
+}
+
+impl<Data: CollapsibleTileData> AsMut<GridMap2D<Data>> for CollapsibleGrid<Data> {
+    fn as_mut(&mut self) -> &mut GridMap2D<Data> {
+        &mut self.grid
+    }
+}
+
 impl<Data: CollapsibleTileData> CollapsibleGrid<Data> {
     pub fn new(size: GridSize) -> Self {
         Self {
@@ -405,6 +417,13 @@ impl<Data: CollapsibleTileData> CollapsibleGrid<Data> {
 
     pub fn tile_type_ids(&self) -> &HashSet<u64> {
         &self.tile_type_ids
+    }
+
+    pub fn all_collapsed(&self) -> impl Iterator<Item = GridTileRef<'_, Data>> {
+        self.collapsed_added
+            .iter()
+            .map(|pos| self.grid.get_tile_at_position(pos).unwrap())
+            .filter(|tile| tile.as_ref().collapse_idx().is_some())
     }
 
     pub fn insert_tile_type_id(&mut self, tile_type_id: u64) {

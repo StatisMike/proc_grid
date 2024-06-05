@@ -1,9 +1,9 @@
-use std::{cmp::Ordering, collections::BTreeMap};
+use std::cmp::Ordering;
 
 use rand::Rng;
 
+use crate::gen::collapse::option::PerOptionData;
 use crate::gen::collapse::tile::CollapsibleTileData;
-use crate::gen::collapse::AdjacencyTable;
 use crate::map::GridMap2D;
 use crate::tile::{GridPosition, GridTile, TileContainer};
 
@@ -117,10 +117,9 @@ impl super::private::Sealed for PositionQueue {
         _rng: &mut R,
         grid: &mut GridMap2D<Data>,
         positions: &[GridPosition],
-        adjacency_table: &AdjacencyTable,
-        options_with_weights: BTreeMap<u64, u32>,
+        options_data: &PerOptionData,
     ) {
-        let tiles = Data::new_from_frequency(positions, adjacency_table, options_with_weights);
+        let tiles = Data::new_from_frequency(positions, options_data);
         self.initialize_queue(&tiles);
         for tile in tiles {
             grid.insert_tile(tile);

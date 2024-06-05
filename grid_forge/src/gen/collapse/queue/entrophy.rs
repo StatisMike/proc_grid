@@ -1,12 +1,12 @@
 use std::{
     cmp::Ordering,
-    collections::{BTreeMap, BTreeSet, HashMap},
+    collections::{BTreeSet, HashMap},
 };
 
 use rand::Rng;
 
-use super::{CollapseQueue, Propagator};
-use crate::gen::collapse::{tile::CollapsibleTileData, AdjacencyTable};
+use super::CollapseQueue;
+use crate::gen::collapse::{option::PerOptionData, tile::CollapsibleTileData};
 use crate::map::GridMap2D;
 use crate::tile::{GridPosition, GridTile, TileContainer};
 
@@ -48,30 +48,15 @@ impl Ord for EntrophyItem {
 /// Select next position to collapse using smallest entrophy condition.
 ///
 /// Its state will be updated every time after tile entrophy changed by removing some of its options.
+#[derive(Default)]
 pub struct EntrophyQueue {
     by_entrophy: BTreeSet<EntrophyItem>,
     by_pos: HashMap<GridPosition, f32>,
-    propagator: Propagator,
-    propagation_range: u32,
 }
 
 impl EntrophyQueue {
-    pub fn new(propagation_range: u32) -> Self {
-        Self {
-            propagation_range,
-            ..Default::default()
-        }
-    }
-}
-
-impl Default for EntrophyQueue {
-    fn default() -> Self {
-        Self {
-            by_entrophy: BTreeSet::new(),
-            by_pos: HashMap::new(),
-            propagator: Propagator::default(),
-            propagation_range: 5,
-        }
+    pub fn new() -> Self {
+        Self::default()
     }
 }
 
@@ -119,15 +104,9 @@ impl super::private::Sealed for EntrophyQueue {
         rng: &mut R,
         grid: &mut GridMap2D<Data>,
         positions: &[GridPosition],
-        adjacency_table: &AdjacencyTable,
-        options_with_weights: BTreeMap<u64, u32>,
+        options_data: &PerOptionData,
     ) {
-        let tiles = Data::new_from_frequency_with_entrophy(
-            rng,
-            positions,
-            adjacency_table,
-            options_with_weights,
-        );
+        let tiles = Data::new_from_frequency_with_entrophy(rng, positions, options_data);
 
         self.initialize_queue(&tiles);
 
@@ -142,9 +121,5 @@ impl super::private::Sealed for EntrophyQueue {
 
     fn propagating(&self) -> bool {
         true
-    }
-
-    fn in_propagaton_range(&self, collapsed: &GridPosition, candidate: &GridPosition) -> bool {
-        collapsed.in_range(candidate, self.propagation_range)
     }
 }

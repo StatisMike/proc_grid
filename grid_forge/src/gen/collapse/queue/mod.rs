@@ -6,7 +6,7 @@ mod propagator;
 
 pub use entrophy::EntrophyQueue;
 pub use position::*;
-pub use propagator::*;
+pub(crate) use propagator::*;
 
 use super::tile::CollapsibleTileData;
 
@@ -34,12 +34,10 @@ where
 }
 
 pub(crate) mod private {
-    use std::collections::BTreeMap;
-
     use rand::Rng;
 
     use crate::{
-        gen::collapse::{AdjacencyTable, CollapsibleTileData},
+        gen::collapse::{option::PerOptionData, CollapsibleTileData},
         map::GridMap2D,
         tile::GridPosition,
     };
@@ -50,8 +48,7 @@ pub(crate) mod private {
             rng: &mut R,
             grid: &mut GridMap2D<Data>,
             positions: &[GridPosition],
-            adjacency_table: &AdjacencyTable,
-            options_with_weights: BTreeMap<u64, u32>,
+            options_data: &PerOptionData,
         ) where
             R: Rng,
             Data: CollapsibleTileData;
@@ -61,14 +58,6 @@ pub(crate) mod private {
         }
 
         fn propagating(&self) -> bool {
-            false
-        }
-
-        fn in_propagaton_range(
-            &self,
-            _collapsed: &GridPosition,
-            _candidate: &GridPosition,
-        ) -> bool {
             false
         }
     }

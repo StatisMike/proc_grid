@@ -24,3 +24,9 @@ godot = { git = "https://github.com/godot-rust/gdext", branch = "master", option
 [dev-dependencies]
 bencher = "0.1.*"
 rand_chacha = "0.3.*"
+image = { version = "0.25.*", features = ["png"]}
+
+[[example]]
+name = "gen_collapse_singular"
+path = "examples/gen_collapse_singular.rs"
+doc-scrape-examples = true

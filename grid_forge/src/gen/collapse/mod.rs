@@ -1,14 +1,16 @@
 mod error;
-pub mod overlap;
+// pub mod overlap;
+mod grid;
+mod option;
 mod queue;
 pub mod singular;
 mod tile;
 
-use std::ops::{Index, IndexMut};
+use std::ops::Index;
 
 // Flattened reexports
 pub use error::CollapseError;
-use grid::Grid;
+pub use grid::{CollapsedGrid, CollapsibleGrid};
 pub use queue::*;
 pub use tile::*;
 
@@ -109,35 +111,5 @@ impl AdjacencyTable {
             .get(el_id)
             .expect("cannot get adjacencies for provided `el_id`")[*direction]
             .iter()
-    }
-}
-
-#[derive(Clone)]
-pub(crate) struct DirectionTable<T> {
-    table: Vec<T>,
-}
-
-impl<T: Default> Default for DirectionTable<T> {
-    fn default() -> Self {
-        let mut table = Vec::new();
-
-        for _ in 0..GridDir::ALL_2D.len() {
-            table.push(T::default())
-        }
-        Self { table }
-    }
-}
-
-impl<T> IndexMut<GridDir> for DirectionTable<T> {
-    fn index_mut(&mut self, index: GridDir) -> &mut Self::Output {
-        &mut self.table[index as usize]
-    }
-}
-
-impl<T> Index<GridDir> for DirectionTable<T> {
-    type Output = T;
-
-    fn index(&self, index: GridDir) -> &Self::Output {
-        &self.table[index as usize]
     }
 }

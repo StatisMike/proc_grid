@@ -1,0 +1,448 @@
+------------------- Idx: 0 enables below in direction: UP -------------------
+[14, 42]
+------------------- Idx: 0 enables below in direction: DOWN -------------------
+[13, 24]
+------------------- Idx: 0 enables below in direction: LEFT -------------------
+[17, 53]
+------------------- Idx: 0 enables below in direction: RIGHT -------------------
+[1, 6]
+------------------- Idx: 1 enables below in direction: UP -------------------
+[53, 13, 9, 33]
+------------------- Idx: 1 enables below in direction: DOWN -------------------
+[53, 13, 39]
+------------------- Idx: 1 enables below in direction: LEFT -------------------
+[42, 13, 10, 0]
+------------------- Idx: 1 enables below in direction: RIGHT -------------------
+[13, 15, 42]
+------------------- Idx: 2 enables below in direction: UP -------------------
+[44, 41, 52, 46, 22, 24, 2, 28, 21, 16, 12, 26, 38]
+------------------- Idx: 2 enables below in direction: DOWN -------------------
+[47, 41, 54, 34, 2, 30, 45, 4, 3, 18, 38]
+------------------- Idx: 2 enables below in direction: LEFT -------------------
+[35, 41, 54, 51, 6, 25, 2, 16, 12, 28, 26, 18]
+------------------- Idx: 2 enables below in direction: RIGHT -------------------
+[44, 41, 51, 46, 2, 30, 3, 21, 12, 23, 10]
+------------------- Idx: 3 enables below in direction: UP -------------------
+[41, 2, 46]
+------------------- Idx: 3 enables below in direction: DOWN -------------------
+[10]
+------------------- Idx: 3 enables below in direction: LEFT -------------------
+[2, 35, 51]
+------------------- Idx: 3 enables below in direction: RIGHT -------------------
+[34, 33]
+------------------- Idx: 4 enables below in direction: UP -------------------
+[2]
+------------------- Idx: 4 enables below in direction: DOWN -------------------
+[50, 51]
+------------------- Idx: 4 enables below in direction: LEFT -------------------
+[35, 28, 41]
+------------------- Idx: 4 enables below in direction: RIGHT -------------------
+[26, 38]
+------------------- Idx: 5 enables below in direction: UP -------------------
+[29]
+------------------- Idx: 5 enables below in direction: DOWN -------------------
+[35, 28]
+------------------- Idx: 5 enables below in direction: LEFT -------------------
+[29]
+------------------- Idx: 5 enables below in direction: RIGHT -------------------
+[22, 28]
+------------------- Idx: 6 enables below in direction: UP -------------------
+[31, 54, 6]
+------------------- Idx: 6 enables below in direction: DOWN -------------------
+[16, 11, 9, 6]
+------------------- Idx: 6 enables below in direction: LEFT -------------------
+[27, 14, 13, 0, 42]
+------------------- Idx: 6 enables below in direction: RIGHT -------------------
+[2, 41, 46, 30, 23]
+------------------- Idx: 7 enables below in direction: UP -------------------
+[29]
+------------------- Idx: 7 enables below in direction: DOWN -------------------
+[23, 46]
+------------------- Idx: 7 enables below in direction: LEFT -------------------
+[22, 46]
+------------------- Idx: 7 enables below in direction: RIGHT -------------------
+[35, 29]
+------------------- Idx: 8 enables below in direction: UP -------------------
+[17, 13]
+------------------- Idx: 8 enables below in direction: DOWN -------------------
+[17, 42]
+------------------- Idx: 8 enables below in direction: LEFT -------------------
+[13]
+------------------- Idx: 8 enables below in direction: RIGHT -------------------
+[53, 20]
+------------------- Idx: 9 enables below in direction: UP -------------------
+[6]
+------------------- Idx: 9 enables below in direction: DOWN -------------------
+[55, 13, 1]
+------------------- Idx: 9 enables below in direction: LEFT -------------------
+[27, 14]
+------------------- Idx: 9 enables below in direction: RIGHT -------------------
+[54, 34]
+------------------- Idx: 10 enables below in direction: UP -------------------
+[39, 3, 10]
+------------------- Idx: 10 enables below in direction: DOWN -------------------
+[37, 21, 10, 33]
+------------------- Idx: 10 enables below in direction: LEFT -------------------
+[35, 28, 2, 41, 26]
+------------------- Idx: 10 enables below in direction: RIGHT -------------------
+[1, 13, 32]
+------------------- Idx: 11 enables below in direction: UP -------------------
+[31, 6]
+------------------- Idx: 11 enables below in direction: DOWN -------------------
+[16]
+------------------- Idx: 11 enables below in direction: LEFT -------------------
+[53, 15]
+------------------- Idx: 11 enables below in direction: RIGHT -------------------
+[38]
+------------------- Idx: 12 enables below in direction: UP -------------------
+[45]
+------------------- Idx: 12 enables below in direction: DOWN -------------------
+[2]
+------------------- Idx: 12 enables below in direction: LEFT -------------------
+[2]
+------------------- Idx: 12 enables below in direction: RIGHT -------------------
+[2]
+------------------- Idx: 13 enables below in direction: UP -------------------
+[1, 13, 49, 9, 17, 34, 19, 0, 53, 15]
+------------------- Idx: 13 enables below in direction: DOWN -------------------
+[31, 1, 13, 24, 8, 43, 39, 40, 14, 53, 55, 15]
+------------------- Idx: 13 enables below in direction: LEFT -------------------
+[1, 13, 42, 33, 39, 19, 40, 55, 14, 10]
+------------------- Idx: 13 enables below in direction: RIGHT -------------------
+[31, 1, 13, 8, 6, 42, 49, 19, 14, 15]
+------------------- Idx: 14 enables below in direction: UP -------------------
+[13]
+------------------- Idx: 14 enables below in direction: DOWN -------------------
+[42, 27, 32, 0]
+------------------- Idx: 14 enables below in direction: LEFT -------------------
+[39, 13, 42]
+------------------- Idx: 14 enables below in direction: RIGHT -------------------
+[9, 13, 6]
+------------------- Idx: 15 enables below in direction: UP -------------------
+[13, 33]
+------------------- Idx: 15 enables below in direction: DOWN -------------------
+[31, 13]
+------------------- Idx: 15 enables below in direction: LEFT -------------------
+[1, 13]
+------------------- Idx: 15 enables below in direction: RIGHT -------------------
+[20, 40, 11]
+------------------- Idx: 16 enables below in direction: UP -------------------
+[31, 11, 6]
+------------------- Idx: 16 enables below in direction: DOWN -------------------
+[2, 30, 47, 38]
+------------------- Idx: 16 enables below in direction: LEFT -------------------
+[31, 24]
+------------------- Idx: 16 enables below in direction: RIGHT -------------------
+[2]
+------------------- Idx: 17 enables below in direction: UP -------------------
+[8, 42]
+------------------- Idx: 17 enables below in direction: DOWN -------------------
+[31, 13, 8]
+------------------- Idx: 17 enables below in direction: LEFT -------------------
+[53, 43, 20]
+------------------- Idx: 17 enables below in direction: RIGHT -------------------
+[40, 27, 0]
+------------------- Idx: 18 enables below in direction: UP -------------------
+[2]
+------------------- Idx: 18 enables below in direction: DOWN -------------------
+[35, 36]
+------------------- Idx: 18 enables below in direction: LEFT -------------------
+[47, 36]
+------------------- Idx: 18 enables below in direction: RIGHT -------------------
+[2, 21]
+------------------- Idx: 19 enables below in direction: UP -------------------
+[20]
+------------------- Idx: 19 enables below in direction: DOWN -------------------
+[13]
+------------------- Idx: 19 enables below in direction: LEFT -------------------
+[13]
+------------------- Idx: 19 enables below in direction: RIGHT -------------------
+[13]
+------------------- Idx: 20 enables below in direction: UP -------------------
+[40, 42]
+------------------- Idx: 20 enables below in direction: DOWN -------------------
+[27, 19]
+------------------- Idx: 20 enables below in direction: LEFT -------------------
+[15, 8]
+------------------- Idx: 20 enables below in direction: RIGHT -------------------
+[53, 17]
+------------------- Idx: 21 enables below in direction: UP -------------------
+[39, 10, 37]
+------------------- Idx: 21 enables below in direction: DOWN -------------------
+[2, 47]
+------------------- Idx: 21 enables below in direction: LEFT -------------------
+[2, 18, 25]
+------------------- Idx: 21 enables below in direction: RIGHT -------------------
+[39, 24]
+------------------- Idx: 22 enables below in direction: UP -------------------
+[29]
+------------------- Idx: 22 enables below in direction: DOWN -------------------
+[2, 41, 54, 34, 38]
+------------------- Idx: 22 enables below in direction: LEFT -------------------
+[5, 46, 22]
+------------------- Idx: 22 enables below in direction: RIGHT -------------------
+[28, 7, 22]
+------------------- Idx: 23 enables below in direction: UP -------------------
+[30, 7, 23]
+------------------- Idx: 23 enables below in direction: DOWN -------------------
+[48, 46, 23]
+------------------- Idx: 23 enables below in direction: LEFT -------------------
+[2, 54, 6]
+------------------- Idx: 23 enables below in direction: RIGHT -------------------
+[29, 35]
+------------------- Idx: 24 enables below in direction: UP -------------------
+[55, 53, 13, 49, 0]
+------------------- Idx: 24 enables below in direction: DOWN -------------------
+[2, 41, 47]
+------------------- Idx: 24 enables below in direction: LEFT -------------------
+[31, 21, 24]
+------------------- Idx: 24 enables below in direction: RIGHT -------------------
+[16, 39, 24]
+------------------- Idx: 25 enables below in direction: UP -------------------
+[38]
+------------------- Idx: 25 enables below in direction: DOWN -------------------
+[51]
+------------------- Idx: 25 enables below in direction: LEFT -------------------
+[44]
+------------------- Idx: 25 enables below in direction: RIGHT -------------------
+[2, 21]
+------------------- Idx: 26 enables below in direction: UP -------------------
+[51]
+------------------- Idx: 26 enables below in direction: DOWN -------------------
+[2]
+------------------- Idx: 26 enables below in direction: LEFT -------------------
+[4, 38]
+------------------- Idx: 26 enables below in direction: RIGHT -------------------
+[2, 10]
+------------------- Idx: 27 enables below in direction: UP -------------------
+[20, 14, 42]
+------------------- Idx: 27 enables below in direction: DOWN -------------------
+[49, 42]
+------------------- Idx: 27 enables below in direction: LEFT -------------------
+[17, 53]
+------------------- Idx: 27 enables below in direction: RIGHT -------------------
+[31, 9, 6]
+------------------- Idx: 28 enables below in direction: UP -------------------
+[5, 35]
+------------------- Idx: 28 enables below in direction: DOWN -------------------
+[2, 45, 41, 34]
+------------------- Idx: 28 enables below in direction: LEFT -------------------
+[5, 46, 22]
+------------------- Idx: 28 enables below in direction: RIGHT -------------------
+[41, 2, 4, 51, 10]
+------------------- Idx: 29 enables below in direction: UP -------------------
+[47, 48, 29, 36]
+------------------- Idx: 29 enables below in direction: DOWN -------------------
+[5, 7, 29, 22]
+------------------- Idx: 29 enables below in direction: LEFT -------------------
+[48, 7, 29, 23]
+------------------- Idx: 29 enables below in direction: RIGHT -------------------
+[5, 35, 29, 36]
+------------------- Idx: 30 enables below in direction: UP -------------------
+[41, 16, 2]
+------------------- Idx: 30 enables below in direction: DOWN -------------------
+[23, 48]
+------------------- Idx: 30 enables below in direction: LEFT -------------------
+[2, 6]
+------------------- Idx: 30 enables below in direction: RIGHT -------------------
+[47, 48]
+------------------- Idx: 31 enables below in direction: UP -------------------
+[17, 13, 15]
+------------------- Idx: 31 enables below in direction: DOWN -------------------
+[16, 6, 11]
+------------------- Idx: 31 enables below in direction: LEFT -------------------
+[13, 27]
+------------------- Idx: 31 enables below in direction: RIGHT -------------------
+[16, 24]
+------------------- Idx: 32 enables below in direction: UP -------------------
+[14]
+------------------- Idx: 32 enables below in direction: DOWN -------------------
+[42]
+------------------- Idx: 32 enables below in direction: LEFT -------------------
+[10]
+------------------- Idx: 32 enables below in direction: RIGHT -------------------
+[53]
+------------------- Idx: 33 enables below in direction: UP -------------------
+[10]
+------------------- Idx: 33 enables below in direction: DOWN -------------------
+[1, 15]
+------------------- Idx: 33 enables below in direction: LEFT -------------------
+[34, 3]
+------------------- Idx: 33 enables below in direction: RIGHT -------------------
+[13, 42]
+------------------- Idx: 34 enables below in direction: UP -------------------
+[41, 28, 46, 2, 22]
+------------------- Idx: 34 enables below in direction: DOWN -------------------
+[13]
+------------------- Idx: 34 enables below in direction: LEFT -------------------
+[3, 9, 34]
+------------------- Idx: 34 enables below in direction: RIGHT -------------------
+[54, 34, 33]
+------------------- Idx: 35 enables below in direction: UP -------------------
+[5, 35, 18]
+------------------- Idx: 35 enables below in direction: DOWN -------------------
+[35, 28, 36]
+------------------- Idx: 35 enables below in direction: LEFT -------------------
+[7, 29, 23]
+------------------- Idx: 35 enables below in direction: RIGHT -------------------
+[52, 2, 41, 3, 4, 10]
+------------------- Idx: 36 enables below in direction: UP -------------------
+[35, 18]
+------------------- Idx: 36 enables below in direction: DOWN -------------------
+[29]
+------------------- Idx: 36 enables below in direction: LEFT -------------------
+[29]
+------------------- Idx: 36 enables below in direction: RIGHT -------------------
+[47, 18]
+------------------- Idx: 37 enables below in direction: UP -------------------
+[10]
+------------------- Idx: 37 enables below in direction: DOWN -------------------
+[21]
+------------------- Idx: 37 enables below in direction: LEFT -------------------
+[38]
+------------------- Idx: 37 enables below in direction: RIGHT -------------------
+[55]
+------------------- Idx: 38 enables below in direction: UP -------------------
+[16, 2, 46, 22, 38]
+------------------- Idx: 38 enables below in direction: DOWN -------------------
+[2, 41, 25, 38]
+------------------- Idx: 38 enables below in direction: LEFT -------------------
+[50, 45, 11, 4, 38]
+------------------- Idx: 38 enables below in direction: RIGHT -------------------
+[50, 45, 37, 26, 38]
+------------------- Idx: 39 enables below in direction: UP -------------------
+[55, 13, 1]
+------------------- Idx: 39 enables below in direction: DOWN -------------------
+[10, 21]
+------------------- Idx: 39 enables below in direction: LEFT -------------------
+[24, 21]
+------------------- Idx: 39 enables below in direction: RIGHT -------------------
+[13, 14]
+------------------- Idx: 40 enables below in direction: UP -------------------
+[13]
+------------------- Idx: 40 enables below in direction: DOWN -------------------
+[20, 42]
+------------------- Idx: 40 enables below in direction: LEFT -------------------
+[17, 15]
+------------------- Idx: 40 enables below in direction: RIGHT -------------------
+[13, 42]
+------------------- Idx: 41 enables below in direction: UP -------------------
+[38, 2, 28, 22, 24]
+------------------- Idx: 41 enables below in direction: DOWN -------------------
+[52, 2, 30, 3, 34]
+------------------- Idx: 41 enables below in direction: LEFT -------------------
+[2, 28, 35, 6]
+------------------- Idx: 41 enables below in direction: RIGHT -------------------
+[2, 10, 4]
+------------------- Idx: 42 enables below in direction: UP -------------------
+[32, 8, 43, 40, 27, 14, 42]
+------------------- Idx: 42 enables below in direction: DOWN -------------------
+[17, 27, 0, 20, 49, 42]
+------------------- Idx: 42 enables below in direction: LEFT -------------------
+[40, 1, 13, 33]
+------------------- Idx: 42 enables below in direction: RIGHT -------------------
+[1, 14, 13, 6]
+------------------- Idx: 43 enables below in direction: UP -------------------
+[13]
+------------------- Idx: 43 enables below in direction: DOWN -------------------
+[42]
+------------------- Idx: 43 enables below in direction: LEFT -------------------
+[49]
+------------------- Idx: 43 enables below in direction: RIGHT -------------------
+[17]
+------------------- Idx: 44 enables below in direction: UP -------------------
+[50, 51]
+------------------- Idx: 44 enables below in direction: DOWN -------------------
+[2]
+------------------- Idx: 44 enables below in direction: LEFT -------------------
+[2]
+------------------- Idx: 44 enables below in direction: RIGHT -------------------
+[45, 25]
+------------------- Idx: 45 enables below in direction: UP -------------------
+[2, 28]
+------------------- Idx: 45 enables below in direction: DOWN -------------------
+[51, 12]
+------------------- Idx: 45 enables below in direction: LEFT -------------------
+[44, 38]
+------------------- Idx: 45 enables below in direction: RIGHT -------------------
+[38]
+------------------- Idx: 46 enables below in direction: UP -------------------
+[23, 7]
+------------------- Idx: 46 enables below in direction: DOWN -------------------
+[2, 3, 34, 38]
+------------------- Idx: 46 enables below in direction: LEFT -------------------
+[2, 6]
+------------------- Idx: 46 enables below in direction: RIGHT -------------------
+[28, 7, 22]
+------------------- Idx: 47 enables below in direction: UP -------------------
+[2, 16, 21, 24]
+------------------- Idx: 47 enables below in direction: DOWN -------------------
+[29]
+------------------- Idx: 47 enables below in direction: LEFT -------------------
+[47, 30, 36]
+------------------- Idx: 47 enables below in direction: RIGHT -------------------
+[47, 48, 18]
+------------------- Idx: 48 enables below in direction: UP -------------------
+[23, 30]
+------------------- Idx: 48 enables below in direction: DOWN -------------------
+[29]
+------------------- Idx: 48 enables below in direction: LEFT -------------------
+[47, 30]
+------------------- Idx: 48 enables below in direction: RIGHT -------------------
+[29]
+------------------- Idx: 49 enables below in direction: UP -------------------
+[27, 42]
+------------------- Idx: 49 enables below in direction: DOWN -------------------
+[13, 24]
+------------------- Idx: 49 enables below in direction: LEFT -------------------
+[13]
+------------------- Idx: 49 enables below in direction: RIGHT -------------------
+[43, 55, 53]
+------------------- Idx: 50 enables below in direction: UP -------------------
+[51, 4]
+------------------- Idx: 50 enables below in direction: DOWN -------------------
+[51, 44]
+------------------- Idx: 50 enables below in direction: LEFT -------------------
+[52, 38]
+------------------- Idx: 50 enables below in direction: RIGHT -------------------
+[38]
+------------------- Idx: 51 enables below in direction: UP -------------------
+[50, 45, 51, 4, 25]
+------------------- Idx: 51 enables below in direction: DOWN -------------------
+[50, 51, 26, 44]
+------------------- Idx: 51 enables below in direction: LEFT -------------------
+[2, 28]
+------------------- Idx: 51 enables below in direction: RIGHT -------------------
+[2, 3]
+------------------- Idx: 52 enables below in direction: UP -------------------
+[41]
+------------------- Idx: 52 enables below in direction: DOWN -------------------
+[2]
+------------------- Idx: 52 enables below in direction: LEFT -------------------
+[35]
+------------------- Idx: 52 enables below in direction: RIGHT -------------------
+[50]
+------------------- Idx: 53 enables below in direction: UP -------------------
+[13, 1]
+------------------- Idx: 53 enables below in direction: DOWN -------------------
+[13, 1, 24]
+------------------- Idx: 53 enables below in direction: LEFT -------------------
+[49, 20, 8, 32]
+------------------- Idx: 53 enables below in direction: RIGHT -------------------
+[17, 27, 11, 0]
+------------------- Idx: 54 enables below in direction: UP -------------------
+[2, 22]
+------------------- Idx: 54 enables below in direction: DOWN -------------------
+[6]
+------------------- Idx: 54 enables below in direction: LEFT -------------------
+[9, 34]
+------------------- Idx: 54 enables below in direction: RIGHT -------------------
+[2, 23]
+------------------- Idx: 55 enables below in direction: UP -------------------
+[9, 13]
+------------------- Idx: 55 enables below in direction: DOWN -------------------
+[39, 24]
+------------------- Idx: 55 enables below in direction: LEFT -------------------
+[49, 37]
+------------------- Idx: 55 enables below in direction: RIGHT -------------------
+[13]

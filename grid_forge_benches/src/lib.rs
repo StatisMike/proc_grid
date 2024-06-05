@@ -7,8 +7,8 @@ pub mod vis_io;
 #[cfg(test)]
 pub mod walker;
 
-#[cfg(test)]
-pub mod overlap;
+// #[cfg(test)]
+// pub mod overlap;
 
 mod utils {
     use rand::SeedableRng;

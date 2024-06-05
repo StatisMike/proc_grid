@@ -165,7 +165,7 @@ impl<P: OverlappingPattern> private::Sealed for CollapsiblePattern<P> {
 }
 
 impl<P: OverlappingPattern> CollapsibleTileData for CollapsiblePattern<P> {
-    fn collapse_id(&self) -> Option<u64> {
+    fn collapse_idx(&self) -> Option<u64> {
         self.pattern_id
     }
 

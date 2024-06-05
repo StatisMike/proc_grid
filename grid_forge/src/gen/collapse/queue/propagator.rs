@@ -1,14 +1,16 @@
+use std::collections::{HashMap, HashSet};
+
 use crate::{
-    gen::collapse::{AdjacencyTable, CollapsibleTileData},
+    gen::collapse::{option::PerOptionData, CollapsibleTileData},
     map::{GridDir, GridMap2D},
-    tile::GridPosition,
+    tile::{GridPosition, TileContainer},
 };
 
 use super::CollapseQueue;
 
-pub(crate) struct PropagateItem {
+pub struct PropagateItem {
     position: GridPosition,
-    to_remove: u64,
+    to_remove: usize,
 }
 
 impl PropagateItem {
@@ -16,11 +18,11 @@ impl PropagateItem {
         &self.position
     }
 
-    pub fn to_remove(&self) -> &u64 {
-        &self.to_remove
+    pub fn to_remove(&self) -> usize {
+        self.to_remove
     }
 
-    pub fn new(position: GridPosition, to_remove: u64) -> Self {
+    pub fn new(position: GridPosition, to_remove: usize) -> Self {
         Self {
             position,
             to_remove,
@@ -29,62 +31,113 @@ impl PropagateItem {
 }
 
 #[derive(Default)]
-pub(crate) struct Propagator {
+pub struct Propagator {
     inner: Vec<PropagateItem>,
+    reserved_removal: HashMap<GridPosition, Vec<usize>>,
 }
 
 impl Propagator {
-    pub fn push(&mut self, item: PropagateItem) {
+    pub fn push_propagate(&mut self, item: PropagateItem) {
         self.inner.push(item);
     }
 
-    pub fn pop(&mut self) -> Option<PropagateItem> {
-        self.inner.pop()
-    }
-
-    pub(crate) fn propagate<T: CollapsibleTileData, Q: CollapseQueue>(
+    pub(crate) fn propagate<Tile: CollapsibleTileData, Q: CollapseQueue>(
         &mut self,
-        grid: &mut GridMap2D<T>,
+        grid: &mut GridMap2D<Tile>,
+        option_data: &PerOptionData,
         queue: &mut Q,
-        adjacency: &AdjacencyTable,
+        collapsed_pos: Option<&GridPosition>,
     ) -> Result<(), GridPosition> {
+        let mut tiles_to_update = HashSet::new();
         let size = *grid.size();
-        while let Some(item) = self.inner.pop() {
+        while let Some((position, to_remove)) = self.pop_to_resolve(collapsed_pos) {
             for direction in GridDir::ALL_2D {
-                let pos_to_update = if let Some(pos) = direction.march_step(&item.position, &size) {
-                    pos
+                let pos_to_update =
+                    if let Some(pos) = direction.opposite().march_step(&position, &size) {
+                        pos
+                    } else {
+                        continue;
+                    };
+                let mut tile = if let Some(tile) = grid.get_mut_tile_at_position(&pos_to_update) {
+                    tile
                 } else {
                     continue;
                 };
-                let mut tile = grid
-                    .get_mut_tile_at_position(&pos_to_update)
-                    .expect("cannot get cell to propagate!");
-                for option_id in adjacency
-                    .get_all_adjacencies_in_direction(item.to_remove(), &direction.opposite())
+                if tile.as_ref().is_collapsed() {
+                    continue;
+                }
+                for option_idx in
+                    option_data.get_all_enabled_in_direction(to_remove, direction.opposite())
                 {
-                    match tile
-                        .as_mut()
-                        .decrement_ways_to_be_option(*option_id, *direction)
-                    {
-                        crate::gen::collapse::WaysToBeOptionOutcome::Eliminated => {
-                            tile.as_mut().remove_option(*option_id);
-                            if !tile.as_ref().have_options() {
-                                return Err(pos_to_update);
-                            }
-                        }
-                        _ => continue,
+                    let binding = tile.as_mut();
+                    let removed = binding
+                        .ways_to_be_option()
+                        .decrement(*option_idx, *direction);
+                    if removed {
+                        binding.remove_option(option_data.get_weights(*option_idx));
                     }
-
-                    self.push(PropagateItem::new(pos_to_update, *option_id));
-
-                    // Propagate the changes made to intermediate neighbours only if the queue is propagating
-                    if queue.propagating() {
-                        queue.update_queue(&tile);
+                    if !binding.has_compatible_options() {
+                        return Err(pos_to_update);
+                    }
+                    match (removed, queue.propagating()) {
+                        (true, true) => {
+                            self.push_propagate(PropagateItem::new(pos_to_update, *option_idx))
+                        }
+                        (true, false) => self.retain_removal(pos_to_update, *option_idx),
+                        (false, _) => continue,
+                    }
+                    if removed && queue.needs_update_after_options_change() {
+                        tiles_to_update.insert(tile.grid_position());
                     }
                 }
             }
         }
 
+        for pos in tiles_to_update {
+            queue.update_queue(&grid.get_tile_at_position(&pos).unwrap());
+        }
+
         Ok(())
+    }
+
+    fn pop_to_resolve(
+        &mut self,
+        collapsed_pos: Option<&GridPosition>,
+    ) -> Option<(GridPosition, usize)> {
+        if let Some(pos) = collapsed_pos {
+            if let Some(option) = self.get_from_retained(pos) {
+                return Some((*pos, option));
+            }
+        }
+        if let Some(PropagateItem {
+            position,
+            to_remove,
+        }) = self.inner.pop()
+        {
+            return Some((position, to_remove));
+        }
+        None
+    }
+
+    fn get_from_retained(&mut self, position: &GridPosition) -> Option<usize> {
+        let options_to_remove = self.reserved_removal.get_mut(position)?;
+
+        if let Some(option_to_remove) = options_to_remove.pop() {
+            Some(option_to_remove)
+        } else {
+            self.reserved_removal.remove(position);
+            None
+        }
+    }
+
+    fn retain_removal(&mut self, position: GridPosition, option_to_remove: usize) {
+        match self.reserved_removal.entry(position) {
+            std::collections::hash_map::Entry::Occupied(mut e) => {
+                e.get_mut().push(option_to_remove);
+            }
+            std::collections::hash_map::Entry::Vacant(e) => {
+                e.insert(vec![option_to_remove]);
+            }
+        };
     }
 }
