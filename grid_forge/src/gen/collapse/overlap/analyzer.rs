@@ -60,7 +60,7 @@ impl<P: OverlappingPattern, Data: IdentifiableTileData> Analyzer<P, Data> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct FrequencyHints<P, Data>
 where
     P: OverlappingPattern,
@@ -69,6 +69,16 @@ where
     weights: BTreeMap<u64, u32>,
     pattern_type: PhantomData<fn(P)>,
     data_type: PhantomData<fn(Data)>,
+}
+
+impl<P, Data> Clone for FrequencyHints<P, Data>
+where
+    P: OverlappingPattern,
+    Data: IdentifiableTileData,
+{
+    fn clone(&self) -> Self {
+        Self { weights: self.weights.clone(), pattern_type: self.pattern_type.clone(), data_type: self.data_type.clone() }
+    }
 }
 
 impl<P, Data> Default for FrequencyHints<P, Data>
@@ -92,6 +102,11 @@ where
 {
     pub fn set_weight_for_pattern(&mut self, pattern: &P, weight: u32) {
         let entry = self.weights.entry(pattern.pattern_id()).or_default();
+        *entry = weight;
+    }
+
+    pub fn set_weight_for_pattern_id(&mut self, pattern_id: u64, weight: u32) {
+        let entry = self.weights.entry(pattern_id).or_default();
         *entry = weight;
     }
 
@@ -124,7 +139,7 @@ where
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct AdjacencyRules<P, Data>
 where
     P: OverlappingPattern,
@@ -132,8 +147,19 @@ where
 {
     inner: AdjacencyTable,
     pattern_type: PhantomData<fn(P)>,
-    data_type: PhantomData<fn(Data)>,
+    data_type: PhantomData<fn(Data) -> Data>,
 }
+
+impl<P, Data> core::fmt::Debug for AdjacencyRules<P, Data>
+where
+    P: OverlappingPattern,
+    Data: IdentifiableTileData,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AdjacencyRules").field("inner", &self.inner).field("pattern_type", &self.pattern_type).field("data_type", &self.data_type).finish()
+    }
+}
+
 
 impl<P, Data> Default for AdjacencyRules<P, Data>
 where
@@ -167,7 +193,7 @@ where
         }
     }
 
-    pub(crate) fn inner(&self) -> &AdjacencyTable {
+    pub fn inner(&self) -> &AdjacencyTable {
         &self.inner
     }
 }

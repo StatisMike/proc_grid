@@ -1,7 +1,7 @@
 mod error;
-// pub mod overlap;
 mod grid;
 mod option;
+pub mod overlap;
 mod queue;
 pub mod singular;
 mod tile;
@@ -102,7 +102,7 @@ impl AdjacencyTable {
         false
     }
 
-    pub(crate) fn get_all_adjacencies_in_direction(
+    pub fn get_all_adjacencies_in_direction(
         &self,
         el_id: &u64,
         direction: &GridDir,
@@ -111,5 +111,9 @@ impl AdjacencyTable {
             .get(el_id)
             .expect("cannot get adjacencies for provided `el_id`")[*direction]
             .iter()
+    }
+
+    pub fn inner_ids(&self) -> impl Iterator<Item=u64> + '_ {
+        self.inner.keys().copied()
     }
 }

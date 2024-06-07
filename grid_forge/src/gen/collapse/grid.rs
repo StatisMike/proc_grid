@@ -9,10 +9,8 @@ use crate::{
 };
 
 use super::{
-    error::CollapsedGridError,
-    option::PerOptionData,
-    singular::{AdjacencyRules, CollapsibleTile, FrequencyHints},
-    CollapsedTileData, CollapsibleTileData, PropagateItem,
+    error::CollapsedGridError, option::PerOptionData, CollapsedTileData, CollapsibleTileData,
+    PropagateItem,
 };
 
 /// [`GridMap2D`] containing data of [`CollapsedTileData`].
@@ -54,32 +52,9 @@ impl AsRef<GridMap2D<CollapsedTileData>> for CollapsedGrid {
     }
 }
 
-pub trait CollapsibleGrid<Tile: IdentifiableTileData>:
-    Sized + private::Sealed<CollapsibleTile>
+pub trait CollapsibleGrid<IT: IdentifiableTileData, CT: CollapsibleTileData>:
+    Sized + private::Sealed<CT>
 {
-    fn new_empty(
-        size: GridSize,
-        frequencies: &FrequencyHints<Tile>,
-        adjacencies: &AdjacencyRules<Tile>,
-    ) -> Self;
-
-    fn new_from_collapsed(
-        collapsed: &CollapsedGrid,
-        frequencies: &FrequencyHints<Tile>,
-        adjacencies: &AdjacencyRules<Tile>,
-    ) -> Result<Self, CollapsedGridError>;
-
-    fn change(
-        self,
-        frequencies: &FrequencyHints<Tile>,
-        adjacencies: &AdjacencyRules<Tile>,
-    ) -> Result<Self, CollapsedGridError>;
-
-    fn populate_from_collapsed(
-        &mut self,
-        collapsed: &CollapsedGrid,
-    ) -> Result<(), CollapsedGridError>;
-
     fn retrieve_collapsed(&self) -> CollapsedGrid;
 
     fn retrieve_ident<OT: IdentifiableTileData, B: IdentTileBuilder<OT>>(

@@ -71,7 +71,7 @@ impl Propagator {
                 {
                     let binding = tile.as_mut();
                     let removed = binding
-                        .ways_to_be_option()
+                        .mut_ways_to_be_option()
                         .decrement(*option_idx, *direction);
                     if removed {
                         binding.remove_option(option_data.get_weights(*option_idx));

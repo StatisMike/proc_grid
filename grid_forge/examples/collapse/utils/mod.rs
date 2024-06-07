@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 
+mod gif_subscribers;
+
 use grid_forge::{
     gen::collapse::CollapsedTileData,
     map::GridMap2D,
@@ -9,6 +11,8 @@ use grid_forge::{
 use image::{ImageBuffer, Rgb};
 use rand::SeedableRng;
 use rand_chacha::ChaChaRng;
+
+pub use gif_subscribers::GifSingleSubscriber;
 
 #[derive(Debug)]
 pub struct RngHelper {

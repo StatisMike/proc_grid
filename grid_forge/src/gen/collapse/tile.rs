@@ -86,24 +86,24 @@ pub(crate) mod private {
             Self: tile::TileData,
         {
             let rng_range = Self::entrophy_uniform();
-            let (weight_sum, weight_log_sum) = options_data
-                .iter_weights()
-                .map(|(_, (weight, weight_log))| (weight, weight_log))
+            let ways_to_be_option = options_data.get_ways_to_become_option();
+
+            let (weight_sum, weight_log_sum) = ways_to_be_option
+                .iter_possible()
+                .map(|option_idx| options_data.get_weights(option_idx))
                 .fold(
                     (0u32, 0f32),
                     |(sum_weight, sum_weight_log), (weight, weight_log)| {
-                        (sum_weight + *weight, sum_weight_log + *weight_log)
+                        (sum_weight + weight, sum_weight_log + weight_log)
                     },
                 );
-
-            let ways_to_be_option = options_data.get_ways_to_become_option();
 
             positions
                 .iter()
                 .map(|position| {
                     Self::new_uncollapsed_tile(
                         *position,
-                        options_data.num_options(),
+                        options_data.num_possible_options(),
                         ways_to_be_option.clone(),
                         weight_sum,
                         weight_log_sum,
@@ -120,24 +120,24 @@ pub(crate) mod private {
         where
             Self: tile::TileData,
         {
-            let (weight_sum, weight_log_sum) = options_data
-                .iter_weights()
-                .map(|(_, (weight, weight_log))| (weight, weight_log))
+            let ways_to_be_option = options_data.get_ways_to_become_option();
+
+            let (weight_sum, weight_log_sum) = ways_to_be_option
+                .iter_possible()
+                .map(|option_idx| options_data.get_weights(option_idx))
                 .fold(
                     (0u32, 0f32),
                     |(sum_weight, sum_weight_log), (weight, weight_log)| {
-                        (sum_weight + *weight, sum_weight_log + *weight_log)
+                        (sum_weight + weight, sum_weight_log + weight_log)
                     },
                 );
-
-            let ways_to_be_option = options_data.get_ways_to_become_option();
 
             positions
                 .iter()
                 .map(|pos| {
                     Self::new_uncollapsed_tile(
                         *pos,
-                        options_data.num_options(),
+                        options_data.num_possible_options(),
                         ways_to_be_option.clone(),
                         weight_sum,
                         weight_log_sum,
@@ -147,7 +147,9 @@ pub(crate) mod private {
                 .collect::<Vec<_>>()
         }
 
-        fn ways_to_be_option(&mut self) -> &mut WaysToBeOption;
+        fn ways_to_be_option(&self) -> &WaysToBeOption;
+
+        fn mut_ways_to_be_option(&mut self) -> &mut WaysToBeOption;
 
         fn remove_option(&mut self, weights: (u32, f32));
 

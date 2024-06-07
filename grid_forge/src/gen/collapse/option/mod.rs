@@ -49,7 +49,7 @@ impl<T> AsMut<Vec<T>> for PerOptionTable<T> {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct PerOptionData {
     option_map: HashMap<u64, usize>,
     option_map_rev: HashMap<u64, u64>,
@@ -57,6 +57,7 @@ pub struct PerOptionData {
     ways_to_be_option: WaysToBeOption,
     opt_with_weight: PerOptionTable<(u32, f32)>,
     option_count: usize,
+    possible_options_count: usize
 }
 
 impl IdentTileCollection for PerOptionData {
@@ -95,6 +96,7 @@ impl PerOptionData {
         }
 
         self.option_count = self.option_map.len();
+        self.possible_options_count = self.option_count;
 
         for trans_id in 0..self.option_count {
             let original_id = self.get_tile_type_id(&trans_id).unwrap();
@@ -122,6 +124,10 @@ impl PerOptionData {
         self.option_count
     }
 
+    pub fn num_possible_options(&self) -> usize {
+        self.possible_options_count
+    }
+
     pub fn get_ways_to_become_option(&self) -> &WaysToBeOption {
         &self.ways_to_be_option
     }
@@ -129,12 +135,19 @@ impl PerOptionData {
     fn generate_ways_to_be_option(&mut self) {
         let inner = self.ways_to_be_option.mut_inner().as_mut();
         for adj in self.adjacencies.table.iter() {
-            inner.push(DirectionTable::new_array([
+            let table = DirectionTable::new_array([
                 adj.index(GridDir::UP).len(),
                 adj.index(GridDir::DOWN).len(),
                 adj.index(GridDir::LEFT).len(),
                 adj.index(GridDir::RIGHT).len(),
-            ]));
+            ]);
+            if table.inner().contains(&0) {
+                self.possible_options_count -= 1;
+                inner.push(WaysToBeOption::EMPTY_DIR_TABLE)
+            } else {
+                inner.push(table);
+            }
+            
         }
     }
 
@@ -196,5 +209,14 @@ impl WaysToBeOption {
             .iter()
             .enumerate()
             .filter_map(|(idx, t)| if t[GridDir::UP] == 0 { None } else { Some(idx) })
+    }
+
+    pub(crate) fn purge_others(&mut self, options: &[usize]) {
+        for (option_id, ways) in self.table.as_mut().iter_mut().enumerate() {
+            if options.contains(&option_id) {
+                continue;
+            }
+            *ways = Self::EMPTY_DIR_TABLE;
+        }
     }
 }

@@ -104,6 +104,10 @@ impl<T> DirectionTable<T> {
     pub const fn new_array(values: [T; 4]) -> Self {
         Self { table: values }
     }
+
+    pub(crate) fn inner(&self) -> &[T] {
+        &self.table
+    }
 }
 
 impl<T: Default> Default for DirectionTable<T> {

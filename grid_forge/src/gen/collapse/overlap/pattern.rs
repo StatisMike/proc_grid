@@ -91,13 +91,13 @@ impl<const P_X: usize, const P_Y: usize, const P_Z: usize> OverlappingPattern
 
     fn get_id_for_pos(&self, anchor_pos: &GridPosition, pos: &GridPosition) -> u64 {
         if P_Z == 1 {
-            self.tile_type_ids[0][*anchor_pos.y() as usize - *pos.y() as usize]
-                [*anchor_pos.x() as usize - *pos.x() as usize]
+            self.tile_type_ids[0][(*pos.y() - *anchor_pos.y()) as usize]
+                [(*pos.x() - *anchor_pos.x()) as usize]
         } else {
-            self.tile_type_ids[(anchor_pos.z().expect("cannot get `z` from `anchor_pos`")
-                - pos.z().expect("cannot get `z` from `pos`"))
-                as usize][(anchor_pos.y() - pos.y()) as usize]
-                [(anchor_pos.x() - pos.x()) as usize]
+            self.tile_type_ids[(pos.z().expect("cannot get `z` from `pos`")
+            - anchor_pos.z().expect("cannot get `z` from `anchor_pos`"))
+                as usize][(pos.y() - anchor_pos.y()) as usize]
+                [(pos.x() - anchor_pos.x()) as usize]
         }
     }
 
@@ -258,6 +258,10 @@ impl<P: OverlappingPattern> PatternCollection<P> {
         } else {
             Vec::new()
         }
+    }
+
+    pub fn iter_tile_types(&self) -> impl Iterator<Item = &u64> {
+        self.by_tile_id.keys()
     }
 }
 

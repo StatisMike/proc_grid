@@ -1,3 +1,4 @@
+use std::collections::{HashMap, HashSet};
 use std::marker::PhantomData;
 
 use rand::Rng;
@@ -58,7 +59,11 @@ impl crate::gen::collapse::tile::private::Sealed for CollapsibleTile {
         )
     }
 
-    fn ways_to_be_option(&mut self) -> &mut WaysToBeOption {
+    fn ways_to_be_option(&self) -> &WaysToBeOption {
+        &self.ways_to_be_option
+    }
+
+    fn mut_ways_to_be_option(&mut self) -> &mut WaysToBeOption {
         &mut self.ways_to_be_option
     }
 
@@ -71,7 +76,7 @@ impl crate::gen::collapse::tile::private::Sealed for CollapsibleTile {
         let mut current_sum = 0;
         let mut chosen = None;
         let mut out = Vec::new();
-        for option_idx in self.ways_to_be_option().iter_possible() {
+        for option_idx in self.mut_ways_to_be_option().iter_possible() {
             current_sum += options_data.get_weights(option_idx).0;
             if chosen.is_some() || random > current_sum {
                 out.push(option_idx);
@@ -119,8 +124,8 @@ pub struct CollapsibleTileGrid<Tile: IdentifiableTileData> {
     tile_type: PhantomData<Tile>,
 }
 
-impl<Tile: IdentifiableTileData> CollapsibleGrid<Tile> for CollapsibleTileGrid<Tile> {
-    fn new_empty(
+impl<Tile: IdentifiableTileData> CollapsibleTileGrid<Tile> {
+    pub fn new_empty(
         size: GridSize,
         frequencies: &FrequencyHints<Tile>,
         adjacencies: &AdjacencyRules<Tile>,
@@ -135,7 +140,7 @@ impl<Tile: IdentifiableTileData> CollapsibleGrid<Tile> for CollapsibleTileGrid<T
         }
     }
 
-    fn new_from_collapsed(
+    pub fn new_from_collapsed(
         collapsed: &CollapsedGrid,
         frequencies: &FrequencyHints<Tile>,
         adjacencies: &AdjacencyRules<Tile>,
@@ -173,7 +178,7 @@ impl<Tile: IdentifiableTileData> CollapsibleGrid<Tile> for CollapsibleTileGrid<T
         })
     }
 
-    fn change(
+    pub fn change(
         self,
         frequencies: &FrequencyHints<Tile>,
         adjacencies: &AdjacencyRules<Tile>,
@@ -183,7 +188,7 @@ impl<Tile: IdentifiableTileData> CollapsibleGrid<Tile> for CollapsibleTileGrid<T
         Self::new_from_collapsed(&collapsed, frequencies, adjacencies)
     }
 
-    fn populate_from_collapsed(
+    pub fn populate_from_collapsed(
         &mut self,
         collapsed: &CollapsedGrid,
     ) -> Result<(), CollapsedGridError> {
@@ -222,7 +227,11 @@ impl<Tile: IdentifiableTileData> CollapsibleGrid<Tile> for CollapsibleTileGrid<T
 
         Ok(())
     }
+}
 
+impl<Tile: IdentifiableTileData> CollapsibleGrid<Tile, CollapsibleTile>
+    for CollapsibleTileGrid<Tile>
+{
     fn retrieve_collapsed(&self) -> CollapsedGrid {
         let mut out = CollapsedGrid::new(*self.grid.size());
 
@@ -293,6 +302,31 @@ impl<Tile: IdentifiableTileData> collapse::grid::private::Sealed<CollapsibleTile
     }
 
     fn _get_initial_propagate_items(&self, to_collapse: &[GridPosition]) -> Vec<PropagateItem> {
-        collapse::grid::get_initial_propagate_items(to_collapse, &self.grid, &self.option_data)
+        let mut out = Vec::new();
+        let mut cache = HashMap::new();
+        let mut check_generated = HashSet::new();
+        let check_provided: HashSet<_> = HashSet::from_iter(to_collapse.iter());
+
+        for pos_to_collapse in to_collapse {
+            for neighbour_tile in self.grid.get_neighbours(pos_to_collapse) {
+                if !neighbour_tile.as_ref().is_collapsed()
+                    || check_provided.contains(&neighbour_tile.grid_position())
+                    || check_generated.contains(&neighbour_tile.grid_position())
+                {
+                    continue;
+                }
+                let check_pos = neighbour_tile.grid_position();
+                check_generated.insert(check_pos);
+                let collapsed_idx = neighbour_tile.as_ref().collapse_idx().unwrap();
+                for opt_to_remove in cache.entry(collapsed_idx).or_insert_with(|| {
+                    (0..self.option_data.num_options())
+                        .filter(|option_idx| option_idx != &collapsed_idx)
+                        .collect::<Vec<usize>>()
+                }) {
+                    out.push(PropagateItem::new(check_pos, *opt_to_remove))
+                }
+            }
+        }
+        out
     }
 }
