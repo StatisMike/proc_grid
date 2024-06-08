@@ -1,10 +1,15 @@
 use std::fs::File;
 use std::io::Write;
 
-use grid_forge::{gen::collapse::*, map::{GridDir, GridMap2D, GridSize}, tile::{identifiable::collection::IdentTileCollection, GridPosition, TileContainer}, vis::collection::VisCollection};
+use grid_forge::{
+    gen::collapse::*,
+    map::{GridDir, GridMap2D, GridSize},
+    tile::{identifiable::collection::IdentTileCollection, GridPosition, TileContainer},
+    vis::collection::VisCollection,
+};
 use overlap::{CollapsiblePatternGrid, DebugSubscriber, OverlappingPattern};
 use rand_chacha::ChaChaRng;
-use utils::{GifSingleSubscriber, RngHelper, VisGridLoaderHelper, VisRotate};
+use utils::{ArgHelper, GifSingleSubscriber, RngHelper, VisGridLoaderHelper, VisRotate};
 
 mod utils;
 
@@ -14,6 +19,8 @@ const MAP_20X20: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../assets/samples/
 const OUTPUTS_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/examples/collapse/outputs/");
 
 fn main() {
+    let args = ArgHelper::gather();
+
     // VisCollection to handle Image <-> GridMap2D roundabouts
     let mut vis_collection = VisCollection::default();
 
@@ -66,17 +73,18 @@ fn main() {
 
     let outputs_size = GridSize::new_xy(30, 30);
 
-    // Save the collapse process as a GIF
-    let file = std::fs::File::create(format!("{}{}", OUTPUTS_DIR, "overlap_entrophy.gif")).unwrap();
-    let subscriber = GifSingleSubscriber::new(
-        file, 
-        &outputs_size, 
-        vis_collection.clone()
-    );
-
     // Resolver can be reused, as it is used for the same tile type.
-    let mut resolver = overlap::Resolver::default()
-    .with_subscriber(Box::new(subscriber));
+    let mut resolver = overlap::Resolver::default();
+
+    // Save the collapse process as a GIF.
+    if args.gif() {
+        let file =
+            std::fs::File::create(format!("{}{}", OUTPUTS_DIR, "overlap_entrophy.gif")).unwrap();
+
+        let subscriber = GifSingleSubscriber::new(file, &outputs_size, vis_collection.clone()).with_rescale(3);
+
+        resolver = resolver.with_subscriber(Box::new(subscriber));
+    }
 
     // Using propagating EntrophyQueue, we will use more restrictive `identity`
     // AdjacencyRules. It will help to keep high success rate, but is a little
@@ -87,7 +95,8 @@ fn main() {
         analyzer.get_collection().clone(),
         analyzer.get_frequency(),
         analyzer.get_adjacency(),
-    ).unwrap();
+    )
+    .unwrap();
 
     let after_collapse = resolver
         .generate(
@@ -103,6 +112,7 @@ fn main() {
     vis_collection
         .draw_map(collapsed.as_ref(), &mut out_buffer)
         .unwrap();
+    out_buffer = image::imageops::resize(&out_buffer, outputs_size.x() * 4 * 3, outputs_size.y() * 4 * 3, image::imageops::FilterType::Nearest);
     out_buffer
         .save(format!("{}{}", OUTPUTS_DIR, "overlap_entrophy.png"))
         .unwrap();
@@ -113,7 +123,7 @@ fn main() {
 
     // let to_collapse =
     //     CollapsiblePatternGrid::new_empty(outputs_size, analyzer.get_collection().clone(), analyzer.get_frequency(), analyzer.get_adjacency()).unwrap();
-    
+
     // let mut rng: ChaChaRng = RngHelper::init_str("overlap_position",5)
     //     .into();
 
@@ -143,7 +153,6 @@ fn main() {
     //         },
     //     }
     // }
-    
 
     // let collapsed = after_collapse.unwrap().retrieve_collapsed();
     // let mut out_buffer = vis_collection.init_map_image_buffer(collapsed.as_ref().size());

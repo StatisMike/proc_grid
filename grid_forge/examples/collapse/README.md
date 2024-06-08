@@ -3,10 +3,10 @@
 Given sample gridmaps, these algorithms can analyze the underlying tile adjacency rules and
 generate completely new, random maps in servicable speed.
 
-Examples presented there are generated using `vis` feature, which allows reading and writing 2D gridmaps from image files, and are based on two sample gridmaps containing tiles in size of 4x4 pixels, below resized  for better clarity: 
+Examples presented there are generated using `vis` feature, which allows reading and writing 2D gridmaps from image files, and are based on two sample gridmaps containing tiles in size of 4x4 pixels, with 100 and 400 individual tiles, below resized for better clarity: 
 
-<img src="../../../assets/samples/roads.png" width = "260px">
-<img src="../../../assets/samples/seas.png" width = "260px">
+![10x10_input](inputs/source_10x10.png)
+![20x20_input](inputs/source_20x20.png)
 
 ## Queues
 
@@ -28,8 +28,8 @@ Structs kept in `gen::collapse::singular` module can be used to create maps base
 
 Below example 30x30 map generated with help of `EntrophyQueue`:
 
-<img src="outputs/identity_entrophy.png" width = "240px">
-<img src="outputs/identity_entrophy.gif" width = "240px">
+![identity_entrophy](outputs/identity_entrophy.png)
+![identity_entrophy_process](outputs/identity_entrophy.gif)
 
 `BorderAnalyzer` creates more liberate rules - it checks tiles for posible adjacent in sample map similarly to previous analyzer, but additionally creates new rules based on the tile borders. To describe it more naturally:
 
@@ -37,8 +37,8 @@ Below example 30x30 map generated with help of `EntrophyQueue`:
 
 Below example of 30x30 map generated with the help of default `PositionQueue`:
 
-<img src="outputs/border_position.png" width = "240px">
-<img src="outputs/border_position.gif" width = "240px">
+![border_position](outputs/border_position.png)
+![border_position_process](outputs/border_position.gif)
 
 ## Overlapping algorithm
 
@@ -47,5 +47,5 @@ overlapping patterns of tiles. Given some sample gridmaps `overlapping::Analyzer
 a `PatternCollection` containing `WIDTH x HEIGHT` tiles, which afterwards the
 `overlapping::Resolver` will try to place on newly generated grid.
 
-<img src="outputs/overlap_entrophy.png" width = "240px">
-<img src="outputs/overlap_entrophy.gif" width = "240px">
+![overlap_entrophy](outputs/overlap_entrophy.png)
+![overlap_entrophy_process](outputs/overlap_entrophy.gif)

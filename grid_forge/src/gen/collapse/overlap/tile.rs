@@ -76,6 +76,7 @@ impl<P: OverlappingPattern> private::Sealed for CollapsiblePattern<P> {
         rng: &mut R,
         options_data: &crate::gen::collapse::option::PerOptionData,
     ) -> Option<Vec<usize>> {
+        assert!(self.weight_sum > 0);
         let random = rng.gen_range(0..self.weight_sum);
         let mut current_sum = 0;
         let mut chosen = None;
@@ -132,7 +133,12 @@ pub struct CollapsiblePatternGrid<P: OverlappingPattern, Tile: IdentifiableTileD
 
 impl<P: OverlappingPattern, Tile: IdentifiableTileData> Clone for CollapsiblePatternGrid<P, Tile> {
     fn clone(&self) -> Self {
-        Self { pattern_grid: self.pattern_grid.clone(), patterns: self.patterns.clone(), option_data: self.option_data.clone(), types: self.types.clone() }
+        Self {
+            pattern_grid: self.pattern_grid.clone(),
+            patterns: self.patterns.clone(),
+            option_data: self.option_data.clone(),
+            types: self.types,
+        }
     }
 }
 
@@ -150,9 +156,8 @@ where
         let mut option_data = PerOptionData::default();
         option_data.populate(&frequencies.get_all_weights_cloned(), adjacencies.inner());
 
-        println!("{}", option_data.get_tile_type_id(&222).unwrap());
-
-        let pattern_ids: HashSet<_> = HashSet::from_iter(patterns.inner().values().map(|p| p.pattern_id()));
+        let pattern_ids: HashSet<_> =
+            HashSet::from_iter(patterns.inner().values().map(|p| p.pattern_id()));
         let option_ids: HashSet<_> = HashSet::from_iter(option_data.inner().keys().copied());
         let mut missing_ids = pattern_ids
             .symmetric_difference(&option_ids)
@@ -247,7 +252,7 @@ where
                 );
             }
             if possible_patterns.is_empty() {
-                return Err(CollapsedGridError::new_missing(vec![tile_type_id]));
+                return Err(CollapsedGridError::new_collapse(position));
             }
             let mut current_ways = ways.clone();
             current_ways.purge_others(&possible_patterns);
@@ -279,12 +284,8 @@ where
             Some(pattern_idx) => {
                 let pattern_id = self.option_data.get_tile_type_id(&pattern_idx).unwrap();
 
-                let pattern = self.patterns
-                .get_tile_data(&pattern_id)
-                .unwrap();
-                Some(
-                    pattern.tile_type_id(),
-                )
+                let pattern = self.patterns.get_tile_data(&pattern_id).unwrap();
+                Some(pattern.tile_type_id())
             }
             None => None,
         }

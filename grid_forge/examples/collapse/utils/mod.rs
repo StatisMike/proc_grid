@@ -14,6 +14,26 @@ use rand_chacha::ChaChaRng;
 
 pub use gif_subscribers::GifSingleSubscriber;
 
+pub struct ArgHelper {
+    gif: bool,
+}
+
+impl ArgHelper {
+    pub const GIF: &'static str = "--gif";
+
+    pub fn gather() -> Self {
+        let args = std::env::args().collect::<Vec<_>>();
+
+        let gif = args.contains(&Self::GIF.to_owned());
+
+        Self { gif }
+    }
+
+    pub fn gif(&self) -> bool {
+        self.gif
+    }
+}
+
 #[derive(Debug)]
 pub struct RngHelper {
     seed: [u8; 32],

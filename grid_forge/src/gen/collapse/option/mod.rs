@@ -57,7 +57,7 @@ pub struct PerOptionData {
     ways_to_be_option: WaysToBeOption,
     opt_with_weight: PerOptionTable<(u32, f32)>,
     option_count: usize,
-    possible_options_count: usize
+    possible_options_count: usize,
 }
 
 impl IdentTileCollection for PerOptionData {
@@ -147,7 +147,6 @@ impl PerOptionData {
             } else {
                 inner.push(table);
             }
-            
         }
     }
 
@@ -186,16 +185,16 @@ impl WaysToBeOption {
     /// Decrements number of ways to become option from given direction. If reaches
     /// 0, returns `true` and given option should be removed.
     pub(crate) fn decrement(&mut self, option_idx: usize, direction: GridDir) -> bool {
-        let num_ways_by_dir = self.table.index_mut(option_idx);
-        let num_ways = num_ways_by_dir.index_mut(direction);
-        if num_ways == &0 {
+        // let num_ways_by_dir = self.table.index_mut(option_idx);
+        // let num_ways = num_ways_by_dir[direction];
+        if self.table[option_idx][direction] == 0 {
             return false;
         }
-        *num_ways -= 1;
-        if *num_ways > 0 {
+        self.table[option_idx][direction] -= 1;
+        if self.table[option_idx][direction] > 0 {
             return false;
         }
-        *num_ways_by_dir = Self::EMPTY_DIR_TABLE;
+        self.table[option_idx] = Self::EMPTY_DIR_TABLE;
         true
     }
 

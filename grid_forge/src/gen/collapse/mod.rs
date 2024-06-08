@@ -113,7 +113,7 @@ impl AdjacencyTable {
             .iter()
     }
 
-    pub fn inner_ids(&self) -> impl Iterator<Item=u64> + '_ {
+    pub fn inner_ids(&self) -> impl Iterator<Item = u64> + '_ {
         self.inner.keys().copied()
     }
 }

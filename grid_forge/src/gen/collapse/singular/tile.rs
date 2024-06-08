@@ -72,6 +72,7 @@ impl crate::gen::collapse::tile::private::Sealed for CollapsibleTile {
         rng: &mut R,
         options_data: &PerOptionData,
     ) -> Option<Vec<usize>> {
+        assert!(self.weight_sum > 0);
         let random = rng.gen_range(0..self.weight_sum);
         let mut current_sum = 0;
         let mut chosen = None;

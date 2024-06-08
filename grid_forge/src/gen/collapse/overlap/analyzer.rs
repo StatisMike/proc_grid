@@ -77,7 +77,11 @@ where
     Data: IdentifiableTileData,
 {
     fn clone(&self) -> Self {
-        Self { weights: self.weights.clone(), pattern_type: self.pattern_type.clone(), data_type: self.data_type.clone() }
+        Self {
+            weights: self.weights.clone(),
+            pattern_type: self.pattern_type,
+            data_type: self.data_type,
+        }
     }
 }
 
@@ -156,10 +160,13 @@ where
     Data: IdentifiableTileData,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("AdjacencyRules").field("inner", &self.inner).field("pattern_type", &self.pattern_type).field("data_type", &self.data_type).finish()
+        f.debug_struct("AdjacencyRules")
+            .field("inner", &self.inner)
+            .field("pattern_type", &self.pattern_type)
+            .field("data_type", &self.data_type)
+            .finish()
     }
 }
-
 
 impl<P, Data> Default for AdjacencyRules<P, Data>
 where

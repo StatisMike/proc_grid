@@ -10,7 +10,7 @@ use grid_forge::{
     vis::collection::VisCollection,
 };
 use rand_chacha::ChaChaRng;
-use utils::{GifSingleSubscriber, RngHelper, VisGridLoaderHelper, VisRotate};
+use utils::{ArgHelper, GifSingleSubscriber, RngHelper, VisGridLoaderHelper, VisRotate};
 
 mod utils;
 
@@ -20,6 +20,8 @@ const MAP_20X20: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../assets/samples/
 const OUTPUTS_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/examples/collapse/outputs/");
 
 fn main() {
+    let args = ArgHelper::gather();
+
     // VisCollection to handle Image <-> GridMap2D roundabouts
     let mut vis_collection = VisCollection::default();
 
@@ -44,15 +46,14 @@ fn main() {
     // Resolver can be reused, as it is used for the same tile type.
     let mut resolver = Resolver::default();
 
-    // Save the collapse process as a GIF
-    let file = std::fs::File::create(format!("{}{}", OUTPUTS_DIR, "identity_entrophy.gif")).unwrap();
-    let subscriber = GifSingleSubscriber::new(
-        file, 
-        &outputs_size, 
-        vis_collection.clone()
-    );
+    // Save the collapse process as a GIF.
+    if args.gif() {
+        let file =
+            std::fs::File::create(format!("{}{}", OUTPUTS_DIR, "identity_entrophy.gif")).unwrap();
+        let subscriber = GifSingleSubscriber::new(file, &outputs_size, vis_collection.clone()).with_rescale(3);
 
-    resolver = resolver.with_subscriber(Box::new(subscriber));
+        resolver = resolver.with_subscriber(Box::new(subscriber));
+    }
 
     // Using propagating EntrophyQueue, we will use more restrictive `identity`
     // AdjacencyRules. It will help to keep high success rate, but is a little
@@ -77,6 +78,7 @@ fn main() {
     vis_collection
         .draw_map(collapsed.as_ref(), &mut out_buffer)
         .unwrap();
+    out_buffer = image::imageops::resize(&out_buffer, outputs_size.x() * 4 * 3, outputs_size.y() * 4 * 3, image::imageops::FilterType::Nearest);
     out_buffer
         .save(format!("{}{}", OUTPUTS_DIR, "identity_entrophy.png"))
         .unwrap();
@@ -89,13 +91,13 @@ fn main() {
         .into();
 
     // Save the collapse process as a GIF
-    let file = std::fs::File::create(format!("{}{}", OUTPUTS_DIR, "singular_border.gif")).unwrap();
-    let subscriber = GifSingleSubscriber::new(
-        file, 
-        &outputs_size, 
-        vis_collection.clone());
+    if args.gif() {
+        let file =
+            std::fs::File::create(format!("{}{}", OUTPUTS_DIR, "border_position.gif")).unwrap();
+        let subscriber = GifSingleSubscriber::new(file, &outputs_size, vis_collection.clone()).with_rescale(3);
 
-    resolver = resolver.with_subscriber(Box::new(subscriber));
+        resolver = resolver.with_subscriber(Box::new(subscriber));
+    }
 
     let mut to_collapse =
         CollapsibleTileGrid::new_empty(outputs_size, &frequency_hints, border_analyzer.adjacency());
@@ -113,6 +115,7 @@ fn main() {
     vis_collection
         .draw_map(collapsed.as_ref(), &mut out_buffer)
         .unwrap();
+    out_buffer = image::imageops::resize(&out_buffer, outputs_size.x() * 4 * 3, outputs_size.y() * 4 * 3, image::imageops::FilterType::Nearest);
     out_buffer
         .save(format!("{}{}", OUTPUTS_DIR, "border_position.png"))
         .unwrap();

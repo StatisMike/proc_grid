@@ -95,7 +95,7 @@ impl<const P_X: usize, const P_Y: usize, const P_Z: usize> OverlappingPattern
                 [(*pos.x() - *anchor_pos.x()) as usize]
         } else {
             self.tile_type_ids[(pos.z().expect("cannot get `z` from `pos`")
-            - anchor_pos.z().expect("cannot get `z` from `anchor_pos`"))
+                - anchor_pos.z().expect("cannot get `z` from `anchor_pos`"))
                 as usize][(pos.y() - anchor_pos.y()) as usize]
                 [(pos.x() - anchor_pos.x()) as usize]
         }

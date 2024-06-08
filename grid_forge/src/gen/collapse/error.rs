@@ -75,6 +75,7 @@ pub(crate) enum CollapseErrorKind {
 pub struct CollapsedGridError {
     missing_type_ids: Option<Vec<u64>>,
     sizes: Option<(GridSize, GridSize)>,
+    position: Option<GridPosition>
 }
 
 impl CollapsedGridError {
@@ -82,12 +83,21 @@ impl CollapsedGridError {
         Self {
             missing_type_ids: Some(missing_type_ids),
             sizes: None,
+            position: None,
         }
     }
     pub(crate) fn new_wrong_size(source_size: GridSize, target_size: GridSize) -> Self {
         Self {
             missing_type_ids: None,
             sizes: Some((source_size, target_size)),
+            position: None,
+        }
+    }
+    pub(crate) fn new_collapse(position: GridPosition) -> Self {
+        Self {
+            missing_type_ids: None,
+            sizes: None,
+            position: Some(position)
         }
     }
 
@@ -103,13 +113,20 @@ impl CollapsedGridError {
     pub fn sizes(&self) -> &Option<(GridSize, GridSize)> {
         &self.sizes
     }
+
+    /// If error originates from incompatible prepopulated [`CollapsedTileData`](crate::gen::collapse::CollapsedTileData) during their transformation
+    /// into [`CollapsiblePatternGrid`](crate::gen::collapse::overlap::CollapsiblePatternGrid), it will contain the position of problematic tile.
+    pub fn position(&self) -> &Option<GridPosition> {
+        &self.position
+    }
 }
 
 impl Display for CollapsedGridError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match (&self.missing_type_ids, &self.sizes) {
-            (Some(missing), None) => write!(f, "there are {} `tile_type_ids` missing from underlying CollapsibleGrid data. Make sure that the `CollapsibleGrid` have been provided correct rulesets", missing.len()),
-            (None, Some((source, target))) => write!(f, "size of source `GridMap`: {source:?} is greater than target `CollapsibleGrid`: {target:?}"),
+        match (&self.missing_type_ids, &self.sizes, &self.position) {
+            (Some(missing), None, None) => write!(f, "there are {} `tile_type_ids` missing from underlying CollapsibleGrid data. Make sure that the `CollapsibleGrid` have been provided correct rulesets", missing.len()),
+            (None, Some((source, target)), None) => write!(f, "size of source `GridMap`: {source:?} is greater than target `CollapsibleGrid`: {target:?}"),
+            (None, None, Some(position)) => write!(f, "tile at position: {position:?} cannot get any compatible patterns"),
             _ => unreachable!("either created by `Self::new_missing()` or `Self::new_wrong_size()`"),
         }
     }
