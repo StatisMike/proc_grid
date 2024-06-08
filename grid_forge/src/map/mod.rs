@@ -1,4 +1,4 @@
-use std::vec::IntoIter;
+use std::ops::{Index, IndexMut};
 
 use grid::Grid;
 
@@ -94,6 +94,44 @@ impl GridDir {
     }
 }
 
+/// Stores type in relation to each direction.
+#[derive(Clone, Debug)]
+pub struct DirectionTable<T> {
+    table: [T; 4],
+}
+
+impl<T> DirectionTable<T> {
+    pub const fn new_array(values: [T; 4]) -> Self {
+        Self { table: values }
+    }
+
+    pub(crate) fn inner(&self) -> &[T] {
+        &self.table
+    }
+}
+
+impl<T: Default> Default for DirectionTable<T> {
+    fn default() -> Self {
+        Self {
+            table: [T::default(), T::default(), T::default(), T::default()],
+        }
+    }
+}
+
+impl<T> IndexMut<GridDir> for DirectionTable<T> {
+    fn index_mut(&mut self, index: GridDir) -> &mut Self::Output {
+        &mut self.table[index as usize]
+    }
+}
+
+impl<T> Index<GridDir> for DirectionTable<T> {
+    type Output = T;
+
+    fn index(&self, index: GridDir) -> &Self::Output {
+        &self.table[index as usize]
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct GridSize {
     x: u32,
@@ -137,6 +175,11 @@ impl GridSize {
 
     pub fn is_position_valid(&self, position: &GridPosition) -> bool {
         position.x() < &self.x && position.y() < &self.y
+    }
+
+    /// Checks if each of `self` dimensions are lesser than or equal to `other`'s.
+    pub fn is_contained_within(&self, other: &Self) -> bool {
+        self.x <= other.x && self.y <= other.y && self.z <= other.z
     }
 
     pub fn get_all_possible_positions(&self) -> Vec<GridPosition> {
@@ -203,7 +246,6 @@ impl GridSize {
 pub struct GridMap2D<Data: TileData> {
     pub(crate) size: GridSize,
     pub(crate) tiles: Grid<Option<Data>>,
-    pub(crate) layer: Option<u32>,
 }
 
 impl<Data: TileData> GridMap2D<Data> {
@@ -212,7 +254,6 @@ impl<Data: TileData> GridMap2D<Data> {
         Self {
             size,
             tiles: Grid::new(size.x as usize, size.y as usize),
-            layer: None,
         }
     }
 
@@ -365,10 +406,21 @@ impl<Data: TileData> GridMap2D<Data> {
             .collect::<Vec<GridPosition>>()
     }
 
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut Option<Data>> {
+        self.tiles.iter_mut()
+    }
+
     pub fn iter_tiles(&self) -> impl Iterator<Item = GridTileRef<Data>> {
         self.tiles.indexed_iter().filter_map(|(pos, data)| {
             data.as_ref()
                 .map(|d| GridTileRef::new(GridPosition::new_xy(pos.0 as u32, pos.1 as u32), d))
+        })
+    }
+
+    pub fn iter_mut_tiles(&mut self) -> impl Iterator<Item = GridTileRefMut<Data>> {
+        self.tiles.indexed_iter_mut().filter_map(|(pos, data)| {
+            data.as_mut()
+                .map(|d| GridTileRefMut::new(GridPosition::new_xy(pos.0 as u32, pos.1 as u32), d))
         })
     }
 

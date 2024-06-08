@@ -1,7 +1,8 @@
 use std::collections::{BTreeMap, HashMap};
 use std::marker::PhantomData;
 
-use crate::map::{GridDir, GridMap2D};
+use crate::gen::collapse::AdjacencyTable;
+use crate::map::{DirectionTable, GridDir, GridMap2D};
 use crate::tile::identifiable::IdentifiableTileData;
 use crate::tile::{GridPosition, TileContainer};
 
@@ -19,7 +20,7 @@ pub struct AdjacencyRules<Data>
 where
     Data: IdentifiableTileData,
 {
-    inner: HashMap<u64, InnerAdjacency>,
+    inner: AdjacencyTable,
     id_type: PhantomData<Data>,
 }
 
@@ -41,7 +42,7 @@ where
 {
     fn default() -> Self {
         Self {
-            inner: HashMap::new(),
+            inner: AdjacencyTable::default(),
             id_type: PhantomData::<Data>,
         }
     }
@@ -65,30 +66,11 @@ where
     }
 
     pub(crate) fn add_adjacency_raw(&mut self, tile_id: u64, adjacent_id: u64, direction: GridDir) {
-        let adjacents = self.inner.entry(tile_id).or_default();
-
-        adjacents.add_option(adjacent_id, direction);
+        self.inner.insert_adjacency(tile_id, direction, adjacent_id);
     }
 
-    pub(crate) fn is_valid_raw(&self, tile_id: u64, adjacent_id: u64, direction: GridDir) -> bool {
-        if let Some(rules) = self.inner.get(&tile_id) {
-            rules.is_in_options(adjacent_id, direction)
-        } else {
-            false
-        }
-    }
-
-    pub(crate) fn is_valid_raw_any(
-        &self,
-        tile_id: u64,
-        adjacent_options: &[u64],
-        direction: GridDir,
-    ) -> bool {
-        if let Some(rules) = self.inner.get(&tile_id) {
-            rules.is_in_options_any(adjacent_options, direction)
-        } else {
-            false
-        }
+    pub(crate) fn inner(&self) -> &AdjacencyTable {
+        &self.inner
     }
 }
 
@@ -294,16 +276,16 @@ where
                 self.set_border_id(new_id, adjacent_id, &direction.opposite());
             }
             (None, Some(id_border)) => {
-                self.set_border_id(id_border, tile_id, direction);
+                self.set_border_id(*id_border, tile_id, direction);
             }
             (Some(id_border), None) => {
-                self.set_border_id(id_border, adjacent_id, &direction.opposite());
+                self.set_border_id(*id_border, adjacent_id, &direction.opposite());
             }
             (Some(id_left), Some(id_right)) => {
                 if id_left == id_right {
                     return;
                 }
-                self.unify_border_id(id_left.max(id_right), id_left.min(id_right));
+                self.unify_border_id(*id_left.max(id_right), *id_left.min(id_right));
             }
         }
     }
@@ -327,12 +309,8 @@ where
             .push((tile_id, *direction));
     }
 
-    fn get_border_id(&self, tile_id: &u64, direction: &GridDir) -> Option<u64> {
-        self.inner
-            .get(tile_id)
-            .unwrap()
-            .get_at_dir(direction)
-            .copied()
+    fn get_border_id(&self, tile_id: &u64, direction: &GridDir) -> &Option<u64> {
+        self.inner.get(tile_id).unwrap().get_at_dir(direction)
     }
 
     fn unify_border_id(&mut self, existing: u64, into: u64) {
@@ -351,46 +329,11 @@ where
     }
 }
 
-// -------- PRIVATE -------- //
-
-#[derive(Debug, Clone)]
-struct InnerAdjacency {
-    ia: HashMap<GridDir, Vec<u64>>,
-}
-
-impl Default for InnerAdjacency {
-    fn default() -> Self {
-        let mut ia = HashMap::new();
-        for dir in GridDir::ALL_2D {
-            ia.insert(*dir, Vec::new());
-        }
-        Self { ia }
-    }
-}
-
-impl InnerAdjacency {
-    fn add_option(&mut self, adjacent_id: u64, dir: GridDir) {
-        let opts = self.ia.get_mut(&dir).unwrap();
-        if !opts.contains(&adjacent_id) {
-            opts.push(adjacent_id);
-        }
-    }
-
-    fn is_in_options(&self, adjacent_id: u64, dir: GridDir) -> bool {
-        self.ia.get(&dir).unwrap().contains(&adjacent_id)
-    }
-
-    fn is_in_options_any(&self, adjacent_options: &[u64], dir: GridDir) -> bool {
-        let options = self.ia.get(&dir).unwrap();
-        adjacent_options.iter().any(|opt| options.contains(opt))
-    }
-}
-
 struct TileBordersAdjacency<Data>
 where
     Data: IdentifiableTileData,
 {
-    borders: HashMap<GridDir, u64>,
+    borders: DirectionTable<Option<u64>>,
     phantom: PhantomData<Data>,
 }
 
@@ -399,11 +342,11 @@ where
     Data: IdentifiableTileData,
 {
     fn set_at_dir(&mut self, dir: &GridDir, border_id: u64) {
-        self.borders.insert(*dir, border_id);
+        self.borders[*dir] = Some(border_id);
     }
 
-    fn get_at_dir(&self, dir: &GridDir) -> Option<&u64> {
-        self.borders.get(dir)
+    fn get_at_dir(&self, dir: &GridDir) -> &Option<u64> {
+        &self.borders[*dir]
     }
 }
 
@@ -413,7 +356,7 @@ where
 {
     fn default() -> Self {
         Self {
-            borders: HashMap::new(),
+            borders: DirectionTable::new_array([None; 4]),
             phantom: PhantomData::<Data>,
         }
     }

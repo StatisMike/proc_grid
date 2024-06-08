@@ -1,10 +1,6 @@
-use std::collections::BTreeMap;
-
-use rand::distributions::{Distribution, Uniform};
-use rand::Rng;
-
+use crate::tile::identifiable::builders::ConstructableViaIdentifierTile;
 use crate::tile::identifiable::IdentifiableTileData;
-use crate::tile::{GridPosition, GridTile, TileData};
+use crate::tile::TileData;
 
 pub struct CollapsedTileData {
     tile_type_id: u64,
@@ -18,90 +14,153 @@ impl IdentifiableTileData for CollapsedTileData {
     }
 }
 
-/// Trait shared by [`TileData`] used within collapsible generative algorithms.
-pub trait CollapsibleTileData: IdentifiableTileData {
-    fn have_options(&self) -> bool;
+impl ConstructableViaIdentifierTile for CollapsedTileData {
+    fn tile_new(tile_type_id: u64) -> Self {
+        Self::new(tile_type_id)
+    }
+}
 
-    fn remove_option(&mut self, tile_id: u64) -> bool;
+impl CollapsedTileData {
+    #[inline]
+    pub fn new(tile_type_id: u64) -> Self {
+        Self { tile_type_id }
+    }
+}
+
+/// Trait shared by [`TileData`] used within collapsible generative algorithms.
+pub trait CollapsibleTileData: TileData + private::Sealed {
+    fn num_compatible_options(&self) -> usize;
+
+    fn has_compatible_options(&self) -> bool {
+        self.num_compatible_options() > 0
+    }
 
     fn is_collapsed(&self) -> bool {
-        self.collapse_id().is_some()
+        self.collapse_idx().is_some()
     }
 
-    fn collapse_id(&self) -> Option<u64>;
+    fn collapse_idx(&self) -> Option<usize>;
 
-    fn new_uncollapsed_tile(
-        position: GridPosition,
-        options_with_weights: BTreeMap<u64, u32>,
-        weight_sum: u32,
-        weight_log_sum: f32,
-        entrophy_noise: f32,
-    ) -> GridTile<Self>;
-
-    /// Create new collapsed tile.
-    fn new_collapsed_tile(position: GridPosition, tile_id: u64) -> GridTile<Self>;
-
-    /// Vector constructor where collapsible tiles need entrophy noise.
-    fn new_from_frequency_with_entrophy<R: Rng>(
-        rng: &mut R,
-        positions: &[GridPosition],
-        options_with_weights: BTreeMap<u64, u32>,
-    ) -> Vec<GridTile<Self>> {
-        let rng_range = Self::entrophy_uniform();
-        let weight_sum: u32 = options_with_weights.values().sum();
-        let weight_log_sum = options_with_weights
-            .values()
-            .map(|v| (*v as f32) * (*v as f32).log2())
-            .sum::<f32>();
-
-        positions
-            .iter()
-            .map(|position| {
-                Self::new_uncollapsed_tile(
-                    *position,
-                    options_with_weights.clone(),
-                    weight_sum,
-                    weight_log_sum,
-                    rng_range.sample(rng),
-                )
-            })
-            .collect::<Vec<_>>()
-    }
-
-    /// Vector constructor where collapsible tiles do not need entrophy noise.
-    fn new_from_frequency(
-        positions: &[GridPosition],
-        options_with_weights: BTreeMap<u64, u32>,
-    ) -> Vec<GridTile<Self>> {
-        let weight_sum: u32 = options_with_weights.values().sum();
-        let weight_log_sum = options_with_weights
-            .values()
-            .map(|v| (*v as f32) * (*v as f32).log2())
-            .sum::<f32>();
-
-        positions
-            .iter()
-            .map(|pos| {
-                Self::new_uncollapsed_tile(
-                    *pos,
-                    options_with_weights.clone(),
-                    weight_sum,
-                    weight_log_sum,
-                    0.0,
-                )
-            })
-            .collect::<Vec<_>>()
-    }
+    /// Create new collapsed tile data.
+    fn new_collapsed_data(option_idx: usize) -> Self;
 
     /// Calculate entrophy.
     fn calc_entrophy(&self) -> f32;
 
     /// Associate function to calculate entrophy.
+    #[inline]
     fn calc_entrophy_ext(weight_sum: u32, weight_log_sum: f32) -> f32 {
         (weight_sum as f32).log2() - weight_log_sum / (weight_sum as f32)
     }
+}
 
-    fn entrophy_uniform() -> Uniform<f32> {
-        Uniform::<f32>::new(0., 0.00001)
+pub(crate) mod private {
+    use rand::{
+        distributions::{Distribution, Uniform},
+        Rng,
+    };
+
+    use crate::{
+        gen::collapse::option::{PerOptionData, WaysToBeOption},
+        tile::{self, GridPosition, GridTile},
+    };
+
+    pub trait Sealed {
+        fn new_uncollapsed_tile(
+            position: GridPosition,
+            num_options: usize,
+            ways_to_be_option: WaysToBeOption,
+            weight_sum: u32,
+            weight_log_sum: f32,
+            entrophy_noise: f32,
+        ) -> GridTile<Self>
+        where
+            Self: tile::TileData;
+
+        fn new_from_frequency_with_entrophy<R: Rng>(
+            rng: &mut R,
+            positions: &[GridPosition],
+            options_data: &PerOptionData,
+        ) -> Vec<GridTile<Self>>
+        where
+            Self: tile::TileData,
+        {
+            let rng_range = Self::entrophy_uniform();
+            let ways_to_be_option = options_data.get_ways_to_become_option();
+
+            let (weight_sum, weight_log_sum) = ways_to_be_option
+                .iter_possible()
+                .map(|option_idx| options_data.get_weights(option_idx))
+                .fold(
+                    (0u32, 0f32),
+                    |(sum_weight, sum_weight_log), (weight, weight_log)| {
+                        (sum_weight + weight, sum_weight_log + weight_log)
+                    },
+                );
+
+            positions
+                .iter()
+                .map(|position| {
+                    Self::new_uncollapsed_tile(
+                        *position,
+                        options_data.num_possible_options(),
+                        ways_to_be_option.clone(),
+                        weight_sum,
+                        weight_log_sum,
+                        rng_range.sample(rng),
+                    )
+                })
+                .collect::<Vec<_>>()
+        }
+
+        fn new_from_frequency(
+            positions: &[GridPosition],
+            options_data: &PerOptionData,
+        ) -> Vec<GridTile<Self>>
+        where
+            Self: tile::TileData,
+        {
+            let ways_to_be_option = options_data.get_ways_to_become_option();
+
+            let (weight_sum, weight_log_sum) = ways_to_be_option
+                .iter_possible()
+                .map(|option_idx| options_data.get_weights(option_idx))
+                .fold(
+                    (0u32, 0f32),
+                    |(sum_weight, sum_weight_log), (weight, weight_log)| {
+                        (sum_weight + weight, sum_weight_log + weight_log)
+                    },
+                );
+
+            positions
+                .iter()
+                .map(|pos| {
+                    Self::new_uncollapsed_tile(
+                        *pos,
+                        options_data.num_possible_options(),
+                        ways_to_be_option.clone(),
+                        weight_sum,
+                        weight_log_sum,
+                        0.0,
+                    )
+                })
+                .collect::<Vec<_>>()
+        }
+
+        fn ways_to_be_option(&self) -> &WaysToBeOption;
+
+        fn mut_ways_to_be_option(&mut self) -> &mut WaysToBeOption;
+
+        fn remove_option(&mut self, weights: (u32, f32));
+
+        fn entrophy_uniform() -> Uniform<f32> {
+            Uniform::<f32>::new(0., 0.00001)
+        }
+
+        fn collapse<R: Rng>(
+            &mut self,
+            rng: &mut R,
+            options_data: &PerOptionData,
+        ) -> Option<Vec<usize>>;
     }
 }

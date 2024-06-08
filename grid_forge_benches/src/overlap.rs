@@ -47,7 +47,44 @@ fn analyze_10x10_pattern_3x3(bencher: &mut Bencher) {
 }
 
 #[bench]
-fn generate_10x10_pattern_3x3_position(bencher: &mut Bencher) {
+fn generate_10x10_pattern_2x2_entrophy(bencher: &mut Bencher) {
+    let builder = IdentTileTraitBuilder::<BasicIdentTileData>::default();
+
+    let mut vis_collection = VisCollection::<DefaultVisPixel, 4, 4>::default();
+
+    let mut analyzer = Analyzer::<OverlappingPattern2D<2, 2>, BasicIdentTileData>::default();
+
+    for path in &[MAP_10X10, MAP_20X20] {
+        let img = image::open(path).unwrap().into_rgb8();
+
+        let grid = load_gridmap_identifiable_auto(&img, &mut vis_collection, &builder).unwrap();
+
+        analyzer.analyze_map(&grid);
+    }
+
+    let pattern_collection = analyzer.get_collection().clone();
+    let pattern_rules = analyzer.get_adjacency();
+    let pattern_freq = analyzer.get_frequency();
+
+    let size = GridSize::new_xy(10, 10);
+    let positions = size.get_all_possible_positions();
+
+    let grid =
+        CollapsiblePatternGrid::new_empty(size, pattern_collection, pattern_freq, pattern_rules)
+            .unwrap();
+
+    bencher.iter(|| {
+        let mut rng: ChaChaRng = RngHelper::init_str("overlap_bench", 1).into();
+
+        let mut resolver = Resolver::default();
+        let res = resolver.generate(grid.clone(), &mut rng, &positions, EntrophyQueue::default());
+
+        assert!(res.is_ok());
+    });
+}
+
+#[bench]
+fn generate_10x10_pattern_3x3_entrophy(bencher: &mut Bencher) {
     let builder = IdentTileTraitBuilder::<BasicIdentTileData>::default();
 
     let mut vis_collection = VisCollection::<DefaultVisPixel, 4, 4>::default();
@@ -62,27 +99,24 @@ fn generate_10x10_pattern_3x3_position(bencher: &mut Bencher) {
         analyzer.analyze_map(&grid);
     }
 
+    let pattern_collection = analyzer.get_collection().clone();
     let pattern_rules = analyzer.get_adjacency();
-    let pattern_collection = analyzer.get_collection();
     let pattern_freq = analyzer.get_frequency();
 
     let size = GridSize::new_xy(10, 10);
     let positions = size.get_all_possible_positions();
 
-    bencher.iter(|| {
-        let mut rng: ChaChaRng = RngHelper::init_str("overlap_bench", 1).with_pos(57).into();
-
-        let mut resolver = Resolver::new(size);
-        resolver
-            .generate(
-                &mut rng,
-                &positions,
-                PositionQueue::default(),
-                pattern_collection,
-                pattern_freq,
-                pattern_rules,
-            )
+    let grid =
+        CollapsiblePatternGrid::new_empty(size, pattern_collection, pattern_freq, pattern_rules)
             .unwrap();
+
+    bencher.iter(|| {
+        let mut rng: ChaChaRng = RngHelper::init_str("overlap_bench", 1).into();
+
+        let mut resolver = Resolver::default();
+        let res = resolver.generate(grid.clone(), &mut rng, &positions, EntrophyQueue::default());
+
+        assert!(res.is_ok())
     });
 }
 

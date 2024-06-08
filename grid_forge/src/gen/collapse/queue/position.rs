@@ -1,12 +1,13 @@
-use std::{cmp::Ordering, collections::BTreeMap};
+use std::cmp::Ordering;
 
 use rand::Rng;
 
+use crate::gen::collapse::option::PerOptionData;
 use crate::gen::collapse::tile::CollapsibleTileData;
 use crate::map::GridMap2D;
 use crate::tile::{GridPosition, GridTile, TileContainer};
 
-use super::{CollapseQueue, ResolverSelector};
+use super::CollapseQueue;
 
 /// Enum defining the starting point of the collapse wave.
 #[derive(Default, Eq, PartialEq)]
@@ -110,15 +111,15 @@ impl CollapseQueue for PositionQueue {
     }
 }
 
-impl ResolverSelector for PositionQueue {
+impl super::private::Sealed for PositionQueue {
     fn populate_inner_grid<R: Rng, Data: CollapsibleTileData>(
         &mut self,
         _rng: &mut R,
         grid: &mut GridMap2D<Data>,
         positions: &[GridPosition],
-        options_with_weights: BTreeMap<u64, u32>,
+        options_data: &PerOptionData,
     ) {
-        let tiles = Data::new_from_frequency(positions, options_with_weights);
+        let tiles = Data::new_from_frequency(positions, options_data);
         self.initialize_queue(&tiles);
         for tile in tiles {
             grid.insert_tile(tile);
