@@ -1,14 +1,9 @@
 use std::fs::File;
 
 use grid_forge::{
-    gen::collapse::{
-        singular, overlap, CollapsedTileData,
-    },
+    gen::collapse::{overlap, singular, CollapsedTileData},
     map::GridSize,
-    tile::{
-        identifiable::builders::ConstructableViaIdentifierTile,
-        GridTile,
-    },
+    tile::{identifiable::builders::ConstructableViaIdentifierTile, GridTile},
     vis::collection::VisCollection,
 };
 use image::{ImageBuffer, Rgb};
@@ -20,7 +15,7 @@ pub struct GifSingleSubscriber {
     collection: VisCollection<Rgb<u8>, 4, 4>,
     frame_size: (u16, u16),
     resize: bool,
-    map_size: GridSize
+    map_size: GridSize,
 }
 
 impl GifSingleSubscriber {
@@ -35,29 +30,50 @@ impl GifSingleSubscriber {
             collection,
             frame_size,
             resize: false,
-            map_size: *size
+            map_size: *size,
         }
     }
 
     pub fn with_rescale(mut self, rescale: u8) -> Self {
-      self.frame_size = (self.frame.width() as u16 * rescale as u16, self.frame.height() as u16 * rescale as u16);
-      self.resize = true;
+        self.frame_size = (
+            self.frame.width() as u16 * rescale as u16,
+            self.frame.height() as u16 * rescale as u16,
+        );
+        self.resize = true;
 
-      self
+        self
     }
 
     fn begin(&mut self) {
-      self.encoder = Some(gif::Encoder::new(self.file.take().unwrap(), self.frame_size.0, self.frame_size.1, &[]).unwrap());
-      self.encoder.as_mut().unwrap().set_repeat(gif::Repeat::Infinite).unwrap();
-      self.write_frame();
+        self.encoder = Some(
+            gif::Encoder::new(
+                self.file.take().unwrap(),
+                self.frame_size.0,
+                self.frame_size.1,
+                &[],
+            )
+            .unwrap(),
+        );
+        self.encoder
+            .as_mut()
+            .unwrap()
+            .set_repeat(gif::Repeat::Infinite)
+            .unwrap();
+        self.write_frame();
     }
 
     fn write_frame(&mut self) {
         let mut buffer = self.frame.clone();
         if self.resize {
-          buffer = image::imageops::resize(&buffer, self.frame_size.0 as u32, self.frame_size.1 as u32, image::imageops::FilterType::Nearest)
+            buffer = image::imageops::resize(
+                &buffer,
+                self.frame_size.0 as u32,
+                self.frame_size.1 as u32,
+                image::imageops::FilterType::Nearest,
+            )
         }
-        let mut frame = gif::Frame::from_rgb_speed(self.frame_size.0, self.frame_size.1, &buffer, 15);
+        let mut frame =
+            gif::Frame::from_rgb_speed(self.frame_size.0, self.frame_size.1, &buffer, 15);
         frame.delay = 5;
         self.encoder.as_mut().unwrap().write_frame(&frame).unwrap();
     }
@@ -66,9 +82,9 @@ impl GifSingleSubscriber {
 impl singular::Subscriber for GifSingleSubscriber {
     fn on_collapse(&mut self, position: &grid_forge::tile::GridPosition, tile_type_id: u64) {
         if self.encoder.is_none() {
-          self.begin()
+            self.begin()
         }
-        
+
         self.collection
             .draw_tile(
                 &GridTile::new(*position, CollapsedTileData::tile_new(tile_type_id)),
@@ -86,9 +102,9 @@ impl overlap::Subscriber for GifSingleSubscriber {
         tile_type_id: u64,
         _pattern_id: u64,
     ) {
-      if self.encoder.is_none() {
-        self.begin()
-      }
+        if self.encoder.is_none() {
+            self.begin()
+        }
         self.collection
             .draw_tile(
                 &GridTile::new(*position, CollapsedTileData::tile_new(tile_type_id)),

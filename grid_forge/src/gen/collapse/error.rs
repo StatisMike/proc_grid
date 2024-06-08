@@ -75,7 +75,7 @@ pub(crate) enum CollapseErrorKind {
 pub struct CollapsedGridError {
     missing_type_ids: Option<Vec<u64>>,
     sizes: Option<(GridSize, GridSize)>,
-    position: Option<GridPosition>
+    position: Option<GridPosition>,
 }
 
 impl CollapsedGridError {
@@ -97,7 +97,7 @@ impl CollapsedGridError {
         Self {
             missing_type_ids: None,
             sizes: None,
-            position: Some(position)
+            position: Some(position),
         }
     }
 

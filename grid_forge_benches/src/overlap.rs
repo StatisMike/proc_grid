@@ -70,15 +70,14 @@ fn generate_10x10_pattern_2x2_entrophy(bencher: &mut Bencher) {
     let positions = size.get_all_possible_positions();
 
     let grid =
-        CollapsiblePatternGrid::new_empty(size, pattern_collection, &pattern_freq, &pattern_rules)
+        CollapsiblePatternGrid::new_empty(size, pattern_collection, pattern_freq, pattern_rules)
             .unwrap();
 
     bencher.iter(|| {
         let mut rng: ChaChaRng = RngHelper::init_str("overlap_bench", 1).into();
 
         let mut resolver = Resolver::default();
-        let res = resolver
-            .generate(grid.clone(), &mut rng, &positions, EntrophyQueue::default());
+        let res = resolver.generate(grid.clone(), &mut rng, &positions, EntrophyQueue::default());
 
         assert!(res.is_ok());
     });
@@ -108,18 +107,17 @@ fn generate_10x10_pattern_3x3_entrophy(bencher: &mut Bencher) {
     let positions = size.get_all_possible_positions();
 
     let grid =
-        CollapsiblePatternGrid::new_empty(size, pattern_collection, &pattern_freq, &pattern_rules)
+        CollapsiblePatternGrid::new_empty(size, pattern_collection, pattern_freq, pattern_rules)
             .unwrap();
 
     bencher.iter(|| {
         let mut rng: ChaChaRng = RngHelper::init_str("overlap_bench", 1).into();
 
         let mut resolver = Resolver::default();
-        let res = resolver
-            .generate(grid.clone(), &mut rng, &positions, EntrophyQueue::default());
-        
+        let res = resolver.generate(grid.clone(), &mut rng, &positions, EntrophyQueue::default());
+
         assert!(res.is_ok())
-            });
+    });
 }
 
 // #[bench]

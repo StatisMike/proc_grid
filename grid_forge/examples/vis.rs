@@ -76,5 +76,10 @@ fn main() {
         map.size().y() * 5,
         imageops::FilterType::Nearest,
     );
-    image.save("examples/vis_example.png").unwrap();
+    image
+        .save(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/examples/outputs/vis_example.png"
+        ))
+        .unwrap();
 }

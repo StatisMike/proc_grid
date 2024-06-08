@@ -28,6 +28,14 @@ image = { version = "0.25.*", features = ["png"]}
 gif = { version ="*" }
 
 [[example]]
+name = "vis"
+path = "examples/vis.rs"
+
+[[example]]
+name = "gen_walker"
+path = "examples/gen_walker.rs"
+
+[[example]]
 name = "gen_collapse_singular"
 path = "examples/collapse/gen_collapse_singular.rs"
 

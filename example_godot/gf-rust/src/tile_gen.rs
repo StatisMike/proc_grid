@@ -162,24 +162,24 @@ impl TileGenerator {
 
             let mut iter = 0;
             let mut rng = thread_rng();
-            let mut resolver = singular::Resolver::new(size);
+            let mut resolver = singular::Resolver::default();
+            let mut grid =
+                singular::CollapsibleTileGrid::new_empty(size, &frequency_hints, &adjacency_rules);
 
             loop {
                 let result = if queue == 0 {
                     resolver.generate(
+                        &mut grid,
                         &mut rng,
                         &size.get_all_possible_positions(),
                         PositionQueue::default(),
-                        &frequency_hints,
-                        &adjacency_rules,
                     )
                 } else {
                     resolver.generate(
+                        &mut grid,
                         &mut rng,
                         &size.get_all_possible_positions(),
                         EntrophyQueue::default(),
-                        &frequency_hints,
-                        &adjacency_rules,
                     )
                 };
                 match result {
@@ -203,7 +203,7 @@ impl TileGenerator {
                 }
             }
 
-            let map = resolver.build_grid(&builder).unwrap();
+            let map = grid.retrieve_ident(&builder).unwrap();
             sender.send(GenerationResult::Success(map)).unwrap();
         }));
     }

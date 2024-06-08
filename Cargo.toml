@@ -4,12 +4,8 @@ resolver="2"
 members = [
   "grid_forge",
 
-  # Examples:
-  "examples/collapse",
-  "examples/overlap",
-  "examples/godot/gf-rust",
-  "examples/walker",
-  "examples/vis", 
+  # Integration examples
+  "example_godot/gf-rust",
   
   # Benchmarks
   "grid_forge_benches",

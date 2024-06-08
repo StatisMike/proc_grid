@@ -81,7 +81,8 @@ fn main() {
         let file =
             std::fs::File::create(format!("{}{}", OUTPUTS_DIR, "overlap_entrophy.gif")).unwrap();
 
-        let subscriber = GifSingleSubscriber::new(file, &outputs_size, vis_collection.clone()).with_rescale(3);
+        let subscriber =
+            GifSingleSubscriber::new(file, &outputs_size, vis_collection.clone()).with_rescale(3);
 
         resolver = resolver.with_subscriber(Box::new(subscriber));
     }
@@ -112,7 +113,12 @@ fn main() {
     vis_collection
         .draw_map(collapsed.as_ref(), &mut out_buffer)
         .unwrap();
-    out_buffer = image::imageops::resize(&out_buffer, outputs_size.x() * 4 * 3, outputs_size.y() * 4 * 3, image::imageops::FilterType::Nearest);
+    out_buffer = image::imageops::resize(
+        &out_buffer,
+        outputs_size.x() * 4 * 3,
+        outputs_size.y() * 4 * 3,
+        image::imageops::FilterType::Nearest,
+    );
     out_buffer
         .save(format!("{}{}", OUTPUTS_DIR, "overlap_entrophy.png"))
         .unwrap();

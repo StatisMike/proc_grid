@@ -83,5 +83,10 @@ fn main() {
         image::imageops::FilterType::Nearest,
     );
 
-    image.save("examples/walker_example.png").unwrap();
+    image
+        .save(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/examples/outputs/walker_example.png"
+        ))
+        .unwrap();
 }
