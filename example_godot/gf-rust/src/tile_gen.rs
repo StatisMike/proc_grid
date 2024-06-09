@@ -4,11 +4,12 @@ use std::sync::mpsc::{self, Receiver};
 use std::thread::{self, JoinHandle};
 
 use godot::builtin::meta::ToGodot;
-use godot::builtin::{Array, GString};
+use godot::builtin::{Array, GString, Vector2i};
 use godot::engine::{AcceptDialog, INode, Node, TileMap};
 use godot::log::godot_warn;
 use godot::obj::{Base, Gd, WithBaseField};
 use godot::register::{godot_api, GodotClass};
+use grid_forge::tile::GridPosition;
 use singular::Analyzer;
 
 use grid_forge::gen::collapse::*;
@@ -80,6 +81,12 @@ impl INode for TileGenerator {
                             thread.unwrap().join().unwrap();
                         }
                         self.running = false;
+                    },
+                    GenerationResult::CollapsedTile(position, tile_type_id) => {
+                        self.base_mut().emit_signal(
+                            "generation_collapsed".into(),
+                            &[position.get_godot_coords().to_variant(), tile_type_id.to_variant()],
+                        );
                     }
                 }
             }
@@ -97,6 +104,9 @@ impl TileGenerator {
 
     #[signal]
     fn generation_runtime_error(message: GString);
+
+    #[signal]
+    fn generation_collapsed(coords: Vector2i, tile_type_id: u64);
 
     #[func]
     fn initialize_rulesets(&mut self, maps: Array<GString>) {
@@ -141,8 +151,12 @@ impl TileGenerator {
     }
 
     #[func]
-    fn begin_generation(&mut self, width: i32, height: i32, rule: i32, queue: i32) {
+    fn begin_generation(&mut self, width: i32, height: i32, rule: i32, queue: i32, subscribe: bool) {
         let (sender, receiver) = mpsc::channel();
+        let mut subscriber = None;
+        if subscribe {
+            subscriber = Some(SenderSubscriber::new(sender.clone()));
+        }
         self.channel = Some(receiver);
         self.running = true;
 
@@ -163,6 +177,9 @@ impl TileGenerator {
             let mut iter = 0;
             let mut rng = thread_rng();
             let mut resolver = singular::Resolver::default();
+            if let Some(subscriber) = subscriber {
+                resolver = resolver.with_subscriber(Box::new(subscriber));
+            }
             let mut grid =
                 singular::CollapsibleTileGrid::new_empty(size, &frequency_hints, &adjacency_rules);
 
@@ -237,5 +254,25 @@ impl TileGenerator {
 enum GenerationResult {
     RuntimeErr(String),
     Error(String),
+    CollapsedTile(GridPosition, u64),
     Success(GridMap2D<BasicIdentTileData>),
+}
+
+/// Resolver Subsciber specific to Godot
+struct SenderSubscriber {
+    sender: mpsc::Sender<GenerationResult>,
+}
+
+impl SenderSubscriber {
+    pub fn new(sender : mpsc::Sender<GenerationResult>) -> Self {
+        Self { sender }
+    }
+}
+
+impl singular::Subscriber for SenderSubscriber {
+    fn on_collapse(&mut self, position: &grid_forge::tile::GridPosition, tile_type_id: u64) {
+        // Delay the sending to let the Godot react to the signal
+        std::thread::sleep(std::time::Duration::from_millis(10));
+        self.sender.send(GenerationResult::CollapsedTile(*position, tile_type_id)).unwrap();
+    }
 }

@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet; 
 use std::marker::PhantomData;
 
 use private::Sealed;
@@ -8,7 +8,7 @@ use rand::Rng;
 use crate::gen::collapse::error::CollapsedGridError;
 use crate::gen::collapse::option::{PerOptionData, WaysToBeOption};
 use crate::gen::collapse::{tile::*, CollapsedGrid, CollapsibleGrid, PropagateItem};
-use crate::map::{GridDir, GridMap2D, GridSize};
+use crate::map::{GridMap2D, GridSize};
 use crate::tile::identifiable::builders::IdentTileBuilder;
 use crate::tile::identifiable::collection::IdentTileCollection;
 use crate::tile::identifiable::IdentifiableTileData;
