@@ -6,7 +6,7 @@
 
 use std::io::BufReader;
 
-use godot::builtin::GString;
+use godot::builtin::{GString, Vector2i};
 use godot::engine::file_access::ModeFlags;
 use godot::engine::{AcceptDialog, FileAccess, GFile, TileMap, TileSet, TileSetAtlasSource};
 use godot::log::{godot_error, godot_warn};
@@ -192,5 +192,10 @@ impl TileCollections {
         .map_err(|err| format!("GridMap to TileMap conversion failed: {err}"))?;
 
         Ok(())
+    }
+
+    #[func]
+    pub fn insert_tile(&self, mut tilemap: Gd<TileMap>, tile_type_id: u64, coords: Vector2i) {
+        self.godot_collection.as_ref().unwrap().get_tile_data(&tile_type_id).unwrap().insert_to_tilemap(&mut tilemap, coords, 0)
     }
 }

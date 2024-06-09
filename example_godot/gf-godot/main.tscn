@@ -54,7 +54,7 @@ horizontal_alignment = 1
 
 [node name="TileMap" type="TileMap" parent="TileMapContainer"]
 texture_filter = 1
-position = Vector2(20, 60)
+position = Vector2(6, 60)
 scale = Vector2(5, 5)
 tile_set = ExtResource("2_sxov8")
 format = 2
@@ -187,6 +187,14 @@ popup/item_0/id = 0
 popup/item_1/text = "EntrophyQueue"
 popup/item_1/id = 1
 
+[node name="Subscribe" type="CheckBox" parent="TabContainer/Generate"]
+layout_mode = 0
+offset_left = 327.0
+offset_top = 127.0
+offset_right = 553.0
+offset_bottom = 179.0
+text = "Show immediate changes"
+
 [node name="Button" type="Button" parent="TabContainer/Generate"]
 layout_mode = 0
 offset_left = 199.0
@@ -257,6 +265,7 @@ modal = NodePath("../AcceptDialog")
 [connection signal="node_hovered" from="TileMapContainer/TileMap" to="." method="_on_tile_map_node_hovered"]
 [connection signal="pressed" from="TabContainer/Image/Button" to="." method="_on_button_pressed"]
 [connection signal="pressed" from="TabContainer/Generate/Button" to="." method="_on_button_pressed_gen"]
+[connection signal="generation_collapsed" from="TileGenerator" to="." method="_on_tile_generator_generation_collapsed"]
 [connection signal="generation_error" from="TileGenerator" to="." method="_on_tile_generator_generation_error"]
 [connection signal="generation_finished" from="TileGenerator" to="." method="_on_tile_generator_generation_finished"]
 [connection signal="generation_runtime_error" from="TileGenerator" to="." method="_on_tile_generator_generation_runtime_error"]
