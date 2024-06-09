@@ -1,3 +1,5 @@
+## Simple slider with label, containing the current slider value.
+
 extends HBoxContainer
 
 var label: Label
@@ -5,7 +7,6 @@ var slider: HSlider
 @export var label_text: String
 var slider_value = 0;
 
-# Called when the node enters the scene tree for the first time.
 func _ready():
 	label = get_node("Label");
 	slider = get_node("Toggle");
@@ -15,7 +16,6 @@ func _ready():
 	
 	label.text = label_text + ': ' + str(slider_value);
 
-# Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(_delta):
 	pass
 

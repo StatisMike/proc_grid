@@ -1,3 +1,5 @@
+## Prints the data for the hovered cell.
+
 extends Label
 
 @export var label: String;
