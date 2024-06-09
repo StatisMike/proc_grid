@@ -1,14 +1,10 @@
+## Slightly modified version of the `TileMap` class, which emits the signal when the mouse is hovered over the tile.
 extends TileMap
 
 var last_tile_pos: Vector2i;
 
-# Called when the node enters the scene tree for the first time.
-func _ready():
-	pass # Replace with function body.
-
 signal node_hovered(atlas_coords: Vector2i, tile_pos: Vector2i);
 
-# Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(_delta):
 	var mouse_pos_global = get_viewport().get_mouse_position();
 	var mouse_pos_local = to_local(mouse_pos_global);

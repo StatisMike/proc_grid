@@ -8,7 +8,7 @@ use std::io::BufReader;
 
 use godot::builtin::{GString, Vector2i};
 use godot::engine::file_access::ModeFlags;
-use godot::engine::{AcceptDialog, FileAccess, GFile, TileMap, TileSet, TileSetAtlasSource};
+use godot::engine::{AcceptDialog, GFile, TileMap, TileSet, TileSetAtlasSource};
 use godot::log::{godot_error, godot_warn};
 use godot::obj::Gd;
 use godot::register::{godot_api, GodotClass};
@@ -62,15 +62,17 @@ impl TileCollections {
             return;
         }
 
-        let gd_file = FileAccess::open(self.path_to_image.clone(), ModeFlags::READ);
-        if gd_file.is_none() {
+        let gd_file = GFile::open(self.path_to_image.clone(), ModeFlags::READ);
+        if gd_file.is_err() {
             godot_error!(
                 "cannot open image file at specified Godot location: {}",
                 self.path_to_image
             );
             return;
         };
-        let path = gd_file.unwrap().get_path_absolute().to_string();
+
+        // Opens image file using `GFile`, to be usable also after exporting the project.
+        let image = gd_file.unwrap();
 
         let atlas = self
             .tileset
@@ -87,11 +89,12 @@ impl TileCollections {
         }
 
         // Open image file
-        let image = image::open(&path);
-        if image.is_err() {
-            godot_error!("cannot open image file at absolute location: {path}");
+        let image = image::load(BufReader::new(image), ImageFormat::Png);
+        if let Err(err) = image {
+            godot_error!("cannot load image file at: {err}");
             return;
         }
+
         let image = image.unwrap().to_rgb8();
 
         let grid_size = check_grid_vis_size::<DefaultVisPixel, 4, 4>(&image);
@@ -196,6 +199,11 @@ impl TileCollections {
 
     #[func]
     pub fn insert_tile(&self, mut tilemap: Gd<TileMap>, tile_type_id: u64, coords: Vector2i) {
-        self.godot_collection.as_ref().unwrap().get_tile_data(&tile_type_id).unwrap().insert_to_tilemap(&mut tilemap, coords, 0)
+        self.godot_collection
+            .as_ref()
+            .unwrap()
+            .get_tile_data(&tile_type_id)
+            .unwrap()
+            .insert_to_tilemap(&mut tilemap, coords, 0)
     }
 }

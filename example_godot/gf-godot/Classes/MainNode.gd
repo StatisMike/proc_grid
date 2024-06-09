@@ -1,7 +1,10 @@
 extends Node2D
 
+## Collections containing both PNG and Godot representation.
 @export var collections: TileCollections;
+## List of PNG files to be converted to tilemap.
 @export var maps_png_files: Array[String];
+## Generator for the tilemap.
 @export var generator: TileGenerator;
 
 var load_png_option: OptionButton;
@@ -24,20 +27,19 @@ func _ready():
 		
 	generator.initialize_rulesets(maps_png_files);
 	
-	print(tilemap.position);
 	var tilemap_container = get_node("TileMapContainer");
-	print(tilemap_container.size);
 	tilemap_available_size = Vector2i();
 	tilemap_available_size.x = tilemap_container.size.x - tilemap.position.x - 5;
 	tilemap_available_size.y = tilemap_container.size.y - tilemap.position.y - 5;
-	print(tilemap_available_size);
 
+## Reaction on pressing the *Loading from PNG* button
 func _on_button_pressed():
 	var path = load_png_option.get_item_text(load_png_option.selected);
 	tilemap.clear();
 	collections.convert_png_to_tilemap(path, tilemap);
 	adjust_tilemap();
 	
+## Adjusting the tilemap to fit available space (*Loading from PNG* version)
 func adjust_tilemap():
 	var max_width = 550;
 	var max_height = 550;
@@ -58,6 +60,7 @@ func adjust_tilemap():
 	
 	tilemap.scale = Vector2(adjusted_scale, adjusted_scale);
 	
+## Adjusting the tilemap to fit available space (*Collapsible generation* version)
 func adjust_generation_tilemap():
 	tilemap.tile_set.tile_size = Vector2i(4, 4);
 	var x_scale = tilemap_available_size.x as float / (generation_size.x * 4) as float;
@@ -66,10 +69,10 @@ func adjust_generation_tilemap():
 	var adjusted_scale = snappedf(final_scale, 0.1);
 	if (adjusted_scale > final_scale):
 		adjusted_scale -= 0.1;
-	print(tilemap_available_size, generation_size);
-	print(adjusted_scale);
+
 	tilemap.scale = Vector2(adjusted_scale, adjusted_scale);
 
+## Showing the information about individual tile
 func _on_tile_map_node_hovered(atlas_coords, tile_pos):
 	if atlas_coords == Vector2i(-1, -1):
 		get_node("HoverCellPanel/AtlasCoord").clear();
@@ -78,7 +81,7 @@ func _on_tile_map_node_hovered(atlas_coords, tile_pos):
 		get_node("HoverCellPanel/AtlasCoord").change_value(atlas_coords);
 		get_node("HoverCellPanel/TilePos").change_value(tile_pos);
 
-
+## Reaction on pressing the *Generate* button for *Collapsible generation*
 func _on_button_pressed_gen():
 	var width = get_node("TabContainer/Generate/Size/Width/Toggle").value;
 	var height = get_node("TabContainer/Generate/Size/Height/Toggle").value;
@@ -92,17 +95,23 @@ func _on_button_pressed_gen():
 	generator.begin_generation(width as int, height as int, gen_rules, queue, generation_subscribed);
 	(get_node("TabContainer/Generate/Button") as Button).disabled = true;
 
+## Final during the generation.
 func _on_tile_generator_generation_error(message):
 	(get_node("AcceptDialog") as AcceptDialog).dialog_text = message;
 	(get_node("AcceptDialog") as AcceptDialog).visible = true;
 
+## Runtime error - the generation will retry.
 func _on_tile_generator_generation_runtime_error(message):
 	(get_node("TabContainer/Generate/RuntimeError") as Label).text = message;
 	
+	## For subscription the tilemap needs to be cleared.
 	if generation_subscribed:
 		tilemap.clear();
 
+## After the whole generation is finished.
 func _on_tile_generator_generation_finished(success):
+
+	## Tilemap needs to be build only if the generation were not subscribed to.
 	if success and !generation_subscribed:
 		tilemap.clear();
 		generator.generated_to_tilemap(tilemap);
@@ -111,6 +120,6 @@ func _on_tile_generator_generation_finished(success):
 	(get_node("TabContainer/Generate/RuntimeError") as Label).text = "";
 	(get_node("TabContainer/Generate/Button") as Button).disabled = false;
 	
-
+## For subscription during the generation - after every collapse tile, the collapsed tile will be inserted into the tilemap.
 func _on_tile_generator_generation_collapsed(coords, tile_type_id):
 	collections.insert_tile(tilemap, tile_type_id, coords);

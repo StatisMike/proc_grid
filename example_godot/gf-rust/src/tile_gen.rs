@@ -1,4 +1,4 @@
-//! Implements `grid_forge` collapse procedural generation algorithm, allowing its usage within Godot app.
+//! Implements `grid_forge` collapse procedural generation algorithm, allowing its usage within Godot example app.
 
 use std::sync::mpsc::{self, Receiver};
 use std::thread::{self, JoinHandle};
@@ -49,7 +49,8 @@ impl INode for TileGenerator {
             return;
         }
 
-        // Check if there is a result available from the generation task
+        // Check if there is a result available from the generation task from separate thread. If so, emit the signal
+        // to Godot's *MainNode*.
         if let Some(receiver) = &self.channel {
             if let Ok(result) = receiver.try_recv() {
                 match result {
@@ -81,11 +82,14 @@ impl INode for TileGenerator {
                             thread.unwrap().join().unwrap();
                         }
                         self.running = false;
-                    },
+                    }
                     GenerationResult::CollapsedTile(position, tile_type_id) => {
                         self.base_mut().emit_signal(
                             "generation_collapsed".into(),
-                            &[position.get_godot_coords().to_variant(), tile_type_id.to_variant()],
+                            &[
+                                position.get_godot_coords().to_variant(),
+                                tile_type_id.to_variant(),
+                            ],
                         );
                     }
                 }
@@ -96,18 +100,23 @@ impl INode for TileGenerator {
 
 #[godot_api]
 impl TileGenerator {
+    /// Emitted when the generation is finished.
     #[signal]
     fn generation_finished(success: bool);
 
+    /// Emitted when the generation encounters an error an will be stopped.
     #[signal]
     fn generation_error(message: GString);
 
+    /// Emitted if the generation encounters an error, but will retry.
     #[signal]
     fn generation_runtime_error(message: GString);
 
+    /// Emitted when the singular tile have been collapsed during the generation, if the generation was subscribed to.
     #[signal]
     fn generation_collapsed(coords: Vector2i, tile_type_id: u64);
 
+    /// Initializes the single-tiled rulesets for the generation.
     #[func]
     fn initialize_rulesets(&mut self, maps: Array<GString>) {
         let mut grid_maps = Vec::new();
@@ -150,8 +159,16 @@ impl TileGenerator {
         self.frequency_hints = frequency_hints;
     }
 
+    /// Starts the generation of the tilemap. Whole generation will be done in a separate thread, so the main thread will not be blocked.
     #[func]
-    fn begin_generation(&mut self, width: i32, height: i32, rule: i32, queue: i32, subscribe: bool) {
+    fn begin_generation(
+        &mut self,
+        width: i32,
+        height: i32,
+        rule: i32,
+        queue: i32,
+        subscribe: bool,
+    ) {
         let (sender, receiver) = mpsc::channel();
         let mut subscriber = None;
         if subscribe {
@@ -225,6 +242,7 @@ impl TileGenerator {
         }));
     }
 
+    /// Transfers the generated [`GridMap2D`] to the Godot's [`TileMap`].
     #[func]
     fn generated_to_tilemap(&self, tilemap: Gd<TileMap>) -> bool {
         let mut tilemap = tilemap.clone();
@@ -251,20 +269,26 @@ impl TileGenerator {
     }
 }
 
+/// Result of the [`TileGenerator`] generation, received from the spawned thread, to be send into Godot's *MainNode*.
 enum GenerationResult {
+    /// Runtime error - only passing the error message to Godot, generator will retry.
     RuntimeErr(String),
+    /// Fatal error, the generation will be stopped.
     Error(String),
+    /// Collapsed tile - the tile has been collapsed will be inserted into the tilemap. Contains the position and the `tile_type_id`
+    /// of the collapsed tile. They will be passed to Godot's *MainNode*.
     CollapsedTile(GridPosition, u64),
+    /// Successful generation - the generated map will be sent to Godot's *MainNode*.
     Success(GridMap2D<BasicIdentTileData>),
 }
 
-/// Resolver Subsciber specific to Godot
+/// Resolver Subsciber sending the result of the generation through underlying [`Sender`](mpsc::Sender).
 struct SenderSubscriber {
     sender: mpsc::Sender<GenerationResult>,
 }
 
 impl SenderSubscriber {
-    pub fn new(sender : mpsc::Sender<GenerationResult>) -> Self {
+    pub fn new(sender: mpsc::Sender<GenerationResult>) -> Self {
         Self { sender }
     }
 }
@@ -273,6 +297,8 @@ impl singular::Subscriber for SenderSubscriber {
     fn on_collapse(&mut self, position: &grid_forge::tile::GridPosition, tile_type_id: u64) {
         // Delay the sending to let the Godot react to the signal
         std::thread::sleep(std::time::Duration::from_millis(10));
-        self.sender.send(GenerationResult::CollapsedTile(*position, tile_type_id)).unwrap();
+        self.sender
+            .send(GenerationResult::CollapsedTile(*position, tile_type_id))
+            .unwrap();
     }
 }
