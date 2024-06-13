@@ -218,4 +218,12 @@ impl WaysToBeOption {
             *ways = Self::EMPTY_DIR_TABLE;
         }
     }
+
+    pub(crate) fn purge_option(&mut self, option_idx: usize) -> bool {
+        if self.table[option_idx].inner().iter().all(|i| i == &0) {
+            return false;
+        }
+        self.table[option_idx] = Self::EMPTY_DIR_TABLE;
+        true
+    }
 }

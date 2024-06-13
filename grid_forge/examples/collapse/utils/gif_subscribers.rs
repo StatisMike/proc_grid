@@ -93,6 +93,10 @@ impl singular::Subscriber for GifSingleSubscriber {
             .unwrap();
         self.write_frame();
     }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 }
 
 impl overlap::Subscriber for GifSingleSubscriber {

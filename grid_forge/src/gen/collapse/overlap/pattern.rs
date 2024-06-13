@@ -448,3 +448,91 @@ mod private {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use crate::{
+        gen::collapse::{overlap::Analyzer, CollapsedTileData, CollapsibleTileData},
+        map::{GridDir, GridMap2D, GridSize},
+        tile::{GridPosition, GridTile},
+    };
+
+    use super::{
+        OverlappingPattern, OverlappingPattern2D, OverlappingPatternGrid, PatternCollection,
+        PatternTileData,
+    };
+
+    /// ```
+    ///     0 1 2 3
+    ///     -------
+    /// 0 | 0 0 1 1
+    /// 1 | 0 0 1 1
+    /// 2 | 1 0 1 0
+    /// 3 | 1 0 0 1
+    /// ```
+    fn test_grid_2d_2x2() -> GridMap2D<CollapsedTileData> {
+        let mut map = GridMap2D::new(GridSize::new_xy(4, 4));
+        for tile in vec![
+            GridTile::new(GridPosition::new_xy(0, 0), CollapsedTileData::new(0)),
+            GridTile::new(GridPosition::new_xy(0, 1), CollapsedTileData::new(0)),
+            GridTile::new(GridPosition::new_xy(0, 2), CollapsedTileData::new(1)),
+            GridTile::new(GridPosition::new_xy(0, 3), CollapsedTileData::new(1)),
+            GridTile::new(GridPosition::new_xy(1, 0), CollapsedTileData::new(0)),
+            GridTile::new(GridPosition::new_xy(1, 1), CollapsedTileData::new(0)),
+            GridTile::new(GridPosition::new_xy(1, 2), CollapsedTileData::new(0)),
+            GridTile::new(GridPosition::new_xy(1, 3), CollapsedTileData::new(0)),
+            GridTile::new(GridPosition::new_xy(2, 0), CollapsedTileData::new(1)),
+            GridTile::new(GridPosition::new_xy(2, 1), CollapsedTileData::new(1)),
+            GridTile::new(GridPosition::new_xy(2, 2), CollapsedTileData::new(1)),
+            GridTile::new(GridPosition::new_xy(2, 3), CollapsedTileData::new(1)),
+            GridTile::new(GridPosition::new_xy(3, 0), CollapsedTileData::new(1)),
+            GridTile::new(GridPosition::new_xy(3, 1), CollapsedTileData::new(1)),
+            GridTile::new(GridPosition::new_xy(3, 2), CollapsedTileData::new(0)),
+            GridTile::new(GridPosition::new_xy(3, 3), CollapsedTileData::new(1)),
+        ] {
+            map.insert_tile(tile);
+        }
+        map
+    }
+
+    fn retrieve_pattern<P: OverlappingPattern>(
+        position: &GridPosition,
+        map: &OverlappingPatternGrid<P>,
+    ) -> (u64, u64) {
+        let Some(data) = map.inner.get_tile_at_position(&position) else {
+            panic!("Can't get tile at {position:?}");
+        };
+        let PatternTileData::WithPattern {
+            tile_type_id,
+            pattern_id,
+        } = data.as_ref()
+        else {
+            panic!("Can't get WithPattern tile data at {position:?}");
+        };
+        (*tile_type_id, *pattern_id)
+    }
+
+    #[test]
+    fn correct_adjacency_2d_2x2() {
+        let mut analyzer = Analyzer::<OverlappingPattern2D<2, 2>, _>::default();
+        let pattern_grid = analyzer.analyze_map(&test_grid_2d_2x2());
+
+        let adjacency_rules = analyzer.get_adjacency();
+
+        let p0000 = retrieve_pattern(&GridPosition::new_xy(0, 0), &pattern_grid);
+        let p0101 = retrieve_pattern(&GridPosition::new_xy(1, 0), &pattern_grid);
+        let p1111 = retrieve_pattern(&GridPosition::new_xy(2, 0), &pattern_grid);
+
+        for dir in GridDir::ALL_2D {
+            assert!(
+                !adjacency_rules.is_valid_at_dir(p0000.1, *dir, p1111.1),
+                "patterns are falsely compatible"
+            )
+        }
+
+        assert!(adjacency_rules.is_valid_at_dir(p0000.1, GridDir::RIGHT, p0101.1));
+        assert!(adjacency_rules.is_valid_at_dir(p0101.1, GridDir::LEFT, p0000.1));
+        assert!(!adjacency_rules.is_valid_at_dir(p0000.1, GridDir::UP, p0101.1));
+        assert!(!adjacency_rules.is_valid_at_dir(p0000.1, GridDir::DOWN, p0101.1));
+    }
+}

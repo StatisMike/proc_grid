@@ -200,8 +200,20 @@ where
         }
     }
 
-    pub fn inner(&self) -> &AdjacencyTable {
+    pub(crate) fn inner(&self) -> &AdjacencyTable {
         &self.inner
+    }
+
+    pub fn is_valid_at_dir(
+        &self,
+        pattern_id: u64,
+        direction: GridDir,
+        other_pattern_id: u64,
+    ) -> bool {
+        let Some(adj) = self.inner.inner.get(&pattern_id) else {
+            return false;
+        };
+        adj.inner[direction as usize].contains(&other_pattern_id)
     }
 }
 

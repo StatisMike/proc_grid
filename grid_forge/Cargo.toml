@@ -22,7 +22,7 @@ rand = { version = "0.8.*", optional = true }
 godot = { git = "https://github.com/godot-rust/gdext", branch = "master", optional = true }
 
 [dev-dependencies]
-bencher = "0.1.*"
+criterion = { version = "0.4", features = ["html_reports"] }
 rand_chacha = "0.3.*"
 image = { version = "0.25.*", features = ["png"]}
 gif = { version ="*" }
@@ -42,3 +42,19 @@ path = "examples/collapse/gen_collapse_singular.rs"
 [[example]]
 name = "gen_collapse_overlap"
 path = "examples/collapse/gen_collapse_overlap.rs"
+
+[[bench]]
+name = "gen_collapse_singular"
+harness = false
+
+[[bench]]
+name = "gen_collapse_overlap"
+harness = false
+
+[[bench]]
+name = "gen_walker"
+harness = false
+
+[[bench]]
+name = "vis_io"
+harness = false

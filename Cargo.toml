@@ -4,9 +4,6 @@ resolver="2"
 members = [
   "grid_forge",
 
-  # Integration examples
+  # Integration example
   "example_godot/gf-rust",
-  
-  # Benchmarks
-  "grid_forge_benches",
 ]

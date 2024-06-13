@@ -1,5 +1,4 @@
 ## Simple slider with label, containing the current slider value.
-
 extends HBoxContainer
 
 var label: Label

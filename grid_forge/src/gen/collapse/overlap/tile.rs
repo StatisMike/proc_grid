@@ -1,4 +1,4 @@
-use std::collections::HashSet; 
+use std::collections::HashSet;
 use std::marker::PhantomData;
 
 use private::Sealed;
@@ -24,8 +24,8 @@ pub struct CollapsiblePattern<P: OverlappingPattern> {
     num_possible_patterns: usize,
     ways_to_be_pattern: WaysToBeOption,
     weight_sum: u32,
-    weight_log_sum: f32,
-    entrophy_noise: f32,
+    pub(crate) weight_log_sum: f32,
+    pub(crate) entrophy_noise: f32,
     pattern_type: PhantomData<P>,
 }
 
@@ -95,6 +95,21 @@ impl<P: OverlappingPattern> private::Sealed for CollapsiblePattern<P> {
         self.weight_sum = 0;
         self.weight_log_sum = 0.;
         Some(out)
+    }
+
+    fn mark_collapsed(&mut self, collapsed_idx: usize) {
+        self.collapsed_pattern = Some(collapsed_idx);
+        self.num_possible_patterns = 0;
+        self.weight_sum = 0;
+        self.weight_log_sum = 0.;
+    }
+
+    fn weight_sum(&self) -> u32 {
+        self.weight_sum
+    }
+
+    fn num_possible_options(&self) -> usize {
+        self.num_possible_patterns
     }
 }
 

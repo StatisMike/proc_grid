@@ -67,6 +67,10 @@ impl crate::gen::collapse::tile::private::Sealed for CollapsibleTile {
         &mut self.ways_to_be_option
     }
 
+    fn num_possible_options(&self) -> usize {
+        self.num_possible_options
+    }
+
     fn collapse<R: Rng>(
         &mut self,
         rng: &mut R,
@@ -77,7 +81,7 @@ impl crate::gen::collapse::tile::private::Sealed for CollapsibleTile {
         let mut current_sum = 0;
         let mut chosen = None;
         let mut out = Vec::new();
-        for option_idx in self.mut_ways_to_be_option().iter_possible() {
+        for option_idx in self.ways_to_be_option().iter_possible() {
             current_sum += options_data.get_weights(option_idx).0;
             if chosen.is_some() || random > current_sum {
                 out.push(option_idx);
@@ -91,6 +95,17 @@ impl crate::gen::collapse::tile::private::Sealed for CollapsibleTile {
         self.weight_sum = 0;
         self.weight_log_sum = 0.;
         Some(out)
+    }
+
+    fn mark_collapsed(&mut self, collapsed_idx: usize) {
+        self.collapsed_option = Some(collapsed_idx);
+        self.num_possible_options = 0;
+        self.weight_sum = 0;
+        self.weight_log_sum = 0.;
+    }
+
+    fn weight_sum(&self) -> u32 {
+        self.weight_sum
     }
 }
 

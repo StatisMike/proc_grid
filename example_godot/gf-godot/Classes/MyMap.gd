@@ -13,8 +13,3 @@ func _process(_delta):
 		last_tile_pos = tile_pos;
 		var atlas_coords = get_cell_atlas_coords(0, tile_pos, 0);
 		emit_signal("node_hovered", atlas_coords, tile_pos);
-		
-	
-	
-	
-	

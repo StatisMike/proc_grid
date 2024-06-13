@@ -16,7 +16,7 @@ pub use tile::*;
 
 use nohash::{IntMap, IntSet};
 
-use crate::map::GridDir;
+use crate::{map::GridDir, tile::GridPosition};
 
 #[derive(Clone, Debug, Default)]
 pub(crate) struct Adjacencies {
@@ -38,17 +38,6 @@ impl Adjacencies {
     pub fn add_at_dir(&mut self, direction: GridDir, id: u64) {
         let v = self.inner.get_mut(direction as usize).unwrap();
         v.insert(id);
-    }
-
-    #[inline(always)]
-    pub fn is_at_dir(&self, direction: &GridDir, id: &u64) -> bool {
-        self.inner.get(*direction as usize).unwrap().contains(id)
-    }
-
-    #[inline(always)]
-    pub fn any_at_dir(&self, direction: &GridDir, ids: &[u64]) -> bool {
-        let bind = self.inner.get(*direction as usize).unwrap();
-        ids.iter().any(|id| bind.contains(id))
     }
 }
 
@@ -79,29 +68,6 @@ impl AdjacencyTable {
         }
     }
 
-    pub(crate) fn all_ids(&self) -> Vec<u64> {
-        self.inner.keys().copied().collect()
-    }
-
-    pub(crate) fn check_adjacency(&self, el_id: &u64, direction: &GridDir, other_id: &u64) -> bool {
-        if let Some(adjacencies) = self.inner.get(el_id) {
-            return adjacencies.is_at_dir(direction, other_id);
-        }
-        false
-    }
-
-    pub(crate) fn check_adjacency_any(
-        &self,
-        el_id: &u64,
-        direction: &GridDir,
-        other_ids: &[u64],
-    ) -> bool {
-        if let Some(adjacencies) = self.inner.get(el_id) {
-            return adjacencies.any_at_dir(direction, other_ids);
-        }
-        false
-    }
-
     pub(crate) fn get_all_adjacencies_in_direction(
         &self,
         el_id: &u64,
@@ -111,5 +77,30 @@ impl AdjacencyTable {
             .get(el_id)
             .expect("cannot get adjacencies for provided `el_id`")[*direction]
             .iter()
+    }
+}
+
+/// Basic Subscriber for debugging purposes.
+///
+/// Implements [`overlap::Subscriber`] and [`singular::Subscriber`], making it usable with both resolvers.
+/// Upon collapsing a tile, it will print the collapsed `GridPosition`, `tile_type_id` and (if applicable) `pattern_id`.
+#[derive(Clone, Debug, Default)]
+pub struct DebugSubscriber;
+
+impl singular::Subscriber for DebugSubscriber {
+    fn on_collapse(&mut self, position: &GridPosition, tile_type_id: u64) {
+        println!("collapsed tile_type_id: {tile_type_id} on position: {position:?}");
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+}
+
+impl overlap::Subscriber for DebugSubscriber {
+    fn on_collapse(&mut self, position: &GridPosition, tile_type_id: u64, pattern_id: u64) {
+        println!(
+            "collapsed tile_type_id: {tile_type_id}, pattern_id: {pattern_id} on position: {position:?}"
+        );
     }
 }

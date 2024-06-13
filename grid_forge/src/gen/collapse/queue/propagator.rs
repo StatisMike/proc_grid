@@ -6,8 +6,9 @@ use crate::{
     tile::{GridPosition, TileContainer},
 };
 
-use super::CollapseQueue;
+use super::{entrophy::EntrophyQueue, CollapseQueue};
 
+#[derive(Debug)]
 pub struct PropagateItem {
     position: GridPosition,
     to_remove: usize,
@@ -33,7 +34,6 @@ impl PropagateItem {
 #[derive(Default)]
 pub struct Propagator {
     inner: Vec<PropagateItem>,
-    reserved_removal: HashMap<GridPosition, Vec<usize>>,
 }
 
 impl Propagator {
@@ -41,19 +41,18 @@ impl Propagator {
         self.inner.push(item);
     }
 
-    pub(crate) fn propagate<Tile: CollapsibleTileData, Q: CollapseQueue>(
+    pub(crate) fn propagate<Tile: CollapsibleTileData>(
         &mut self,
         grid: &mut GridMap2D<Tile>,
         option_data: &PerOptionData,
-        queue: &mut Q,
-        collapsed_pos: Option<&GridPosition>,
+        queue: &mut EntrophyQueue,
     ) -> Result<(), GridPosition> {
         let mut tiles_to_update = HashSet::new();
         let size = *grid.size();
-        while let Some((position, to_remove)) = self.pop_to_resolve(collapsed_pos) {
+        while let Some(item) = self.inner.pop() {
             for direction in GridDir::ALL_2D {
                 let pos_to_update =
-                    if let Some(pos) = direction.opposite().march_step(&position, &size) {
+                    if let Some(pos) = direction.opposite().march_step(&item.position, &size) {
                         pos
                     } else {
                         continue;
@@ -67,7 +66,7 @@ impl Propagator {
                     continue;
                 }
                 for option_idx in
-                    option_data.get_all_enabled_in_direction(to_remove, direction.opposite())
+                    option_data.get_all_enabled_in_direction(item.to_remove, direction.opposite())
                 {
                     let binding = tile.as_mut();
                     let removed = binding
@@ -79,14 +78,8 @@ impl Propagator {
                     if !binding.has_compatible_options() {
                         return Err(pos_to_update);
                     }
-                    match (removed, queue.propagating()) {
-                        (true, true) => {
-                            self.push_propagate(PropagateItem::new(pos_to_update, *option_idx))
-                        }
-                        (true, false) => self.retain_removal(pos_to_update, *option_idx),
-                        (false, _) => continue,
-                    }
-                    if removed && queue.needs_update_after_options_change() {
+                    if removed {
+                        self.push_propagate(PropagateItem::new(tile.grid_position(), *option_idx));
                         tiles_to_update.insert(tile.grid_position());
                     }
                 }
@@ -94,50 +87,9 @@ impl Propagator {
         }
 
         for pos in tiles_to_update {
-            queue.update_queue(&grid.get_tile_at_position(&pos).unwrap());
+            queue.update_queue(&grid.get_mut_tile_at_position(&pos).unwrap());
         }
 
         Ok(())
-    }
-
-    fn pop_to_resolve(
-        &mut self,
-        collapsed_pos: Option<&GridPosition>,
-    ) -> Option<(GridPosition, usize)> {
-        if let Some(pos) = collapsed_pos {
-            if let Some(option) = self.get_from_retained(pos) {
-                return Some((*pos, option));
-            }
-        }
-        if let Some(PropagateItem {
-            position,
-            to_remove,
-        }) = self.inner.pop()
-        {
-            return Some((position, to_remove));
-        }
-        None
-    }
-
-    fn get_from_retained(&mut self, position: &GridPosition) -> Option<usize> {
-        let options_to_remove = self.reserved_removal.get_mut(position)?;
-
-        if let Some(option_to_remove) = options_to_remove.pop() {
-            Some(option_to_remove)
-        } else {
-            self.reserved_removal.remove(position);
-            None
-        }
-    }
-
-    fn retain_removal(&mut self, position: GridPosition, option_to_remove: usize) {
-        match self.reserved_removal.entry(position) {
-            std::collections::hash_map::Entry::Occupied(mut e) => {
-                e.get_mut().push(option_to_remove);
-            }
-            std::collections::hash_map::Entry::Vacant(e) => {
-                e.insert(vec![option_to_remove]);
-            }
-        };
     }
 }
