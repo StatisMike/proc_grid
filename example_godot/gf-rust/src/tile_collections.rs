@@ -4,11 +4,12 @@
 //! Parallel loading is made to make sure that the `tile_type_id` of [`BasicIdentTileData`] matches between
 //! [`VisCollection`] and [`GodotTileMapCollection`].
 
+use std::collections::HashSet;
 use std::io::BufReader;
 
-use godot::builtin::{GString, Vector2i};
+use godot::builtin::{Array, Color, GString, Vector2i};
 use godot::engine::file_access::ModeFlags;
-use godot::engine::{AcceptDialog, GFile, TileMap, TileSet, TileSetAtlasSource};
+use godot::engine::{AcceptDialog, GFile, Image, TileMap, TileSet, TileSetAtlasSource};
 use godot::log::{godot_error, godot_warn};
 use godot::obj::Gd;
 use godot::register::{godot_api, GodotClass};
@@ -23,7 +24,7 @@ use grid_forge::vis::collection::VisCollection;
 use grid_forge::vis::ops::{check_grid_vis_size, load_gridmap_identifiable_manual};
 use grid_forge::vis::{read_tile, DefaultVisPixel, PixelWithDefault};
 
-use image::ImageFormat;
+use image::{ImageFormat, Rgb};
 
 /// TileCollections holds reference to chosen GodotTileset and and png tileset, gathering their information
 /// synchronously to create analogous [`VisCollection`] and [`GodotTileMapCollection`]
@@ -38,6 +39,9 @@ pub struct TileCollections {
     tileset: Option<Gd<TileSet>>,
     #[export]
     source_id: i32,
+
+    #[var]
+    tiles: Array<Gd<SingleTile>>,
 
     /// Messages
     #[export]
@@ -116,10 +120,20 @@ impl TileCollections {
                 godot_error!("{error}");
                 return;
             }
+
+            let gd_image = SingleTile::pixels_to_image(&pixels);
+            let types = SingleTile::generate_types(&pixels);
             vis_collection.add_tile_pixels_manual(tile_type_id as u64, pixels);
 
             let godot_tile_info =
                 GodotTileMapTileInfo::new_atlas(self.source_id, position.get_godot_coords(), 0);
+
+            self.tiles.push(SingleTile::new(
+                tile_type_id as i32,
+                godot_tile_info,
+                gd_image,
+                types,
+            ));
             godot_collection.add_tile_data(tile_type_id as u64, godot_tile_info);
         }
 
@@ -198,12 +212,93 @@ impl TileCollections {
     }
 
     #[func]
-    pub fn insert_tile(&self, mut tilemap: Gd<TileMap>, tile_type_id: u64, coords: Vector2i) {
+    pub fn insert_tile(&self, tilemap: Gd<TileMap>, tile_type_id: u64, coords: Vector2i) {
+        let mut tilemap = tilemap.clone();
         self.godot_collection
             .as_ref()
             .unwrap()
             .get_tile_data(&tile_type_id)
             .unwrap()
             .insert_to_tilemap(&mut tilemap, coords, 0)
+    }
+}
+
+#[derive(GodotClass)]
+#[class(base=Resource, no_init)]
+struct SingleTile {
+    #[var]
+    tile_type_id: i32,
+    info: GodotTileMapTileInfo,
+    #[var]
+    image: Gd<Image>,
+    types: Vec<u32>
+}
+
+#[godot_api]
+impl SingleTile {
+    #[constant]
+    pub const SAND: u32 = 0;
+
+    #[constant]
+    pub const WATER: u32 = 1;
+
+    #[constant]
+    pub const GRASS: u32 = 2;
+
+    #[constant]
+    pub const ROAD: u32 = 4;
+
+    fn new(tile_type_id: i32, info: GodotTileMapTileInfo, image: Gd<Image>, types: Vec<u32>) -> Gd<Self> {
+        Gd::from_object(Self {
+            tile_type_id,
+            info,
+            image,
+            types
+        })
+    }
+
+    #[func]
+    pub fn has_type(&self, type_id: u32) -> bool {
+        self.types.contains(&type_id)
+    }
+
+    #[func]
+    pub fn insert_into(&self, mut into: Gd<TileMap>, coords: Vector2i) {
+        self.info.insert_to_tilemap(&mut into, coords, 0);
+    }
+}
+
+impl SingleTile {
+    fn generate_types(pixels: &[[DefaultVisPixel; 4]; 4]) -> Vec<u32> {
+        let mut types = HashSet::new();
+        for row in pixels.iter() {
+            for pixel in row.iter() {
+                if let Some(type_id) = Self::pix_classify(pixel) {
+                    types.insert(type_id);
+                }
+            }
+        }
+        types.into_iter().collect()
+    }
+
+    fn pix_classify(pixel: &DefaultVisPixel) -> Option<u32> { 
+        match pixel {
+            Rgb([64, 158, 24]) => Some(Self::GRASS), 
+            Rgb([133, 79, 40]) => Some(Self::ROAD),
+            Rgb([222, 230, 9]) => Some(Self::SAND),
+            Rgb([53, 60, 209]) => Some(Self::WATER),
+            _ => None
+        }
+    }
+
+    fn pixels_to_image(pixels: &[[DefaultVisPixel; 4]; 4]) -> Gd<Image> {
+        let mut image = Image::create(4, 4, false, godot::engine::image::Format::RGB8).unwrap();
+        for (x, row) in pixels.iter().enumerate() {
+            for (y,pixel) in row.iter().enumerate() {
+                let color = Color::from_rgba8(pixel.0[0], pixel.0[1], pixel.0[2], 0);
+                image.set_pixel(x as i32, y as i32, color);
+            }
+        }
+        image
     }
 }

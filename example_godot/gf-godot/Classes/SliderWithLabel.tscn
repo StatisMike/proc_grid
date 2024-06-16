@@ -1,0 +1,35 @@
+[gd_scene load_steps=4 format=3 uid="uid://gap1ux4wn0k8"]
+
+[ext_resource type="Script" path="res://Classes/SliderWithLabel.gd" id="1_vhtf3"]
+
+[sub_resource type="SystemFont" id="SystemFont_46k0a"]
+font_names = PackedStringArray("FreeSans")
+subpixel_positioning = 2
+multichannel_signed_distance_field = true
+
+[sub_resource type="LabelSettings" id="LabelSettings_yjk1e"]
+font = SubResource("SystemFont_46k0a")
+
+[node name="Main" type="HBoxContainer"]
+size_flags_horizontal = 3
+tooltip_text = "Width of generated GridMap"
+script = ExtResource("1_vhtf3")
+label_text = "Width"
+default = 10
+min = 5
+max = 50
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Label"
+label_settings = SubResource("LabelSettings_yjk1e")
+vertical_alignment = 1
+
+[node name="Toggle" type="HSlider" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+min_value = 10.0
+max_value = 50.0
+value = 10.0

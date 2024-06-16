@@ -1,0 +1,171 @@
+[gd_scene load_steps=6 format=3 uid="uid://b3hphamv1oy7y"]
+
+[ext_resource type="Script" path="res://Classes/GenHistory.gd" id="1_0ewve"]
+[ext_resource type="TileSet" uid="uid://clknfb6b2kcsg" path="res://tileset.tres" id="1_c3aal"]
+[ext_resource type="PackedScene" uid="uid://gap1ux4wn0k8" path="res://Classes/SliderWithLabel.tscn" id="1_rqkvw"]
+[ext_resource type="Script" path="res://Classes/MyMap.gd" id="4_8uube"]
+
+[sub_resource type="GDScript" id="GDScript_do12c"]
+script/source = "extends Control
+
+var next: Button;
+var previous: Button;
+var play: Button;
+var stop: Button;
+var rewind: Button;
+var play_speed: SliderWithLabel;
+var state: Label;
+var close: Button;
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	next = get_node(\"Next\");
+	previous = get_node(\"Previous\");
+	play = get_node(\"Play\");
+	stop = get_node(\"Stop\");
+	rewind = get_node(\"Rewind\");
+	play_speed = get_node(\"MarginContainer/PlaySpeed\");
+	state = get_node(\"State\");
+	close = get_node(\"Close\");
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta):
+	pass
+
+func set_state(current: int, max: int):
+	state.text = str(current) + \"/\" + str(max);
+	
+func play_start() -> int: 
+	next.disabled = true;
+	previous.disabled = true;
+	play.disabled = true;
+	rewind.disabled = true;
+	close.disabled = true;
+	stop.disabled = false;
+	play_speed.slider.editable = false;
+	return play_speed.slider_value;
+	
+func play_stop():
+	next.disabled = false;
+	previous.disabled = false;
+	play.disabled = false;
+	rewind.disabled = false;
+	close.disabled = false;
+	stop.disabled = true;
+	play_speed.slider.editable = true;
+"
+
+[node name="GenerationHistory" type="Panel"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_0ewve")
+
+[node name="TileMapContainer" type="Panel" parent="."]
+layout_mode = 1
+offset_right = 783.0
+offset_bottom = 639.0
+
+[node name="TileMap" type="TileMap" parent="TileMapContainer"]
+texture_filter = 1
+position = Vector2(21, 21)
+scale = Vector2(5, 5)
+tile_set = ExtResource("1_c3aal")
+format = 2
+script = ExtResource("4_8uube")
+
+[node name="Control" type="Control" parent="."]
+layout_mode = 1
+anchor_left = 0.744
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -857.088
+offset_right = -1152.0
+offset_bottom = -648.0
+script = SubResource("GDScript_do12c")
+
+[node name="Close" type="Button" parent="Control"]
+layout_mode = 0
+offset_left = 1046.0
+offset_top = 17.0
+offset_right = 1117.0
+offset_bottom = 48.0
+text = "Go Back
+"
+
+[node name="Next" type="Button" parent="Control"]
+layout_mode = 0
+offset_left = 1050.0
+offset_top = 183.0
+offset_right = 1130.0
+offset_bottom = 223.0
+text = "Next"
+
+[node name="Previous" type="Button" parent="Control"]
+layout_mode = 0
+offset_left = 827.0
+offset_top = 186.0
+offset_right = 907.0
+offset_bottom = 226.0
+text = "Previous
+"
+
+[node name="Play" type="Button" parent="Control"]
+layout_mode = 0
+offset_left = 853.0
+offset_top = 238.0
+offset_right = 933.0
+offset_bottom = 278.0
+text = "Play"
+
+[node name="Stop" type="Button" parent="Control"]
+layout_mode = 0
+offset_left = 1006.0
+offset_top = 293.0
+offset_right = 1086.0
+offset_bottom = 333.0
+text = "Stop"
+
+[node name="Rewind" type="Button" parent="Control"]
+layout_mode = 0
+offset_left = 899.0
+offset_top = 294.0
+offset_right = 979.0
+offset_bottom = 334.0
+text = "Rewind"
+
+[node name="State" type="Label" parent="Control"]
+layout_mode = 0
+offset_left = 925.0
+offset_top = 190.0
+offset_right = 1034.0
+offset_bottom = 220.0
+text = "X / Y"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MarginContainer" type="PanelContainer" parent="Control"]
+layout_mode = 0
+offset_left = 947.0
+offset_top = 239.0
+offset_right = 1110.0
+offset_bottom = 277.0
+
+[node name="PlaySpeed" parent="Control/MarginContainer" instance=ExtResource("1_rqkvw")]
+layout_mode = 2
+alignment = 1
+label_text = "step/s"
+min = 1
+max = 25
+
+[node name="GenerationHistoryState" type="GenerationHistoryState" parent="."]
+
+[connection signal="pressed" from="Control/Close" to="." method="_on_close_pressed"]
+[connection signal="pressed" from="Control/Next" to="." method="_on_next_pressed"]
+[connection signal="pressed" from="Control/Previous" to="." method="_on_previous_pressed"]
+[connection signal="pressed" from="Control/Play" to="." method="_on_play_pressed"]
+[connection signal="pressed" from="Control/Stop" to="." method="_on_stop_pressed"]
+[connection signal="pressed" from="Control/Rewind" to="." method="_on_rewind_pressed"]
+[connection signal="current_state" from="GenerationHistoryState" to="." method="_on_generation_history_state_current_state"]

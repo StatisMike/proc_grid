@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=3 uid="uid://blxumgwg8m5xn"]
+
+[ext_resource type="Script" path="res://Classes/TileButton.gd" id="1_bejy4"]
+[ext_resource type="Texture2D" uid="uid://x7v8d34078uh" path="res://tiles/empty_tile.png" id="1_iyovd"]
+
+[node name="TileButton" type="TextureButton"]
+texture_filter = 1
+offset_right = 4.0
+offset_bottom = 4.0
+scale = Vector2(10, 10)
+texture_normal = ExtResource("1_iyovd")
+stretch_mode = 0
+script = ExtResource("1_bejy4")

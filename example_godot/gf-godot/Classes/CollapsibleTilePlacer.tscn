@@ -1,0 +1,54 @@
+[gd_scene load_steps=3 format=3 uid="uid://bj07rf0bt0u63"]
+
+[ext_resource type="Script" path="res://Classes/CollapsibleTilePlacer.gd" id="1_8maiq"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_t0sk4"]
+bg_color = Color(0.2231, 0.23, 0.23, 1)
+
+[node name="CollapsibleTilePlacer" type="Panel"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = -2.0
+offset_bottom = 2.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_t0sk4")
+script = ExtResource("1_8maiq")
+
+[node name="Table" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -3.0
+offset_top = 2.0
+offset_right = -2.0
+offset_bottom = 4.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="R1" type="HBoxContainer" parent="Table"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="R2" type="HBoxContainer" parent="Table"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="R3" type="HBoxContainer" parent="Table"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="R4" type="HBoxContainer" parent="Table"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="R5" type="HBoxContainer" parent="Table"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="R6" type="HBoxContainer" parent="Table"]
+layout_mode = 2
+size_flags_vertical = 3
