@@ -452,14 +452,13 @@ mod private {
 #[cfg(test)]
 mod test {
     use crate::{
-        gen::collapse::{overlap::Analyzer, CollapsedTileData, CollapsibleTileData},
+        gen::collapse::{overlap::Analyzer, CollapsedTileData},
         map::{GridDir, GridMap2D, GridSize},
         tile::{GridPosition, GridTile},
     };
 
     use super::{
-        OverlappingPattern, OverlappingPattern2D, OverlappingPatternGrid, PatternCollection,
-        PatternTileData,
+        OverlappingPattern, OverlappingPattern2D, OverlappingPatternGrid, PatternTileData,
     };
 
     /// ```
@@ -499,7 +498,7 @@ mod test {
         position: &GridPosition,
         map: &OverlappingPatternGrid<P>,
     ) -> (u64, u64) {
-        let Some(data) = map.inner.get_tile_at_position(&position) else {
+        let Some(data) = map.inner.get_tile_at_position(position) else {
             panic!("Can't get tile at {position:?}");
         };
         let PatternTileData::WithPattern {

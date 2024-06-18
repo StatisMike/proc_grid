@@ -16,8 +16,6 @@ tooltip_text = "Width of generated GridMap"
 script = ExtResource("1_vhtf3")
 label_text = "Width"
 default = 10
-min = 5
-max = 50
 
 [node name="Label" type="Label" parent="."]
 layout_mode = 2

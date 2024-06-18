@@ -4,13 +4,13 @@ use std::sync::mpsc::{self, Receiver};
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
 
-use godot::builtin::meta::ToGodot;
-use godot::builtin::{Array, Callable, GString, Vector2i};
-use godot::engine::{timer, AcceptDialog, Control, IControl, INode, Node, TileMap, Timer};
+use godot::builtin::meta::{FromGodot, ToGodot};
+use godot::builtin::{Array, Dictionary, GString, Vector2i};
+use godot::engine::{AcceptDialog, INode, Node, TileMap, Timer};
 use godot::log::{godot_error, godot_warn};
 use godot::obj::{Base, Gd, NewAlloc, WithBaseField};
 use godot::register::{godot_api, GodotClass};
-use grid_forge::tile::GridPosition;
+use grid_forge::tile::{GridPosition, GridTile};
 use singular::Analyzer;
 
 use grid_forge::gen::collapse::*;
@@ -20,7 +20,7 @@ use grid_forge::tile::identifiable::BasicIdentTileData;
 
 use rand::thread_rng;
 
-use crate::tile_collections::TileCollections;
+use crate::tile_collections::{SingleTile, TileCollections};
 
 #[derive(GodotClass)]
 #[class(base=Node, init)]
@@ -31,13 +31,17 @@ pub struct TileGenerator {
     modal: Option<Gd<AcceptDialog>>,
     #[var]
     running: bool,
+    #[var]
+    pregenerated: Dictionary,
 
     handle: Option<JoinHandle<()>>,
     channel: Option<Receiver<GenerationResult>>,
     generated: Option<GridMap2D<BasicIdentTileData>>,
 
     #[var]
-    generation_time_ms: u32,
+    generation_time_us_total: u32,
+    #[var]
+    generation_time_us_success: u32,
     generation_history: Vec<singular::CollapseHistoryItem>,
 
     border_rules: singular::AdjacencyRules<BasicIdentTileData>,
@@ -78,8 +82,14 @@ impl INode for TileGenerator {
                         }
                         self.running = false;
                     }
-                    GenerationResult::Success((map, history, duration)) => {
+                    GenerationResult::Success((
+                        map,
+                        history,
+                        (duration_total, duration_success),
+                    )) => {
                         (self.generated, self.generation_history) = (Some(map), history);
+                        self.generation_time_us_total = duration_total.as_micros() as u32;
+                        self.generation_time_us_success = duration_success.as_micros() as u32;
                         self.base_mut()
                             .emit_signal("generation_finished".into(), &[true.to_variant()]);
                         if self.handle.is_some() {
@@ -159,11 +169,28 @@ impl TileGenerator {
         height: i32,
         rule: i32,
         queue: i32,
+        pregenerated: Dictionary,
     ) {
         let (sender, receiver) = mpsc::channel();
         let subscriber = singular::CollapseHistorySubscriber::default();
+        let mut collapsed_grid = None;
         self.channel = Some(receiver);
         self.running = true;
+        let size = GridSize::new_xy(width as u32, height as u32);
+
+        let collapsed = self.unpack_pregenerated(&pregenerated);
+
+        if !collapsed.is_empty() {
+            let mut grid = CollapsedGrid::new(size);
+            for (pos, single_tile) in collapsed.iter() {
+                grid.insert_tile(GridTile::new(
+                    *pos,
+                    CollapsedTileData::new(single_tile.bind().get_tile_type_id() as u64),
+                ));
+            }
+            collapsed_grid = Some(grid);
+        }
+        self.pregenerated = pregenerated;
 
         let adjacency_rules = if rule == 0 {
             self.border_rules.clone()
@@ -173,7 +200,6 @@ impl TileGenerator {
 
         let frequency_hints = self.frequency_hints.clone();
 
-        let size = GridSize::new_xy(width as u32, height as u32);
         let builder = IdentTileTraitBuilder::<BasicIdentTileData>::default();
 
         self.handle = Some(thread::spawn(move || {
@@ -186,25 +212,38 @@ impl TileGenerator {
             let mut grid =
                 singular::CollapsibleTileGrid::new_empty(size, &frequency_hints, &adjacency_rules);
 
-            let mut duration: Duration;
+            if let Some(collapsed) = collapsed_grid {
+                if let Err(err) = grid.populate_from_collapsed(&collapsed) {
+                    sender
+                        .send(GenerationResult::Error(format!(
+                            "Cannot populate grid from collapsed grid: {err}"
+                        )))
+                        .unwrap();
+                    return;
+                }
+            }
+
+            let empty_positions = grid.empty_positions();
+
+            let mut duration_total: Duration;
+            let mut duration_success: Duration;
+
+            let start_total = Instant::now();
 
             loop {
-                let start = Instant::now();
+                let start_success = Instant::now();
                 let result = if queue == 0 {
                     resolver.generate_position(
                         &mut grid,
                         &mut rng,
-                        &size.get_all_possible_positions(),
+                        &empty_positions,
                         PositionQueue::default(),
                     )
                 } else {
-                    resolver.generate_entrophy(
-                        &mut grid,
-                        &mut rng,
-                        &size.get_all_possible_positions(),
-                    )
+                    resolver.generate_entrophy(&mut grid, &mut rng, &empty_positions)
                 };
-                duration = start.elapsed();
+                duration_total = start_total.elapsed();
+                duration_success = start_success.elapsed();
                 match result {
                     Ok(_) => break,
                     Err(err) => {
@@ -235,7 +274,11 @@ impl TileGenerator {
                 .history()
                 .to_vec();
             sender
-                .send(GenerationResult::Success((map, history, duration)))
+                .send(GenerationResult::Success((
+                    map,
+                    history,
+                    (duration_total, duration_success),
+                )))
                 .unwrap();
         }));
     }
@@ -266,11 +309,29 @@ impl TileGenerator {
         }
     }
 
-    fn get_generation_result(&self) -> Option<(&GridMap2D<BasicIdentTileData>, &Vec<singular::CollapseHistoryItem>)> {
+    fn get_generation_result(
+        &self,
+    ) -> Option<(
+        &GridMap2D<BasicIdentTileData>,
+        &Vec<singular::CollapseHistoryItem>,
+    )> {
         if let Some(map) = &self.generated {
             return Some((map, &self.generation_history));
         }
         None
+    }
+
+    fn unpack_pregenerated(
+        &self,
+        pregenerated: &Dictionary,
+    ) -> Vec<(GridPosition, Gd<SingleTile>)> {
+        let mut out = Vec::new();
+        for (key, value) in pregenerated.iter_shared() {
+            let pos = Vector2i::from_variant(&key);
+            let tile = Gd::<SingleTile>::from_variant(&value);
+            out.push((GridPosition::new_xy(pos.x as u32, pos.y as u32), tile));
+        }
+        out
     }
 }
 
@@ -285,7 +346,7 @@ enum GenerationResult {
         (
             GridMap2D<BasicIdentTileData>,
             Vec<singular::CollapseHistoryItem>,
-            Duration,
+            (Duration, Duration),
         ),
     ),
 }
@@ -320,7 +381,11 @@ impl GenerationHistoryState {
             godot_error!("Cannot draw frame, because history is empty");
             return false;
         };
-        collection.bind().insert_tile(map.clone(), item.tile_type_id, item.position.get_godot_coords());
+        collection.bind().insert_tile(
+            map.clone(),
+            item.tile_type_id,
+            item.position.get_godot_coords(),
+        );
         true
     }
 
@@ -338,7 +403,6 @@ impl GenerationHistoryState {
         };
         map.set_cell(0, item.position.get_godot_coords());
         true
-
     }
 }
 
@@ -356,12 +420,19 @@ impl GenerationHistoryState {
         };
 
         if let Some(map) = &mut self.tilemap {
-            map.call("adjust_generation".into(), &[Vector2i::new(gridmap.size().x() as i32, gridmap.size().y() as i32).to_variant()]);
+            map.call(
+                "adjust_generation".into(),
+                &[
+                    Vector2i::new(gridmap.size().x() as i32, gridmap.size().y() as i32)
+                        .to_variant(),
+                ],
+            );
         }
         self.history.clone_from(history);
         self.current = 0;
         self.total = self.history.len() as u32 + 1;
-        self.base_mut().emit_signal("current_state".into(), &[0.to_variant()]);
+        self.base_mut()
+            .emit_signal("current_state".into(), &[0.to_variant()]);
     }
 
     #[func]
@@ -376,7 +447,6 @@ impl GenerationHistoryState {
         timer.connect("timeout".into(), self.base_mut().callable("forward"));
         timer.start();
         self.timer = Some(timer);
-        
     }
 
     #[func]
@@ -402,15 +472,20 @@ impl GenerationHistoryState {
             self.playing = false;
         }
         let current = self.current;
-        self.base_mut().emit_signal("current_state".into(), &[current.to_variant()]);
+        self.base_mut()
+            .emit_signal("current_state".into(), &[current.to_variant()]);
     }
 
     #[func]
     fn backward(&mut self) {
-        self.current -= 1;
         self.remove_from_current();
+        if self.current == 0 {
+            return;
+        }
+        self.current -= 1;
         let current = self.current;
-        self.base_mut().emit_signal("current_state".into(), &[current.to_variant()]);
+        self.base_mut()
+            .emit_signal("current_state".into(), &[current.to_variant()]);
     }
 
     #[func]

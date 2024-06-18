@@ -63,10 +63,7 @@ pub(crate) mod private {
     };
 
     use crate::{
-        gen::collapse::{
-            option::{PerOptionData, WaysToBeOption},
-            singular::CollapsibleTile,
-        },
+        gen::collapse::option::{PerOptionData, WaysToBeOption},
         map::{GridDir, GridMap2D},
         tile::{self, GridPosition, GridTile},
     };

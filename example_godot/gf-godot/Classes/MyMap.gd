@@ -6,6 +6,7 @@ class_name MyMap;
 var last_tile_pos: Vector2i;
 var collapsed: Dictionary = Dictionary();
 var collapsible = false;
+var generated = false;
 
 var available_size = Vector2i(0, 0);
 
@@ -18,12 +19,14 @@ func _ready():
 	available_size.y = container.size.y - position.y - 5;
 
 func _process(_delta):
+	if !visible:
+		return;
 	var tile_pos = get_hover_position();
 	if tile_pos != last_tile_pos:
 		last_tile_pos = tile_pos;
 		var atlas_coords = get_cell_atlas_coords(0, tile_pos, 0);
 		var source_id = get_cell_source_id(0, tile_pos, 0);
-		if source_id > 0:
+		if source_id >= 0:
 			emit_signal("node_hovered", atlas_coords, tile_pos, source_id);
 		
 func get_hover_position():
@@ -32,10 +35,12 @@ func get_hover_position():
 	return local_to_map(mouse_pos_local);
 	
 func _input(event):
-	if collapsible and event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed == true:
-		var position = get_hover_position();
-		if get_cell_source_id(0, position) > 0:
-			emit_signal("collapsible_clicked", position);
+	if !visible:
+		return;
+	if collapsible and !generated and event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed == true:
+		var hover_position = get_hover_position();
+		if get_cell_source_id(0, hover_position) >= 0:
+			emit_signal("collapsible_clicked", hover_position);
 
 ## Ready the tilemap for loading from image.
 func ready_for_load():
@@ -45,6 +50,10 @@ func ready_for_load():
 ## Ready the tilemap for generation.
 func ready_for_generation(size: Vector2i):
 	collapsible = true;
+	generated = false;
+	$"../../TabContainer/Generate/HistoryButton".disabled = true;
+	clear_collapsed();
+	clear();
 	adjust_generation(size);
 	for x in size.x:
 		for y in size.y:
@@ -79,3 +88,12 @@ func adjust_generation(generation_size: Vector2i):
 		adjusted_scale -= 0.1;
 
 	scale = Vector2(adjusted_scale, adjusted_scale);
+	
+func add_to_collapsed(pos: Vector2i, single_tile: SingleTile):
+	collapsed[pos] = single_tile;
+
+func remove_from_collapsed(pos: Vector2i):
+	collapsed.erase(pos);
+	
+func clear_collapsed():
+	collapsed.clear();

@@ -1,18 +1,12 @@
-extends TextureButton;
-
+## Button allowing to choose the precollapsed cell.
+extends Button;
 class_name TileButton;
 
-var atlas_pos: Vector2i;
+var tile: SingleTile;
+@onready var tile_sprite: Sprite2D = $Sprite2D;
 
-func _init(init_image: Image, init_atlas_pos: Vector2i):
-	texture_normal = ImageTexture.create_from_image(image);
-	
+func set_tile(init_tile: SingleTile):
+	tile = init_tile;
 
-# Called when the node enters the scene tree for the first time.
 func _ready():
-	pass # Replace with function body.
-
-
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta):
-	pass
+	tile_sprite.texture = ImageTexture.create_from_image(tile.image);

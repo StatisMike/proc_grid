@@ -5,11 +5,9 @@
 //! [`VisCollection`] and [`GodotTileMapCollection`].
 
 use std::collections::HashSet;
-use std::io::BufReader;
 
 use godot::builtin::{Array, Color, GString, Vector2i};
-use godot::engine::file_access::ModeFlags;
-use godot::engine::{AcceptDialog, GFile, Image, TileMap, TileSet, TileSetAtlasSource};
+use godot::engine::{AcceptDialog, Image, Texture2D, TileMap, TileSet, TileSetAtlasSource};
 use godot::log::{godot_error, godot_warn};
 use godot::obj::Gd;
 use godot::register::{godot_api, GodotClass};
@@ -24,7 +22,7 @@ use grid_forge::vis::collection::VisCollection;
 use grid_forge::vis::ops::{check_grid_vis_size, load_gridmap_identifiable_manual};
 use grid_forge::vis::{read_tile, DefaultVisPixel, PixelWithDefault};
 
-use image::{ImageFormat, Rgb};
+use image::Rgb;
 
 /// TileCollections holds reference to chosen GodotTileset and and png tileset, gathering their information
 /// synchronously to create analogous [`VisCollection`] and [`GodotTileMapCollection`]
@@ -66,18 +64,6 @@ impl TileCollections {
             return;
         }
 
-        let gd_file = GFile::open(self.path_to_image.clone(), ModeFlags::READ);
-        if gd_file.is_err() {
-            godot_error!(
-                "cannot open image file at specified Godot location: {}",
-                self.path_to_image
-            );
-            return;
-        };
-
-        // Opens image file using `GFile`, to be usable also after exporting the project.
-        let image = gd_file.unwrap();
-
         let atlas = self
             .tileset
             .clone()
@@ -93,13 +79,7 @@ impl TileCollections {
         }
 
         // Open image file
-        let image = image::load(BufReader::new(image), ImageFormat::Png);
-        if let Err(err) = image {
-            godot_error!("cannot load image file at: {err}");
-            return;
-        }
-
-        let image = image.unwrap().to_rgb8();
+        let image = image_buffer_from_texture_2d(self.path_to_image.clone());
 
         let grid_size = check_grid_vis_size::<DefaultVisPixel, 4, 4>(&image);
 
@@ -176,13 +156,7 @@ impl TileCollections {
         &self,
         path: &str,
     ) -> Result<GridMap2D<BasicIdentTileData>, String> {
-        let gfile =
-            GFile::open(path, ModeFlags::READ).map_err(|err| format!("File open error: {err}"))?;
-        let reader = BufReader::new(gfile);
-        let image = image::load(reader, ImageFormat::Png)
-            .map_err(|err| format!("Image read error: {err}"))?
-            .into_rgb8();
-
+        let image = image_buffer_from_texture_2d(path);
         let vis_collection = self
             .vis_collection
             .as_ref()
@@ -225,13 +199,13 @@ impl TileCollections {
 
 #[derive(GodotClass)]
 #[class(base=Resource, no_init)]
-struct SingleTile {
+pub struct SingleTile {
     #[var]
     tile_type_id: i32,
     info: GodotTileMapTileInfo,
     #[var]
     image: Gd<Image>,
-    types: Vec<u32>
+    types: Vec<u32>,
 }
 
 #[godot_api]
@@ -246,15 +220,29 @@ impl SingleTile {
     pub const GRASS: u32 = 2;
 
     #[constant]
-    pub const ROAD: u32 = 4;
+    pub const ROAD: u32 = 3;
 
-    fn new(tile_type_id: i32, info: GodotTileMapTileInfo, image: Gd<Image>, types: Vec<u32>) -> Gd<Self> {
+    fn new(
+        tile_type_id: i32,
+        info: GodotTileMapTileInfo,
+        image: Gd<Image>,
+        types: Vec<u32>,
+    ) -> Gd<Self> {
         Gd::from_object(Self {
             tile_type_id,
             info,
             image,
-            types
+            types,
         })
+    }
+
+    #[func]
+    pub fn get_atlas_coords(&self) -> Vector2i {
+        let GodotTileMapTileInfo::Atlas(tile_info) = self.info else {
+            godot_error!("Cannot get atlas coords from tile info");
+            return Vector2i::ZERO;
+        };
+        tile_info.gd_atlas_coord
     }
 
     #[func]
@@ -281,24 +269,39 @@ impl SingleTile {
         types.into_iter().collect()
     }
 
-    fn pix_classify(pixel: &DefaultVisPixel) -> Option<u32> { 
+    fn pix_classify(pixel: &DefaultVisPixel) -> Option<u32> {
         match pixel {
-            Rgb([64, 158, 24]) => Some(Self::GRASS), 
+            Rgb([64, 158, 24]) => Some(Self::GRASS),
             Rgb([133, 79, 40]) => Some(Self::ROAD),
             Rgb([222, 230, 9]) => Some(Self::SAND),
             Rgb([53, 60, 209]) => Some(Self::WATER),
-            _ => None
+            _ => None,
         }
     }
 
     fn pixels_to_image(pixels: &[[DefaultVisPixel; 4]; 4]) -> Gd<Image> {
         let mut image = Image::create(4, 4, false, godot::engine::image::Format::RGB8).unwrap();
-        for (x, row) in pixels.iter().enumerate() {
-            for (y,pixel) in row.iter().enumerate() {
+        for (y, row) in pixels.iter().enumerate() {
+            for (x, pixel) in row.iter().enumerate() {
                 let color = Color::from_rgba8(pixel.0[0], pixel.0[1], pixel.0[2], 0);
                 image.set_pixel(x as i32, y as i32, color);
             }
         }
         image
     }
+}
+
+/// Utility function to load `image::ImageBuffer` from Godot's `Texture2D` resource path.
+fn image_buffer_from_texture_2d(
+    texture_path: impl Into<GString>,
+) -> image::ImageBuffer<image::Rgb<u8>, Vec<u8>> {
+    let texture = godot::prelude::load::<Texture2D>(texture_path);
+    let image_data = texture.get_image().unwrap().get_data().to_vec();
+
+    image::ImageBuffer::from_raw(
+        texture.get_width() as u32,
+        texture.get_height() as u32,
+        image_data,
+    )
+    .unwrap()
 }

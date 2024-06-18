@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, HashMap};
 use std::marker::PhantomData;
 
-use crate::gen::collapse::AdjacencyTable;
+use crate::gen::collapse::private::AdjacencyTable;
 use crate::map::{DirectionTable, GridDir, GridMap2D};
 use crate::tile::identifiable::IdentifiableTileData;
 use crate::tile::{GridPosition, TileContainer};

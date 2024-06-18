@@ -1,0 +1,7 @@
+[gd_resource type="ButtonGroup" load_steps=2 format=3 uid="uid://d2fjaskhldcbe"]
+
+[sub_resource type="GDScript" id="GDScript_jj4y3"]
+
+[resource]
+allow_unpress = true
+script = SubResource("GDScript_jj4y3")

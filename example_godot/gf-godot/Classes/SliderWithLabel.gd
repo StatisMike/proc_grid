@@ -5,19 +5,17 @@ class_name SliderWithLabel
 
 @export var label_text: String
 @export var default: int
-@export var min: int
-@export var max: int
+@export var min_value: int
+@export var max_value: int
 
-var label: Label
-var slider: HSlider
+@onready var label: Label = $Label;
+@onready var slider: HSlider = $Toggle;
 var slider_value = 0;
 
 func _ready():
-	label = get_node("Label");
-	slider = get_node("Toggle") as HSlider;
 	
-	slider.min_value = min;
-	slider.max_value = max;
+	slider.min_value = min_value;
+	slider.max_value = max_value;
 	slider.step = 1;
 	
 	_on_toggle_value_changed(default);

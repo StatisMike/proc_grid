@@ -8,7 +8,7 @@ use crate::{
     tile::identifiable::collection::IdentTileCollection,
 };
 
-use super::AdjacencyTable;
+use super::private::AdjacencyTable;
 
 #[derive(Debug, Clone)]
 pub struct PerOptionTable<T> {

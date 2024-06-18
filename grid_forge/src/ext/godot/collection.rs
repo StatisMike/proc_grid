@@ -62,15 +62,15 @@ impl GodotInfoBuilder {
 
 #[derive(Clone, Copy, Hash, Debug)]
 pub struct GodotAtlasTileInfo {
-    gd_source_id: i32,
-    gd_atlas_coord: Vector2i,
-    gd_alternative_id: i32,
+    pub gd_source_id: i32,
+    pub gd_atlas_coord: Vector2i,
+    pub gd_alternative_id: i32,
 }
 
 #[derive(Clone, Copy, Hash, Debug)]
 pub struct GodotScenesCollectionInfo {
-    gd_source_id: i32,
-    gd_tile_idx: i32,
+    pub gd_source_id: i32,
+    pub gd_tile_idx: i32,
 }
 
 #[derive(Clone, Copy, Hash, Debug)]
@@ -79,7 +79,7 @@ pub enum GodotGridMapTileInfo {
 }
 #[derive(Clone, Copy, Hash, Debug)]
 pub struct GodotMeshItemData {
-    gd_tile_idx: i32,
+    pub gd_tile_idx: i32,
 }
 
 impl GodotGridMapTileInfo {

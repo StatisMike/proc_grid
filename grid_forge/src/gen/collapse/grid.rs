@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use crate::{
     map::{GridMap2D, GridSize},
@@ -8,10 +8,7 @@ use crate::{
     },
 };
 
-use super::{
-    error::CollapsedGridError, option::PerOptionData, CollapsedTileData, CollapsibleTileData,
-    PropagateItem,
-};
+use super::{error::CollapsedGridError, CollapsedTileData, CollapsibleTileData};
 
 /// [`GridMap2D`] containing data of [`CollapsedTileData`].
 pub struct CollapsedGrid {
@@ -76,39 +73,6 @@ pub trait CollapsibleGrid<IT: IdentifiableTileData, CT: CollapsibleTileData>:
             }
         }
     }
-}
-
-pub(crate) fn get_initial_propagate_items<T: CollapsibleTileData>(
-    to_collapse: &[GridPosition],
-    map: &GridMap2D<T>,
-    option_data: &PerOptionData,
-) -> Vec<PropagateItem> {
-    let mut out = Vec::new();
-    let mut cache = HashMap::new();
-    let mut check_generated = HashSet::new();
-    let check_provided: HashSet<_> = HashSet::from_iter(to_collapse.iter());
-
-    for pos_to_collapse in to_collapse {
-        for neighbour_tile in map.get_neighbours(pos_to_collapse) {
-            if !neighbour_tile.as_ref().is_collapsed()
-                || check_provided.contains(&neighbour_tile.grid_position())
-                || check_generated.contains(&neighbour_tile.grid_position())
-            {
-                continue;
-            }
-            let check_pos = neighbour_tile.grid_position();
-            check_generated.insert(check_pos);
-            let collapsed_idx = neighbour_tile.as_ref().collapse_idx().unwrap();
-            for opt_to_remove in cache.entry(collapsed_idx).or_insert_with(|| {
-                (0..option_data.num_options())
-                    .filter(|option_idx| option_idx != &collapsed_idx)
-                    .collect::<Vec<usize>>()
-            }) {
-                out.push(PropagateItem::new(check_pos, *opt_to_remove))
-            }
-        }
-    }
-    out
 }
 
 pub(crate) mod private {

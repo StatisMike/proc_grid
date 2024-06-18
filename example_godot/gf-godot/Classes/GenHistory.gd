@@ -3,26 +3,38 @@ extends Panel;
 class_name GenHistory;
 
 @export var collection: TileCollections;
-var tilemap: TileMap;
-var control;
-var state: GenerationHistoryState;
 
-# Called when the node enters the scene tree for the first time.
+@onready var tilemap: MyMap = $TileMapContainer/TileMap;
+@onready var control = $Control;
+@onready var state: GenerationHistoryState = $GenerationHistoryState;
+
+## Collection of pregenerated `SingleTile` objects.
+var pregenerated = Dictionary();
+
 func _ready():
-	state = get_node("GenerationHistoryState") as GenerationHistoryState;
-	tilemap = get_node("TileMapContainer/TileMap");
-	control = get_node("Control");
+	## Pass the collection and tilemat to the GenerationHistoryState.
 	state.collection = collection;
 	state.tilemap = tilemap;
-	
+
+## After generation is finished, the history will be passed all revelant
+## information about the run.
 func on_generation_finished(generator: TileGenerator):
 	state.set_history_from_generator(generator);
-	
+	pregenerated = generator.pregenerated;
+	insert_pregenerated();
+
+## Insert all precollapsed tiles.
+func insert_pregenerated():
+	for pos in pregenerated:
+		(pregenerated[pos] as SingleTile).insert_into(state.tilemap, pos);
+
+## Refresh the history panel state.
 func refresh():
 	state.current = 0;
 	control.set_state(0, state.total);
 	state.tilemap.clear();
 	state.stop();
+	insert_pregenerated();
 
 func _on_previous_pressed():
 	state.backward();

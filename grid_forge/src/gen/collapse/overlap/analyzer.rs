@@ -9,7 +9,7 @@ use super::pattern::{
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
 
-use crate::gen::collapse::AdjacencyTable;
+use crate::gen::collapse::private::AdjacencyTable;
 
 /// GridMap analyzer for overlapping pattern data.
 ///
@@ -210,7 +210,7 @@ where
         direction: GridDir,
         other_pattern_id: u64,
     ) -> bool {
-        let Some(adj) = self.inner.inner.get(&pattern_id) else {
+        let Some(adj) = self.inner().as_ref().get(&pattern_id) else {
             return false;
         };
         adj.inner[direction as usize].contains(&other_pattern_id)

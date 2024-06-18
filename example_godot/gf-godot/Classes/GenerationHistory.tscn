@@ -8,32 +8,17 @@
 [sub_resource type="GDScript" id="GDScript_do12c"]
 script/source = "extends Control
 
-var next: Button;
-var previous: Button;
-var play: Button;
-var stop: Button;
-var rewind: Button;
-var play_speed: SliderWithLabel;
-var state: Label;
-var close: Button;
+@onready var next: Button = $Next;
+@onready var previous: Button = $Previous;
+@onready var play: Button = $Play;
+@onready var stop: Button = $Stop;
+@onready var rewind: Button = $Rewind;
+@onready var play_speed: SliderWithLabel = $MarginContainer/PlaySpeed;
+@onready var state: Label = $State;
+@onready var close: Button = $Close;
 
-# Called when the node enters the scene tree for the first time.
-func _ready():
-	next = get_node(\"Next\");
-	previous = get_node(\"Previous\");
-	play = get_node(\"Play\");
-	stop = get_node(\"Stop\");
-	rewind = get_node(\"Rewind\");
-	play_speed = get_node(\"MarginContainer/PlaySpeed\");
-	state = get_node(\"State\");
-	close = get_node(\"Close\");
-
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta):
-	pass
-
-func set_state(current: int, max: int):
-	state.text = str(current) + \"/\" + str(max);
+func set_state(current: int, max_iters: int):
+	state.text = str(current) + \"/\" + str(max_iters);
 	
 func play_start() -> int: 
 	next.disabled = true;
@@ -157,8 +142,8 @@ offset_bottom = 277.0
 layout_mode = 2
 alignment = 1
 label_text = "step/s"
-min = 1
-max = 25
+min_value = 1
+max_value = 25
 
 [node name="GenerationHistoryState" type="GenerationHistoryState" parent="."]
 

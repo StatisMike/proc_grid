@@ -6,7 +6,7 @@ mod queue;
 pub mod singular;
 mod tile;
 
-use std::ops::Index;
+use std::{collections::HashSet, ops::Index};
 
 // Flattened reexports
 pub use error::CollapseError;
@@ -14,13 +14,11 @@ pub use grid::{CollapsedGrid, CollapsibleGrid};
 pub use queue::*;
 pub use tile::*;
 
-use nohash::{IntMap, IntSet};
-
 use crate::{map::GridDir, tile::GridPosition};
 
 #[derive(Clone, Debug, Default)]
 pub(crate) struct Adjacencies {
-    inner: Vec<IntSet<u64>>,
+    inner: Vec<HashSet<u64>>,
 }
 
 impl Adjacencies {
@@ -28,7 +26,7 @@ impl Adjacencies {
         let mut inner = Vec::new();
 
         for _ in 0..GridDir::ALL_2D.len() {
-            inner.push(IntSet::default());
+            inner.push(HashSet::default());
         }
 
         Self { inner }
@@ -42,41 +40,10 @@ impl Adjacencies {
 }
 
 impl Index<GridDir> for Adjacencies {
-    type Output = IntSet<u64>;
+    type Output = HashSet<u64>;
 
     fn index(&self, index: GridDir) -> &Self::Output {
         &self.inner[index as usize]
-    }
-}
-
-#[derive(Clone, Debug, Default)]
-pub(crate) struct AdjacencyTable {
-    inner: IntMap<u64, Adjacencies>,
-}
-
-impl AdjacencyTable {
-    pub(crate) fn insert_adjacency(&mut self, el_id: u64, direction: GridDir, adj_id: u64) {
-        match self.inner.entry(el_id) {
-            std::collections::hash_map::Entry::Occupied(mut e) => {
-                e.get_mut().add_at_dir(direction, adj_id)
-            }
-            std::collections::hash_map::Entry::Vacant(e) => {
-                let mut adjacencies = Adjacencies::new();
-                adjacencies.add_at_dir(direction, adj_id);
-                e.insert(adjacencies);
-            }
-        }
-    }
-
-    pub(crate) fn get_all_adjacencies_in_direction(
-        &self,
-        el_id: &u64,
-        direction: &GridDir,
-    ) -> impl Iterator<Item = &u64> {
-        self.inner
-            .get(el_id)
-            .expect("cannot get adjacencies for provided `el_id`")[*direction]
-            .iter()
     }
 }
 
@@ -102,5 +69,50 @@ impl overlap::Subscriber for DebugSubscriber {
         println!(
             "collapsed tile_type_id: {tile_type_id}, pattern_id: {pattern_id} on position: {position:?}"
         );
+    }
+}
+
+pub(crate) mod private {
+    use std::collections::HashMap;
+
+    use crate::map::GridDir;
+
+    use super::Adjacencies;
+
+    #[derive(Clone, Debug, Default)]
+    pub struct AdjacencyTable {
+        inner: HashMap<u64, Adjacencies>,
+    }
+
+    impl AsRef<HashMap<u64, Adjacencies>> for AdjacencyTable {
+        fn as_ref(&self) -> &HashMap<u64, Adjacencies> {
+            &self.inner
+        }
+    }
+
+    impl AdjacencyTable {
+        pub(crate) fn insert_adjacency(&mut self, el_id: u64, direction: GridDir, adj_id: u64) {
+            match self.inner.entry(el_id) {
+                std::collections::hash_map::Entry::Occupied(mut e) => {
+                    e.get_mut().add_at_dir(direction, adj_id)
+                }
+                std::collections::hash_map::Entry::Vacant(e) => {
+                    let mut adjacencies = Adjacencies::new();
+                    adjacencies.add_at_dir(direction, adj_id);
+                    e.insert(adjacencies);
+                }
+            }
+        }
+
+        pub(crate) fn get_all_adjacencies_in_direction(
+            &self,
+            el_id: &u64,
+            direction: &GridDir,
+        ) -> impl Iterator<Item = &u64> {
+            self.inner
+                .get(el_id)
+                .expect("cannot get adjacencies for provided `el_id`")[*direction]
+                .iter()
+        }
     }
 }
