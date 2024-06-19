@@ -61,7 +61,7 @@ fn analyze_frequency_10x10(c: &mut Criterion) {
     c.bench_function("analyze_frequency_10x10", |b| {
         b.iter(|| {
             let mut freq_hints = FrequencyHints::default();
-            freq_hints.analyze_grid_map(&seas_grid);
+            freq_hints.analyze(&seas_grid);
         });
     });
 }
@@ -78,7 +78,7 @@ fn analyze_build_collapsible_grid(c: &mut Criterion) {
     analyzer.analyze(&seas_grid);
     let adj_rules = analyzer.adjacency();
     let mut freq_hints = FrequencyHints::default();
-    freq_hints.analyze_grid_map(&seas_grid);
+    freq_hints.analyze(&seas_grid);
 
     c.bench_function("analyze_build_collapsible_grid", |b| {
         b.iter(|| {
@@ -101,7 +101,7 @@ fn gen_identity_position_10x10(c: &mut Criterion) {
         let grid = load_gridmap_identifiable_auto(&img, &mut collection, &builder).unwrap();
 
         analyzer.analyze(&grid);
-        frequency_hints.analyze_grid_map(&grid);
+        frequency_hints.analyze(&grid);
     }
 
     let size = GridSize::new_xy(10, 10);
@@ -140,7 +140,7 @@ fn gen_identity_entrophy_10x10(c: &mut Criterion) {
         let grid = load_gridmap_identifiable_auto(&img, &mut collection, &builder).unwrap();
 
         analyzer.analyze(&grid);
-        frequency_hints.analyze_grid_map(&grid);
+        frequency_hints.analyze(&grid);
     }
 
     let size = GridSize::new_xy(10, 10);
@@ -172,7 +172,7 @@ fn gen_border_position_10x10(c: &mut Criterion) {
         let grid = load_gridmap_identifiable_auto(&img, &mut collection, &builder).unwrap();
 
         analyzer.analyze(&grid);
-        frequency_hints.analyze_grid_map(&grid);
+        frequency_hints.analyze(&grid);
     }
 
     let size = GridSize::new_xy(10, 10);
@@ -211,7 +211,7 @@ fn gen_border_entrophy_10x10(c: &mut Criterion) {
         let grid = load_gridmap_identifiable_auto(&img, &mut collection, &builder).unwrap();
 
         analyzer.analyze(&grid);
-        frequency_hints.analyze_grid_map(&grid);
+        frequency_hints.analyze(&grid);
     }
 
     let size = GridSize::new_xy(10, 10);

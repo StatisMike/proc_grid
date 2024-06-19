@@ -10,8 +10,8 @@ use crate::{
     tile::{GridPosition, GridTile, TileData},
 };
 
-/// Struct implementing the random walker algorithm, producing the collection of [GridPos2D]. To be created with
-/// [GridWalker2DBuilder].
+/// Struct implementing the random walker algorithm, producing the collection of [`GridPosition`]. To be created with
+/// [`GridWalker2DBuilder`].
 pub struct GridWalker2D<R>
 where
     R: Rng,
@@ -68,11 +68,11 @@ where
         &self.walked
     }
 
-    /// Generate [GridMap2D] out of gathered [GridPos2D].
+    /// Generate [GridMap2D] out of gathered [GridPosition].
     ///
     /// # Arguments
     ///
-    /// - `tile_fun` - function which will generate the [GridTile2D]-implementing objects with specified positions.
+    /// - `tile_fun` - function which will generate the [GridTile]-implementing objects with specified positions.
     pub fn gen_grid_map<Data>(&self, tile_fn: fn(GridPosition) -> GridTile<Data>) -> GridMap2D<Data>
     where
         Data: TileData,

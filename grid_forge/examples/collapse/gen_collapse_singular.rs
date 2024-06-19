@@ -38,7 +38,7 @@ fn main() {
     for map in maps {
         identity_analyzer.analyze(&map);
         border_analyzer.analyze(&map);
-        frequency_hints.analyze_grid_map(&map);
+        frequency_hints.analyze(&map);
     }
 
     let outputs_size = GridSize::new_xy(30, 30);

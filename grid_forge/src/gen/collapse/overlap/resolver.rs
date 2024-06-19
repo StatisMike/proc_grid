@@ -65,6 +65,7 @@ where
         use crate::gen::collapse::queue::private::Sealed as _;
         use crate::gen::collapse::tile::private::Sealed as _;
 
+        let mut iter = 0;
         let mut queue = EntrophyQueue::default();
 
         if let Some(subscriber) = self.subscriber.as_mut() {
@@ -82,6 +83,7 @@ where
         CollapseError::from_result(
             propagator.propagate(&mut grid.pattern_grid, &grid.option_data, &mut queue),
             CollapseErrorKind::Init,
+            iter,
         )?;
 
         while let Some(collapse_position) = queue.get_next_position() {
@@ -98,6 +100,7 @@ where
                 return Err(CollapseError::new(
                     collapse_position,
                     CollapseErrorKind::Collapse,
+                    iter,
                 ));
             }
 
@@ -124,7 +127,9 @@ where
             CollapseError::from_result(
                 propagator.propagate(&mut grid.pattern_grid, &grid.option_data, &mut queue),
                 CollapseErrorKind::Propagation,
+                iter
             )?;
+            iter += 1;
         }
 
         Ok(grid)
@@ -142,6 +147,7 @@ where
     {
         use crate::gen::collapse::queue::private::Sealed as _;
         use crate::gen::collapse::tile::private::Sealed as _;
+        let mut iter = 0;
 
         if let Some(subscriber) = self.subscriber.as_mut() {
             subscriber.on_generation_start();
@@ -169,6 +175,7 @@ where
                 return Err(CollapseError::new(
                     collapse_position,
                     CollapseErrorKind::Collapse,
+                    iter
                 ));
             }
 
@@ -196,6 +203,7 @@ where
 
                 subscriber.on_collapse(&collapse_position, collapsed_id, pattern_id);
             }
+            iter += 1;
         }
         Ok(grid)
     }

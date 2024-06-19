@@ -2,9 +2,6 @@ use std::ops::{Add, AddAssign, Sub};
 
 pub mod identifiable;
 
-#[cfg(feature = "vis")]
-pub mod vis;
-
 #[derive(Debug)]
 pub struct GridTile<Data>
 where

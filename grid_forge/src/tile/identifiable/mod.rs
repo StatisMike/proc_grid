@@ -32,7 +32,7 @@ where
     fn tile_type_id(&self) -> u64;
 }
 
-/// Basic tile struct that implements [`IdentifiableTile`], holding only the most basic information.
+/// Basic tile struct that implements [`IdentifiableTileData`], holding only the most basic information.
 #[derive(Clone, Copy, Debug)]
 pub struct BasicIdentTileData {
     tile_type_id: u64,

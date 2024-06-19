@@ -21,7 +21,7 @@ impl GridDir {
     /// Take a step in specified direction from position within the contains of specified [GridSize].
     ///
     /// # Returns
-    /// - resulting [GridPos2D] after the step, or [None] if position is not valid within the specified size.
+    /// - resulting [GridPosition] after the step, or [None] if position is not valid within the specified size.
     ///
     /// # Examples
     /// ```
@@ -295,7 +295,7 @@ impl<Data: TileData> GridMap2D<Data> {
         )
     }
 
-    /// Insert tile. Its position will be determined based on information in [GridTile2D::grid_position]. If tile is
+    /// Insert tile. Its position will be determined based on information in [GridTile::grid_position]. If tile is
     /// present at that position already, it will be overwritten.
     pub fn insert_tile(&mut self, tile: GridTile<Data>) -> bool {
         if !self.size.is_position_valid(&tile.grid_position()) {

@@ -10,19 +10,11 @@ use super::{entrophy::EntrophyQueue, CollapseQueue};
 
 #[derive(Debug)]
 pub struct PropagateItem {
-    position: GridPosition,
-    to_remove: usize,
+    pub position: GridPosition,
+    pub to_remove: usize,
 }
 
 impl PropagateItem {
-    pub fn position(&self) -> &GridPosition {
-        &self.position
-    }
-
-    pub fn to_remove(&self) -> usize {
-        self.to_remove
-    }
-
     pub fn new(position: GridPosition, to_remove: usize) -> Self {
         Self {
             position,

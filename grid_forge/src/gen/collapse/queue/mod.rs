@@ -42,6 +42,7 @@ pub(crate) mod private {
         tile::GridPosition,
     };
 
+    /// Sealed trait for queues usable in collapse resolvers.
     pub trait Sealed {
         fn populate_inner_grid<R, Data>(
             &mut self,

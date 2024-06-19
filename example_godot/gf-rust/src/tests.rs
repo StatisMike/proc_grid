@@ -1,12 +1,13 @@
-//! Integration tests between `grid_forge` and Godot.
+//! Integration tests between `grid_forge` and Godot, using `gd-rehearse` crate.
 
 use gd_rehearse::itest::gditest;
 
 use godot::builtin::Rect2i;
-use godot::engine::{load, TileMap, TileSet};
+use godot::classes::{TileMap, TileSet};
+use godot::tools::load;
 use godot::obj::{Gd, NewAlloc};
 
-use grid_forge::godot::ops::{load_gridmap_from_tilemap_manual, write_gridmap_to_tilemap};
+use grid_forge::godot::{load_gridmap_from_tilemap_manual, write_gridmap_to_tilemap};
 use grid_forge::map::GridSize;
 use grid_forge::tile::identifiable::builders::IdentTileTraitBuilder;
 use grid_forge::tile::identifiable::{BasicIdentTileData, IdentifiableTileData};

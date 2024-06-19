@@ -1,10 +1,19 @@
+//! Module allowing roundtrips between `grid_forge` gridmaps abstractions and Godot's [`TileMap`](godot::classes::TileMap) 
+//! and [`GridMap`](godot::classes::GridMap).
+
 use godot::builtin::Vector2i;
 
 use crate::tile::GridPosition;
 
-pub mod collection;
-pub mod error;
-pub mod ops;
+mod collection;
+mod error;
+mod ops;
+
+pub use {
+    collection::*,
+    error::*,
+    ops::*,
+};
 
 #[derive(Clone, Copy)]
 pub(crate) enum TileSourceType {

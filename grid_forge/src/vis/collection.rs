@@ -78,7 +78,7 @@ where
         }
     }
 
-    /// Add pixels for [`IdentifiableTile`] implementing [`VisTile2D`] if none were collected yet.
+    /// Add pixels for [`IdentifiableTileData`]-implementing [`VisTile2D`] if none were collected yet.
     ///
     /// # Returns
     /// - `true` if the tiles were not present and were added
@@ -116,7 +116,7 @@ where
         VisCollectionOutcome::Existing
     }
 
-    /// Set pixels for [`IdentifiableTile`] implementing [`VisTile2D`] unconditionally.
+    /// Set pixels for [`IdentifiableTileData`]-implementing [`VisTile2D`] unconditionally.
     ///
     /// # Returns
     /// - pixels which were replaced, if some were present already. `None` otherwise.
@@ -149,7 +149,7 @@ where
         }
     }
 
-    /// Add pixels for tiles from [GridMap2D], if the tiles contained were implementing [IdentifiableTile] and [VisTile2D] unconditionally.
+    /// Add pixels for tiles from [`GridMap2D`], if the tiles contained were implementing [`IdentifiableTileData`] and [`VisTile2D`] unconditionally.
     ///
     /// # See also
     /// - [`Self::add_vis_tile_pixels`]

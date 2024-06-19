@@ -51,7 +51,7 @@ pub trait IdentTileCollection {
     /// collection. No-op by default.
     fn on_remove(&mut self, _data: &Self::DATA) {}
 
-    /// Adds tile data without `tile_type_id` provided - it will be generated with [get_data_hash](IdentTileCollection::get_data_hash).
+    /// Adds tile data without `tile_type_id` provided - it will be generated with [generate_type_id](IdentTileCollection::generate_type_id).
     /// If either data or the generated `tile_type_id` are already present in the collection, addition will be skipped, returning `false`.
     fn add_tile(&mut self, data: Self::DATA) -> bool {
         let hash = Self::generate_type_id(&data);
@@ -61,7 +61,7 @@ pub trait IdentTileCollection {
         self.add_tile_data(hash, data)
     }
 
-    /// Sets tile data without `tile_type_id` provided - it will be generated with [get_data_hash](IdentTileCollection::get_data_hash).
+    /// Sets tile data without `tile_type_id` provided - it will be generated with [generate_type_id](IdentTileCollection::generate_type_id).
     /// If either data or generated `tile_type_id` are already present in the collection, they will be overwritten, returning `true`.
     fn set_tile(&mut self, data: Self::DATA) -> bool {
         let mut changed = false;
@@ -78,7 +78,7 @@ pub trait IdentTileCollection {
         changed
     }
 
-    /// Removes tile data if either provided data or hash generated with [get_data_hash](IdentTileCollection::get_data_hash) is present
+    /// Removes tile data if either provided data or hash generated with [generate_type_id](IdentTileCollection::generate_type_id) is present
     /// in the collection.
     fn remove_tile(&mut self, data: &Self::DATA) -> bool {
         let mut changed = false;

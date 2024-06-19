@@ -30,7 +30,7 @@ fn analyze_10x10_pattern_2x2(c: &mut Criterion) {
         b.iter(|| {
             let mut analyzer =
                 Analyzer::<OverlappingPattern2D<2, 2>, BasicIdentTileData>::default();
-            analyzer.analyze_map(&grid);
+            analyzer.analyze(&grid);
         });
     });
 }
@@ -47,7 +47,7 @@ fn analyze_10x10_pattern_3x3(c: &mut Criterion) {
         b.iter(|| {
             let mut analyzer =
                 Analyzer::<OverlappingPattern2D<3, 3>, BasicIdentTileData>::default();
-            analyzer.analyze_map(&grid);
+            analyzer.analyze(&grid);
         });
     });
 }
@@ -63,7 +63,7 @@ fn generate_10x10_pattern_2x2_entrophy(c: &mut Criterion) {
 
     let grid = load_gridmap_identifiable_auto(&img, &mut vis_collection, &builder).unwrap();
 
-    analyzer.analyze_map(&grid);
+    analyzer.analyze(&grid);
 
     let pattern_collection = analyzer.get_collection().clone();
     let pattern_rules = analyzer.get_adjacency();
@@ -99,7 +99,7 @@ fn generate_10x10_pattern_3x3_entrophy(c: &mut Criterion) {
 
     let grid = load_gridmap_identifiable_auto(&img, &mut vis_collection, &builder).unwrap();
 
-    analyzer.analyze_map(&grid);
+    analyzer.analyze(&grid);
 
     let pattern_collection = analyzer.get_collection().clone();
     let pattern_rules = analyzer.get_adjacency();
@@ -135,7 +135,7 @@ fn generate_10x10_pattern_2x2_position(c: &mut Criterion) {
 
     let grid = load_gridmap_identifiable_auto(&img, &mut vis_collection, &builder).unwrap();
 
-    analyzer.analyze_map(&grid);
+    analyzer.analyze(&grid);
 
     let pattern_collection = analyzer.get_collection().clone();
     let pattern_rules = analyzer.get_adjacency();
@@ -176,7 +176,7 @@ fn generate_10x10_pattern_3x3_position(c: &mut Criterion) {
 
     let grid = load_gridmap_identifiable_auto(&img, &mut vis_collection, &builder).unwrap();
 
-    analyzer.analyze_map(&grid);
+    analyzer.analyze(&grid);
 
     let pattern_collection = analyzer.get_collection().clone();
     let pattern_rules = analyzer.get_adjacency();

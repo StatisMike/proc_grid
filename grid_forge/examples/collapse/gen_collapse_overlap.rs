@@ -25,7 +25,7 @@ fn main() {
     let mut analyzer = overlap::Analyzer::<overlap::OverlappingPattern2D<3, 3>, _>::default();
 
     for map in maps.iter() {
-        analyzer.analyze_map(map);
+        analyzer.analyze(map);
     }
 
     // Resolver can be reused, as it is used for the same tile type.
@@ -83,7 +83,7 @@ fn main() {
 
     let mut analyzer = overlap::Analyzer::<overlap::OverlappingPattern2D<2, 2>, _>::default();
     for map in maps.iter() {
-        analyzer.analyze_map(map);
+        analyzer.analyze(map);
     }
     let mut resolver = overlap::Resolver::default();
 

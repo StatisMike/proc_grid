@@ -5,7 +5,7 @@ use private::Sealed;
 use rand::distributions::Distribution;
 use rand::Rng;
 
-use crate::gen::collapse::error::CollapsedGridError;
+use crate::gen::collapse::error::CollapsibleGridError;
 use crate::gen::collapse::option::{PerOptionData, WaysToBeOption};
 use crate::gen::collapse::{tile::*, CollapsedGrid, CollapsibleGrid, PropagateItem};
 use crate::map::{GridMap2D, GridSize};
@@ -167,7 +167,7 @@ where
         patterns: PatternCollection<P>,
         frequencies: &FrequencyHints<P, Tile>,
         adjacencies: &AdjacencyRules<P, Tile>,
-    ) -> Result<Self, CollapsedGridError> {
+    ) -> Result<Self, CollapsibleGridError> {
         let mut option_data = PerOptionData::default();
         option_data.populate(&frequencies.get_all_weights_cloned(), adjacencies.inner());
 
@@ -181,7 +181,7 @@ where
         missing_ids.sort();
 
         if !missing_ids.is_empty() {
-            return Err(CollapsedGridError::new_missing(missing_ids));
+            return Err(CollapsibleGridError::new_missing(missing_ids));
         }
 
         Ok(Self {
@@ -198,7 +198,7 @@ where
         patterns: PatternCollection<P>,
         frequencies: &FrequencyHints<P, Tile>,
         adjacencies: &AdjacencyRules<P, Tile>,
-    ) -> Result<Self, CollapsedGridError> {
+    ) -> Result<Self, CollapsibleGridError> {
         let mut option_data = PerOptionData::default();
         option_data.populate(&frequencies.get_all_weights_cloned(), adjacencies.inner());
 
@@ -210,7 +210,7 @@ where
             .collect::<Vec<_>>();
         missing_ids.sort();
         if !missing_ids.is_empty() {
-            return Err(CollapsedGridError::new_missing(missing_ids));
+            return Err(CollapsibleGridError::new_missing(missing_ids));
         }
 
         let mut grid = GridMap2D::new(*collapsed.as_ref().size());
@@ -234,7 +234,7 @@ where
         collapsed: &CollapsedGrid,
         patterns: &PatternCollection<P>,
         options: &PerOptionData,
-    ) -> Result<Vec<GridTile<CollapsiblePattern<P>>>, CollapsedGridError> {
+    ) -> Result<Vec<GridTile<CollapsiblePattern<P>>>, CollapsibleGridError> {
         let entrophy_uniform = CollapsiblePattern::<P>::entrophy_uniform();
         let ways = options.get_ways_to_become_option();
         let mut out = Vec::new();
@@ -267,7 +267,7 @@ where
                 );
             }
             if possible_patterns.is_empty() {
-                return Err(CollapsedGridError::new_collapse(position));
+                return Err(CollapsibleGridError::new_collapse(position));
             }
             let mut current_ways = ways.clone();
             current_ways.purge_others(&possible_patterns);
@@ -327,13 +327,13 @@ impl<P: OverlappingPattern, Tile: IdentifiableTileData> CollapsibleGrid<Tile, Co
     fn retrieve_ident<OT: IdentifiableTileData, B: IdentTileBuilder<OT>>(
         &self,
         builder: &B,
-    ) -> Result<GridMap2D<OT>, CollapsedGridError> {
+    ) -> Result<GridMap2D<OT>, CollapsibleGridError> {
         let mut out = GridMap2D::new(*self.pattern_grid.size());
 
         if let Err(missing) =
             builder.check_missing_ids(&self.patterns.iter_tile_types().copied().collect::<Vec<_>>())
         {
-            return Err(CollapsedGridError::new_missing(
+            return Err(CollapsibleGridError::new_missing(
                 missing.get_missing_tile_type_ids().to_vec(),
             ));
         }

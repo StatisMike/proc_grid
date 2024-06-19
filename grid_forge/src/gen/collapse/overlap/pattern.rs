@@ -14,7 +14,7 @@ use crate::tile::{GridPosition, TileContainer, TileData};
 /// efficient and provide most interesting outputs, though it all depends of the structute in the input grids.
 ///
 /// Specifying a size of `1` in all directions will provide totally random outputs. For the single-tiled collapsible
-/// generative algorithm the [`adjacency`](crate::gen::collapse::adjacency)-based should be always preferred.
+/// generative algorithm the [`singular`](crate::gen::collapse::singular)-based should be always preferred.
 ///
 /// It is comprised of `tile_type_ids` of all tiles found in the range of the pattern, where the one present at `[0][0][0]`
 /// position is considered the *main* tile, and all others are *secondary* tiles.
@@ -514,7 +514,7 @@ mod test {
     #[test]
     fn correct_adjacency_2d_2x2() {
         let mut analyzer = Analyzer::<OverlappingPattern2D<2, 2>, _>::default();
-        let pattern_grid = analyzer.analyze_map(&test_grid_2d_2x2());
+        let pattern_grid = analyzer.analyze(&test_grid_2d_2x2());
 
         let adjacency_rules = analyzer.get_adjacency();
 

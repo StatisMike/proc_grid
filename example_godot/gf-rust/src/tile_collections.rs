@@ -7,13 +7,12 @@
 use std::collections::HashSet;
 
 use godot::builtin::{Array, Color, GString, Vector2i};
-use godot::engine::{AcceptDialog, Image, Texture2D, TileMap, TileSet, TileSetAtlasSource};
+use godot::classes::{AcceptDialog, Image, Texture2D, TileMap, TileSet, TileSetAtlasSource};
 use godot::log::{godot_error, godot_warn};
 use godot::obj::Gd;
 use godot::register::{godot_api, GodotClass};
 
-use grid_forge::godot::collection::{GodotTileMapCollection, GodotTileMapTileInfo};
-use grid_forge::godot::ops::write_gridmap_to_tilemap;
+use grid_forge::godot::*;
 use grid_forge::map::GridMap2D;
 use grid_forge::tile::identifiable::builders::IdentTileTraitBuilder;
 use grid_forge::tile::identifiable::collection::IdentTileCollection;
@@ -197,6 +196,8 @@ impl TileCollections {
     }
 }
 
+/// SingleTile is a resource that holds information about a single tile in a tilemap.
+/// It is used to load and save tiles from/to Godot's TileMap.
 #[derive(GodotClass)]
 #[class(base=Resource, no_init)]
 pub struct SingleTile {
@@ -291,7 +292,7 @@ impl SingleTile {
     }
 }
 
-/// Utility function to load `image::ImageBuffer` from Godot's `Texture2D` resource path.
+/// Utility function to load [`image::ImageBuffer`] from Godot's [`Texture2D`] resource path.
 fn image_buffer_from_texture_2d(
     texture_path: impl Into<GString>,
 ) -> image::ImageBuffer<image::Rgb<u8>, Vec<u8>> {

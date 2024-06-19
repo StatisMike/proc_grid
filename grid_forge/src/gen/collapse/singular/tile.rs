@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 
 use rand::Rng;
 
-use crate::gen::collapse::error::CollapsedGridError;
+use crate::gen::collapse::error::CollapsibleGridError;
 use crate::gen::collapse::grid::CollapsibleGrid;
 use crate::gen::collapse::option::{PerOptionData, WaysToBeOption};
 use crate::gen::collapse::{self, tile::*, CollapsedGrid, PropagateItem};
@@ -15,7 +15,7 @@ use crate::tile::{GridPosition, GridTile, TileContainer, TileData};
 
 use super::{AdjacencyRules, FrequencyHints};
 
-/// Tile with options that can be collapsed into one of them.
+/// Tile with options that can be collapsed into one of them. Mostly used within the [`CollapsibleTileGrid`].
 #[derive(Clone, Debug)]
 pub struct CollapsibleTile {
     collapsed_option: Option<usize>,
@@ -134,6 +134,59 @@ impl CollapsibleTileData for CollapsibleTile {
     }
 }
 
+/// Collapsible grid compatible with [`singular::Resolver`](super::Resolver).
+/// 
+/// It stores the data of the tiles in the internal grid of [`CollapsibleTile`]. Holds information about the rules for
+/// the generation of the tiles and the weights of the options, provide options to populate the grid with some collapsed
+/// tiles before the generation process and retrieve the collapsed tiles after the generation ends.
+/// 
+/// ## Example
+/// ```
+/// use grid_forge::gen::collapse::*;
+/// use grid_forge::tile::GridPosition;
+/// use grid_forge::map::GridSize;
+/// use grid_forge::tile::identifiable::*;
+/// use grid_forge::tile::identifiable::builders::*;
+/// #
+/// # // setup to prepopulate the rules.
+/// # use grid_forge::tile::*;
+/// # use grid_forge::map::GridDir;
+/// # use grid_forge::tile::identifiable::*;
+/// # use grid_forge::tile::identifiable::builders::*;
+/// # let first_tile = GridTile::new(GridPosition::new_xy(0,0), BasicIdentTileData::tile_new(0));
+/// # let second_tile = GridTile::new(GridPosition::new_xy(1,0), BasicIdentTileData::tile_new(1));
+/// # let mut adjacency_rules = singular::AdjacencyRules::<BasicIdentTileData>::default(); 
+/// # adjacency_rules.add_adjacency(&first_tile, &second_tile, GridDir::UP);
+/// # adjacency_rules.add_adjacency(&second_tile, &first_tile, GridDir::LEFT);
+/// # let mut frequency_hints = singular::FrequencyHints::<BasicIdentTileData>::default();
+/// # frequency_hints.set_weight_for_tile(&first_tile, 1);
+/// # frequency_hints.set_weight_for_tile(&second_tile, 2);
+/// 
+/// // Create new empty grid.
+/// let mut collapsible_grid = singular::CollapsibleTileGrid::new_empty(GridSize::new_xy(10, 10), &frequency_hints, &adjacency_rules);
+/// 
+/// // We can prepopulate existing collapsible grid with some collapsed tiles using `CollapsedGrid`.
+/// let mut collapsed_grid = CollapsedGrid::new(GridSize::new_xy(10, 10));
+/// collapsed_grid.insert_data(&GridPosition::new_xy(0, 0), CollapsedTileData::new(0));
+/// collapsed_grid.insert_data(&GridPosition::new_xy(1, 0), CollapsedTileData::new(1));
+/// 
+/// collapsible_grid.populate_from_collapsed(&collapsed_grid).unwrap();
+/// 
+/// // The collapsible grid can be created directly from a `CollapsedGrid`.
+/// let mut collapsible_grid = singular::CollapsibleTileGrid::new_from_collapsed(&collapsed_grid, &frequency_hints, &adjacency_rules).unwrap();
+/// 
+/// // If there is a need to change the rules after the grid is created, it can be done using `change` method.
+/// # let mut new_frequency_hints = singular::FrequencyHints::<BasicIdentTileData>::default();
+/// # new_frequency_hints.set_weight_for_tile(&first_tile, 2);
+/// # new_frequency_hints.set_weight_for_tile(&second_tile, 1);
+/// collapsible_grid = collapsible_grid.change(&new_frequency_hints, &adjacency_rules).unwrap();
+/// 
+/// // The grid can be retrieved as a `CollapsedGrid`.
+/// let collapsed_grid = collapsible_grid.retrieve_collapsed();
+/// 
+/// // The grid can be retrieved as a `GridMap2D` using compatible `IdentTileBuilder`.
+/// let ident_grid = collapsible_grid.retrieve_ident(&IdentTileTraitBuilder::<BasicIdentTileData>::default());
+/// ```
 pub struct CollapsibleTileGrid<Tile: IdentifiableTileData> {
     pub(crate) grid: GridMap2D<CollapsibleTile>,
     pub(crate) option_data: PerOptionData,
@@ -141,6 +194,8 @@ pub struct CollapsibleTileGrid<Tile: IdentifiableTileData> {
 }
 
 impl<Tile: IdentifiableTileData> CollapsibleTileGrid<Tile> {
+
+    /// Creates a new empty grid with given [`GridSize`], preparing the rules for the generation of the tiles and the weights of the options.
     pub fn new_empty(
         size: GridSize,
         frequencies: &FrequencyHints<Tile>,
@@ -156,11 +211,16 @@ impl<Tile: IdentifiableTileData> CollapsibleTileGrid<Tile> {
         }
     }
 
+    /// Creates a new grid using the [`CollapsedGrid`] as a source grid. Created grid will have the same size as the 
+    /// source grid, and will be populated with existing collapsed tiles.
+    /// 
+    /// Method can return an error if the collapsed grid contains tiles with `tile_type_id`s that are not present in the
+    /// provided frequency hints and adjacency rules.
     pub fn new_from_collapsed(
         collapsed: &CollapsedGrid,
         frequencies: &FrequencyHints<Tile>,
         adjacencies: &AdjacencyRules<Tile>,
-    ) -> Result<Self, CollapsedGridError> {
+    ) -> Result<Self, CollapsibleGridError> {
         let mut option_data = PerOptionData::default();
         option_data.populate(&frequencies.get_all_weights_cloned(), adjacencies.inner());
 
@@ -171,7 +231,7 @@ impl<Tile: IdentifiableTileData> CollapsibleTileGrid<Tile> {
             .collect::<Vec<_>>();
 
         if !missing_ids.is_empty() {
-            return Err(CollapsedGridError::new_missing(missing_ids));
+            return Err(CollapsibleGridError::new_missing(missing_ids));
         }
 
         let mut grid = GridMap2D::new(*collapsed.as_ref().size());
@@ -194,26 +254,35 @@ impl<Tile: IdentifiableTileData> CollapsibleTileGrid<Tile> {
         })
     }
 
+    /// Changes the rules for the generation of the tiles and the weights of the options.
+    /// 
+    /// Method can return an error if the inner collapsible grid contains tiles with `tile_type_id`s that are not present in the
+    /// provided frequency hints and adjacency rules.
     pub fn change(
         self,
         frequencies: &FrequencyHints<Tile>,
         adjacencies: &AdjacencyRules<Tile>,
-    ) -> Result<Self, CollapsedGridError> {
+    ) -> Result<Self, CollapsibleGridError> {
         let collapsed = self.retrieve_collapsed();
 
         Self::new_from_collapsed(&collapsed, frequencies, adjacencies)
     }
 
+    /// Populates the grid with all collapsed tiles from the provided [`CollapsedGrid`].
+    /// 
+    /// Method can return an error if the provided grid contains tiles with `tile_type_id`s that are not present in the
+    /// provided frequency hints and adjacency rules or the provided grid size is greater than the size of inner
+    /// collapsible grid.
     pub fn populate_from_collapsed(
         &mut self,
         collapsed: &CollapsedGrid,
-    ) -> Result<(), CollapsedGridError> {
+    ) -> Result<(), CollapsibleGridError> {
         if !self
             .grid
             .size
             .is_contained_within(collapsed.as_ref().size())
         {
-            return Err(CollapsedGridError::new_wrong_size(
+            return Err(CollapsibleGridError::new_wrong_size(
                 collapsed.as_ref().size,
                 self.grid.size,
             ));
@@ -226,7 +295,7 @@ impl<Tile: IdentifiableTileData> CollapsibleTileGrid<Tile> {
             .collect::<Vec<_>>();
 
         if !missing_ids.is_empty() {
-            return Err(CollapsedGridError::new_missing(missing_ids));
+            return Err(CollapsibleGridError::new_missing(missing_ids));
         }
 
         for tile in collapsed.as_ref().iter_tiles() {
@@ -276,7 +345,7 @@ impl<Tile: IdentifiableTileData> CollapsibleGrid<Tile, CollapsibleTile>
     fn retrieve_ident<T: IdentifiableTileData, B: IdentTileBuilder<T>>(
         &self,
         builder: &B,
-    ) -> Result<GridMap2D<T>, CollapsedGridError> {
+    ) -> Result<GridMap2D<T>, CollapsibleGridError> {
         let mut out = GridMap2D::new(*self.grid.size());
 
         for tile in self.grid.iter_tiles() {

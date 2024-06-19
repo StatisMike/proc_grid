@@ -319,7 +319,7 @@ impl<Data: IdentifiableTileData + ConstructableViaIdentifierTile> IdentTileBuild
     }
 }
 
-/// Trait shared by objects which on basis of the grid position and tile identifier of given [`IdentifiableTile`]-implementing struct can
+/// Trait shared by objects which on basis of the grid position and tile identifier of given [`IdentifiableTileData`]-implementing struct can
 /// create correct instance of the tile. Necessary for many [`GridMap2D`](crate::map::GridMap2D) creating methods.
 ///
 /// Three different builders are available in the `grid_forge`:

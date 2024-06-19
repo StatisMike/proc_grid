@@ -39,7 +39,7 @@ where
 }
 
 impl<P: OverlappingPattern, Data: IdentifiableTileData> Analyzer<P, Data> {
-    pub fn analyze_map(&mut self, map: &GridMap2D<Data>) -> OverlappingPatternGrid<P> {
+    pub fn analyze(&mut self, map: &GridMap2D<Data>) -> OverlappingPatternGrid<P> {
         let grid = OverlappingPatternGrid::from_map(map, &mut self.collection);
         self.frequency.analyze_pattern_grid(&grid);
         self.adjacency.analyze_collection(&self.collection);

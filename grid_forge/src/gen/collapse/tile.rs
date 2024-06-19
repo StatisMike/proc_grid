@@ -2,6 +2,10 @@ use crate::tile::identifiable::builders::ConstructableViaIdentifierTile;
 use crate::tile::identifiable::IdentifiableTileData;
 use crate::tile::TileData;
 
+/// Simple [`TileData`] containing only the `tile_type_id`.
+/// 
+/// Identical in most cases to [`BasicIdentTileData`](crate::tile::identifiable::BasicIdentTileData), but used consistently within the
+/// collapse algorithms - both as input for some initial constraints for the generation process, and as an collapse process output.
 pub struct CollapsedTileData {
     tile_type_id: u64,
 }
@@ -29,16 +33,21 @@ impl CollapsedTileData {
 
 /// Trait shared by [`TileData`] used within collapsible generative algorithms.
 pub trait CollapsibleTileData: TileData + private::Sealed {
+
+    /// Returns number of possible options for the tile.
     fn num_compatible_options(&self) -> usize;
 
+    /// Checks if the tile has any possible options.
     fn has_compatible_options(&self) -> bool {
         self.num_possible_options() > 0
     }
 
+    /// Checks if the tile is collapsed.
     fn is_collapsed(&self) -> bool {
         self.collapse_idx().is_some()
     }
 
+    /// Returns the index of the collapsed option.
     fn collapse_idx(&self) -> Option<usize>;
 
     /// Create new collapsed tile data.
@@ -47,7 +56,7 @@ pub trait CollapsibleTileData: TileData + private::Sealed {
     /// Calculate entrophy.
     fn calc_entrophy(&self) -> f32;
 
-    /// Associate function to calculate entrophy.
+    /// Associated function to calculate entrophy.
     #[inline]
     fn calc_entrophy_ext(weight_sum: u32, weight_log_sum: f32) -> f32 {
         (weight_sum as f32).log2() - weight_log_sum / (weight_sum as f32)
@@ -70,6 +79,8 @@ pub(crate) mod private {
 
     use super::CollapsibleTileData;
 
+    /// Sealed trait for the [`CollapsibleTileData`] trait. It contains most of the shared logic for its implementors,
+    /// which should be kept private.
     pub trait Sealed: tile::TileData {
         /// Creates new uncollapsed tile.
         fn new_uncollapsed_tile(
@@ -171,7 +182,7 @@ pub(crate) mod private {
 
         fn weight_sum(&self) -> u32;
 
-        /// Collapses tile into one of possible options, returning the vector of removed.
+        /// Collapses tile into one of possible options, returning the vector of the removed options.
         fn collapse_gather_removed<R: Rng>(
             &mut self,
             rng: &mut R,
@@ -195,20 +206,6 @@ pub(crate) mod private {
             }
             self.mark_collapsed(chosen.expect("options should always be chosen"));
             out
-        }
-
-        fn collapse_single(&mut self) {
-            assert_eq!(
-                1,
-                self.num_possible_options(),
-                "should have only one possible option!"
-            );
-            self.mark_collapsed(
-                self.ways_to_be_option()
-                    .iter_possible()
-                    .last()
-                    .expect("should have option!"),
-            );
         }
 
         /// Collapses tiles into one of possible options.

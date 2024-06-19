@@ -54,7 +54,7 @@ where
     Ok(grid)
 }
 
-/// Load [`GridMap2D`] of [`IdentifiableTile`] struct, using registered pixels in [`VisCollection`].
+/// Load [`GridMap2D`] of [`IdentifiableTileData`]-implementing struct using registered pixels in [`VisCollection`].
 ///
 /// If you don't need to declare the `tile_type_id` yourself, you can use [`load_gridmap_identifiable_auto`], which generates
 /// identifiers on basis of each pixel.

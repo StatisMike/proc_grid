@@ -1,4 +1,5 @@
-//! Implements `grid_forge` collapse procedural generation algorithm, allowing its usage within Godot example app.
+//! Implements `grid_forge` collapse procedural generation algorithm, allowing its usage within Godot example app, 
+//! alongside some additional utility functions specific for this scenario.
 
 use std::sync::mpsc::{self, Receiver};
 use std::thread::{self, JoinHandle};
@@ -22,28 +23,46 @@ use rand::thread_rng;
 
 use crate::tile_collections::{SingleTile, TileCollections};
 
+/// Class handling the generation of the tilemap.
+/// 
+/// The class is responsible for the generation of the [`GridMap2D`], and trasferring its results to the Godot's [`TileMap`]
+/// afterwards.
+/// 
+/// The generation itself is done in a separate thread, so the main thread will not be blocked.
 #[derive(GodotClass)]
 #[class(base=Node, init)]
 pub struct TileGenerator {
+    /// The collection of tiles to be used for the generation.
     #[export]
     collection: Option<Gd<TileCollections>>,
+    /// Modal dialog to be shown when the generation encounters an error.
     #[export]
     modal: Option<Gd<AcceptDialog>>,
-    #[var]
-    running: bool,
+    /// Dictionary of pregenerated tiles, with their [`Vector2i`] position as a key and [`SingleTile`] as a value.
     #[var]
     pregenerated: Dictionary,
 
-    handle: Option<JoinHandle<()>>,
-    channel: Option<Receiver<GenerationResult>>,
+    /// Produced generation history.
+    generation_history: Vec<singular::CollapseHistoryItem>,
+    /// Produced GridMap2D.
     generated: Option<GridMap2D<BasicIdentTileData>>,
 
+    // ---------------- Generation stats -------------- //
+    /// Total time spent on the generation, in microseconds.
     #[var]
     generation_time_us_total: u32,
+    /// Time spent on the generation for successful run, in microseconds.
     #[var]
     generation_time_us_success: u32,
-    generation_history: Vec<singular::CollapseHistoryItem>,
 
+    // ---------------- Generation state -------------- //
+    running: bool,
+
+    // ---------------- Second thread utils -------------- //
+    handle: Option<JoinHandle<()>>,
+    channel: Option<Receiver<GenerationResult>>,
+
+    // ---------- Collapsible generation rules ----------- //
     border_rules: singular::AdjacencyRules<BasicIdentTileData>,
     identity_rules: singular::AdjacencyRules<BasicIdentTileData>,
     frequency_hints: singular::FrequencyHints<BasicIdentTileData>,
@@ -53,22 +72,27 @@ pub struct TileGenerator {
 
 #[godot_api]
 impl INode for TileGenerator {
+
+    /// Process retrieves the signals from spawned thread when the generation is running, emitting them back to the
+    /// Godot's *MainNode* on the main thread.
     fn process(&mut self, _delta: f64) {
         if !self.running {
             return;
         }
 
-        // Check if there is a result available from the generation task from separate thread. If so, emit the signal
-        // to Godot's *MainNode*.
         if let Some(receiver) = &self.channel {
             if let Ok(result) = receiver.try_recv() {
                 match result {
+
+                    // Runtime error occured - only passing the error message to Godot, generator will retry.
                     GenerationResult::RuntimeErr(mssg) => {
                         self.base_mut().emit_signal(
                             "generation_runtime_error".into(),
                             &[GString::from(mssg).to_variant()],
                         );
                     }
+
+                    // Fatal error occured, the generation will be stopped.
                     GenerationResult::Error(mssg) => {
                         self.base_mut().emit_signal(
                             "generation_error".into(),
@@ -82,6 +106,9 @@ impl INode for TileGenerator {
                         }
                         self.running = false;
                     }
+
+                    // Successful generation - the information about the success will be sent to the Godot's *MainNode*,
+                    // while all of the generated data will be accessible using other Godot-exposed methods.
                     GenerationResult::Success((
                         map,
                         history,
@@ -117,6 +144,16 @@ impl TileGenerator {
     /// Emitted if the generation encounters an error, but will retry.
     #[signal]
     fn generation_runtime_error(message: GString);
+
+    #[constant]
+    const IDENTITY_RULES: i32 = 0;
+    #[constant]
+    const ADJACENCY_RULES: i32 = 1;
+
+    #[constant]
+    const POSITION_QUEUE: i32 = 0;
+    #[constant]
+    const ENTROPHY_QUEUE: i32 = 1;
 
     /// Initializes the single-tiled rulesets for the generation.
     #[func]
@@ -155,7 +192,7 @@ impl TileGenerator {
         let mut frequency_hints = singular::FrequencyHints::default();
 
         for map in grid_maps.iter() {
-            frequency_hints.analyze_grid_map(map);
+            frequency_hints.analyze(map);
         }
 
         self.frequency_hints = frequency_hints;
@@ -192,7 +229,7 @@ impl TileGenerator {
         }
         self.pregenerated = pregenerated;
 
-        let adjacency_rules = if rule == 0 {
+        let adjacency_rules = if rule == Self::ADJACENCY_RULES {
             self.border_rules.clone()
         } else {
             self.identity_rules.clone()
@@ -232,7 +269,7 @@ impl TileGenerator {
 
             loop {
                 let start_success = Instant::now();
-                let result = if queue == 0 {
+                let result = if queue == Self::POSITION_QUEUE {
                     resolver.generate_position(
                         &mut grid,
                         &mut rng,
@@ -351,6 +388,7 @@ enum GenerationResult {
     ),
 }
 
+/// Class storing the history of the generation, providing the methods to view it in the Godot scene.
 #[derive(GodotClass)]
 #[class(base=Node, init)]
 pub struct GenerationHistoryState {
@@ -408,9 +446,11 @@ impl GenerationHistoryState {
 
 #[godot_api]
 impl GenerationHistoryState {
+    /// Sends the current step of the generation history to other Godot classes.
     #[signal]
     fn current_state(current: u32);
 
+    /// Retrieves the history of the generation from the [`TileGenerator`]
     #[func]
     pub fn set_history_from_generator(&mut self, generator: Gd<TileGenerator>) {
         let binding = generator.bind();
@@ -435,6 +475,7 @@ impl GenerationHistoryState {
             .emit_signal("current_state".into(), &[0.to_variant()]);
     }
 
+    /// Plays the generation history starting from the current step with the given speed.
     #[func]
     fn play(&mut self, count_per_sec: u32) {
         if self.current >= self.total {
@@ -449,6 +490,7 @@ impl GenerationHistoryState {
         self.timer = Some(timer);
     }
 
+    /// Stops the generation history playback.
     #[func]
     fn stop(&mut self) {
         self.playing = false;
@@ -459,6 +501,7 @@ impl GenerationHistoryState {
         }
     }
 
+    /// Advances the generation history to the next step manually.
     #[func]
     fn forward(&mut self) {
         if self.current >= self.total {
@@ -476,6 +519,7 @@ impl GenerationHistoryState {
             .emit_signal("current_state".into(), &[current.to_variant()]);
     }
 
+    /// Rewinds the generation history to the previous step.
     #[func]
     fn backward(&mut self) {
         self.remove_from_current();
@@ -488,6 +532,7 @@ impl GenerationHistoryState {
             .emit_signal("current_state".into(), &[current.to_variant()]);
     }
 
+    /// Rewinds the generation history completely.
     #[func]
     fn rewind(&mut self) {
         self.remove_from_current();

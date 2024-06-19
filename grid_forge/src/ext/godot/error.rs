@@ -5,6 +5,7 @@ use crate::tile::identifiable::builders::TileBuilderError;
 
 use super::collection::GodotTileMapTileInfo;
 
+/// Error which can occur when working with Godot's [`TileMap`](godot::classes::TileMap) or [`GridMap`](godot::classes::GridMap).
 #[derive(Clone, Debug)]
 pub struct GodotTileError {
     kind: GodotTileErrorKind,

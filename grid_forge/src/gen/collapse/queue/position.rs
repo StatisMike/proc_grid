@@ -13,9 +13,13 @@ use super::CollapseQueue;
 #[derive(Default, Eq, PartialEq)]
 pub enum PositionQueueStartingPoint {
     #[default]
+    /// Starts at the `(0, 0)` position.
     UpLeft,
+    /// Starts at the `(0, max)` position.
     UpRight,
+    /// Starts at the `(max, 0)` position.
     DownLeft,
+    /// Starts at the `(max, max)` position.
     DownRight,
 }
 
@@ -23,10 +27,13 @@ pub enum PositionQueueStartingPoint {
 #[derive(Default, Eq, PartialEq)]
 pub enum PositionQueueDirection {
     #[default]
+    /// Collapses tiles in a rowwise fashion.
     Rowwise,
+    /// Collapses tiles in a columnwise fashion.
     Columnwise,
 }
 
+/// A queue that collapses tiles consecutively in a fixed direction, based solely on their position.
 #[derive(Default)]
 pub struct PositionQueue {
     starting_point: PositionQueueStartingPoint,
@@ -244,7 +251,5 @@ mod test {
         );
 
         tiles.sort_by(compare_downleft_columnwise);
-
-        println!("{tiles:?}");
     }
 }

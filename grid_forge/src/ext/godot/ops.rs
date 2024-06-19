@@ -1,5 +1,5 @@
 use godot::builtin::Rect2i;
-use godot::engine::TileMap;
+use godot::classes::TileMap;
 use godot::obj::Gd;
 
 use crate::map::{GridMap2D, GridSize};
@@ -11,6 +11,16 @@ use crate::tile::GridPosition;
 use super::collection::{GodotInfoBuilder, GodotTileMapCollection};
 use super::error::GodotTileError;
 
+/// Loads [`GridMap2D`] from [`TileMap`], automatically loading read tiles into [`GodotTileMapCollection`].
+/// 
+/// Currently supports only `layer = 0`.
+/// 
+/// Automatic character of the process means that:
+/// - not all tiles from underlying [`TileSet`](godot::classes::TileSet) sources will be loaded into [`GodotTileMapCollection`], only 
+/// those which are used in the [`TileMap`].
+/// - `tile_type_id` for each tile will be automatically generated.
+/// 
+/// If more control over the process is needed, [`load_gridmap_from_tilemap_manual`] can be used.
 pub fn load_gridmap_from_tilemap_auto<Data: IdentifiableTileData, B: IdentTileBuilder<Data>>(
     tilemap: &Gd<TileMap>,
     collection: &mut GodotTileMapCollection,
@@ -35,6 +45,14 @@ pub fn load_gridmap_from_tilemap_auto<Data: IdentifiableTileData, B: IdentTileBu
     Ok(grid_map)
 }
 
+/// Loads [`GridMap2D`] from [`TileMap`], using tiles collected in [`GodotTileMapCollection`].
+/// 
+/// Currently supports only `layer = 0`.
+/// 
+/// As the process is manual, the `tile_type_id` for each tile will be taken from the collection, not generated
+/// automatically. Process can fail if the collection does not contain the required tile.
+/// 
+/// If such control over the process is not needed, [`load_gridmap_from_tilemap_auto`] can be used.
 pub fn load_gridmap_from_tilemap_manual<Data: IdentifiableTileData, B: IdentTileBuilder<Data>>(
     tilemap: &Gd<TileMap>,
     collection: &GodotTileMapCollection,
@@ -61,6 +79,9 @@ pub fn load_gridmap_from_tilemap_manual<Data: IdentifiableTileData, B: IdentTile
     Ok(grid_map)
 }
 
+/// Writes [`GridMap2D`] to [`TileMap`], using [`GodotTileMapTileInfo`](crate::godot::GodotTileMapTileInfo) from [`GodotTileMapCollection`].
+/// 
+/// Currently supports only `layer = 0`.
 pub fn write_gridmap_to_tilemap<Data: IdentifiableTileData>(
     gridmap: &GridMap2D<Data>,
     tilemap: &mut Gd<TileMap>,
