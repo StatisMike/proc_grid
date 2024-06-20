@@ -1,0 +1,33 @@
+name: Generate documentation
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  doc:
+    name: Deploy documentation on Github Pages
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build Documentation
+        run: |
+          cargo install cargo-makedocs
+          cargo makedocs -e gd-rehearse -i gf_rust
+        
+      - name: Setup index
+        run: cp ./doc_index.html ./target/doc/index.html
+
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./target/doc
+          force_orphan: true

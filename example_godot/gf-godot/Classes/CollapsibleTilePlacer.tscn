@@ -1,0 +1,108 @@
+[gd_scene load_steps=3 format=3 uid="uid://bj07rf0bt0u63"]
+
+[ext_resource type="Script" path="res://Classes/CollapsibleTilePlacer.gd" id="1_8maiq"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_t0sk4"]
+bg_color = Color(0.2231, 0.23, 0.23, 1)
+
+[node name="CollapsibleTilePlacer" type="Panel"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = -2.0
+offset_bottom = 2.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_t0sk4")
+script = ExtResource("1_8maiq")
+
+[node name="Table" type="GridContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.403
+anchor_top = 0.003
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0.549957
+offset_top = 0.05
+offset_right = -2.0
+offset_bottom = 4.0
+columns = 6
+
+[node name="TypeGrass" type="CheckBox" parent="."]
+layout_mode = 0
+offset_left = 70.0
+offset_top = 78.0
+offset_right = 160.0
+offset_bottom = 123.0
+button_pressed = true
+text = "Grass"
+
+[node name="TypeSand" type="CheckBox" parent="."]
+layout_mode = 0
+offset_left = 71.0
+offset_top = 122.0
+offset_right = 161.0
+offset_bottom = 167.0
+button_pressed = true
+text = "Sand"
+
+[node name="TypeWater" type="CheckBox" parent="."]
+layout_mode = 0
+offset_left = 71.0
+offset_top = 168.0
+offset_right = 161.0
+offset_bottom = 213.0
+button_pressed = true
+text = "Water"
+
+[node name="TypeRoad" type="CheckBox" parent="."]
+layout_mode = 0
+offset_left = 71.0
+offset_top = 217.0
+offset_right = 161.0
+offset_bottom = 262.0
+button_pressed = true
+text = "Road"
+
+[node name="Back" type="Button" parent="."]
+layout_mode = 0
+offset_left = 23.0
+offset_top = 360.0
+offset_right = 123.0
+offset_bottom = 391.0
+text = "Go back
+"
+
+[node name="SetTile" type="Button" parent="."]
+layout_mode = 0
+offset_left = 23.0
+offset_top = 321.0
+offset_right = 121.0
+offset_bottom = 352.0
+text = "Set Tile
+"
+
+[node name="Empty" type="Button" parent="."]
+layout_mode = 0
+offset_left = 23.0
+offset_top = 282.0
+offset_right = 122.0
+offset_bottom = 313.0
+text = "Remove tile
+"
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 0
+offset_left = 33.0
+offset_top = 30.0
+offset_right = 179.0
+offset_bottom = 69.0
+
+[connection signal="toggled" from="TypeGrass" to="." method="_on_type_grass_toggled"]
+[connection signal="toggled" from="TypeSand" to="." method="_on_type_sand_toggled"]
+[connection signal="toggled" from="TypeWater" to="." method="_on_type_water_toggled"]
+[connection signal="toggled" from="TypeRoad" to="." method="_on_type_road_toggled"]
+[connection signal="pressed" from="Back" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="SetTile" to="." method="_on_set_tile_pressed"]
+[connection signal="pressed" from="Empty" to="." method="_on_empty_pressed"]

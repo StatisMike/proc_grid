@@ -1,4 +1,4 @@
-//! Example shows `godot` feature of `grid_forge` when working with single-layered [`TileMap`](godot::engine::TileMap).
+//! Example shows `godot` feature of `grid_forge` when working with single-layered [`TileMap`](godot::classes::TileMap).
 
 use godot::init::*;
 

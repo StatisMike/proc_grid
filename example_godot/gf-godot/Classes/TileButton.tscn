@@ -1,0 +1,39 @@
+[gd_scene load_steps=7 format=3 uid="uid://blxumgwg8m5xn"]
+
+[ext_resource type="Script" path="res://Classes/TileButton.gd" id="1_bejy4"]
+[ext_resource type="Texture2D" uid="uid://x7v8d34078uh" path="res://tiles/empty_tile.png" id="1_iyovd"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bdts0"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1rqis"]
+bg_color = Color(0.233925, 0.233925, 0.233925, 1)
+
+[sub_resource type="Theme" id="Theme_tpys6"]
+Button/styles/disabled = SubResource("StyleBoxFlat_bdts0")
+Button/styles/normal = SubResource("StyleBoxFlat_1rqis")
+
+[sub_resource type="ButtonGroup" id="ButtonGroup_pt1bu"]
+resource_local_to_scene = false
+
+[node name="TileButton" type="Button"]
+texture_filter = 1
+custom_minimum_size = Vector2(40, 40)
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = -1112.0
+offset_bottom = -608.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme = SubResource("Theme_tpys6")
+toggle_mode = true
+button_group = SubResource("ButtonGroup_pt1bu")
+script = ExtResource("1_bejy4")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture_filter = 1
+scale = Vector2(5, 5)
+texture = ExtResource("1_iyovd")
+offset = Vector2(4, 4)

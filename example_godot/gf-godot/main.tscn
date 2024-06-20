@@ -1,10 +1,12 @@
-[gd_scene load_steps=11 format=3 uid="uid://bo6a6drfgift2"]
+[gd_scene load_steps=13 format=3 uid="uid://bo6a6drfgift2"]
 
 [ext_resource type="Script" path="res://Classes/MainNode.gd" id="1_b3kv3"]
 [ext_resource type="TileSet" uid="uid://clknfb6b2kcsg" path="res://tileset.tres" id="2_sxov8"]
 [ext_resource type="Script" path="res://Classes/MyMap.gd" id="3_cnlk0"]
-[ext_resource type="Script" path="res://Classes/SliderWithLabel.gd" id="4_g33ov"]
+[ext_resource type="PackedScene" uid="uid://gap1ux4wn0k8" path="res://Classes/SliderWithLabel.tscn" id="4_s24k0"]
 [ext_resource type="Script" path="res://Classes/HoverCellData.gd" id="5_miaey"]
+[ext_resource type="PackedScene" uid="uid://b3hphamv1oy7y" path="res://Classes/GenerationHistory.tscn" id="6_l7l20"]
+[ext_resource type="PackedScene" uid="uid://bj07rf0bt0u63" path="res://Classes/CollapsibleTilePlacer.tscn" id="7_jppps"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_x43o4"]
 bg_color = Color(0.169245, 0.169245, 0.169245, 1)
@@ -27,13 +29,11 @@ func _on_option_button_item_selected(index):
 		disabled = true;
 "
 
-[sub_resource type="SystemFont" id="SystemFont_46k0a"]
-font_names = PackedStringArray("FreeSans")
-subpixel_positioning = 2
-multichannel_signed_distance_field = true
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_f6se3"]
+bg_color = Color(0.28485, 0.28485, 0.28485, 1)
 
-[sub_resource type="LabelSettings" id="LabelSettings_yjk1e"]
-font = SubResource("SystemFont_46k0a")
+[sub_resource type="Theme" id="Theme_pbcp7"]
+Panel/styles/panel = SubResource("StyleBoxFlat_f6se3")
 
 [node name="MainNode" type="Node2D" node_paths=PackedStringArray("collections", "generator")]
 script = ExtResource("1_b3kv3")
@@ -54,7 +54,7 @@ horizontal_alignment = 1
 
 [node name="TileMap" type="TileMap" parent="TileMapContainer"]
 texture_filter = 1
-position = Vector2(6, 60)
+position = Vector2(23, 39)
 scale = Vector2(5, 5)
 tile_set = ExtResource("2_sxov8")
 format = 2
@@ -71,6 +71,7 @@ offset_bottom = 495.0
 grow_horizontal = 0
 
 [node name="Image" type="Panel" parent="TabContainer"]
+visible = false
 layout_mode = 2
 
 [node name="VSplitContainer" type="VSplitContainer" parent="TabContainer/Image"]
@@ -106,67 +107,42 @@ Choose one of the provided PNGs to generate the tilemap.
 Resulting [i]TileMap[/i] will have spaces between the tiles, to show the borders between tiles. "
 
 [node name="Generate" type="Panel" parent="TabContainer"]
-visible = false
 layout_mode = 2
 
 [node name="Size" type="VBoxContainer" parent="TabContainer/Generate"]
 layout_mode = 1
-offset_left = 31.0
-offset_top = 215.0
-offset_right = 287.0
-offset_bottom = 287.0
+offset_left = 37.0
+offset_top = 137.0
+offset_right = 293.0
+offset_bottom = 207.0
 alignment = 1
 
-[node name="Width" type="HBoxContainer" parent="TabContainer/Generate/Size"]
+[node name="Width" parent="TabContainer/Generate/Size" instance=ExtResource("4_s24k0")]
 layout_mode = 2
-size_flags_horizontal = 3
-tooltip_text = "Width of generated GridMap"
-script = ExtResource("4_g33ov")
-label_text = "Width"
+min_value = 5
+max_value = 50
 
-[node name="Label" type="Label" parent="TabContainer/Generate/Size/Width"]
+[node name="Height" parent="TabContainer/Generate/Size" instance=ExtResource("4_s24k0")]
 layout_mode = 2
-size_flags_horizontal = 3
-text = "Label"
-label_settings = SubResource("LabelSettings_yjk1e")
-vertical_alignment = 1
-
-[node name="Toggle" type="HSlider" parent="TabContainer/Generate/Size/Width"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 1
-min_value = 10.0
-max_value = 50.0
-value = 10.0
-
-[node name="Height" type="HBoxContainer" parent="TabContainer/Generate/Size"]
-layout_mode = 2
-size_flags_horizontal = 3
-tooltip_text = "Height of generated GridMap"
-script = ExtResource("4_g33ov")
 label_text = "Height"
+min_value = 5
+max_value = 50
 
-[node name="Label" type="Label" parent="TabContainer/Generate/Size/Height"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Label"
-label_settings = SubResource("LabelSettings_yjk1e")
-vertical_alignment = 1
-
-[node name="Toggle" type="HSlider" parent="TabContainer/Generate/Size/Height"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 1
-min_value = 10.0
-max_value = 50.0
-value = 10.0
+[node name="SizeButton" type="Button" parent="TabContainer/Generate"]
+layout_mode = 0
+offset_left = 351.0
+offset_top = 145.0
+offset_right = 536.0
+offset_bottom = 199.0
+text = "Accept size and 
+clear map"
 
 [node name="Rules" type="OptionButton" parent="TabContainer/Generate"]
 layout_mode = 0
-offset_left = 344.0
-offset_top = 179.0
-offset_right = 532.0
-offset_bottom = 237.0
+offset_left = 351.0
+offset_top = 206.0
+offset_right = 539.0
+offset_bottom = 247.0
 item_count = 2
 selected = 0
 popup/item_0/text = "Border Adjacency"
@@ -176,10 +152,10 @@ popup/item_1/id = 1
 
 [node name="Queue" type="OptionButton" parent="TabContainer/Generate"]
 layout_mode = 0
-offset_left = 346.0
-offset_top = 238.0
-offset_right = 534.0
-offset_bottom = 296.0
+offset_left = 352.0
+offset_top = 250.0
+offset_right = 541.0
+offset_bottom = 297.0
 item_count = 2
 selected = 0
 popup/item_0/text = "PositionQueue"
@@ -187,33 +163,35 @@ popup/item_0/id = 0
 popup/item_1/text = "EntrophyQueue"
 popup/item_1/id = 1
 
-[node name="Subscribe" type="CheckBox" parent="TabContainer/Generate"]
+[node name="GenerateButton" type="Button" parent="TabContainer/Generate"]
+layout_mode = 0
+offset_left = 86.0
+offset_top = 388.0
+offset_right = 270.0
+offset_bottom = 455.0
+text = "Generate"
+
+[node name="HistoryButton" type="Button" parent="TabContainer/Generate"]
 layout_mode = 0
 offset_left = 327.0
-offset_top = 127.0
-offset_right = 553.0
-offset_bottom = 179.0
-text = "Show immediate changes"
-
-[node name="Button" type="Button" parent="TabContainer/Generate"]
-layout_mode = 0
-offset_left = 199.0
-offset_top = 375.0
-offset_right = 383.0
-offset_bottom = 442.0
-text = "Generate"
+offset_top = 389.0
+offset_right = 511.0
+offset_bottom = 456.0
+disabled = true
+text = "Show process"
 
 [node name="RuntimeError" type="Label" parent="TabContainer/Generate"]
 layout_mode = 0
-offset_left = 51.0
-offset_top = 312.0
-offset_right = 521.0
-offset_bottom = 358.0
+offset_left = 58.0
+offset_top = 305.0
+offset_right = 528.0
+offset_bottom = 371.0
 autowrap_mode = 2
 
 [node name="AcceptDialog" type="AcceptDialog" parent="."]
 position = Vector2i(295, 250)
 size = Vector2i(550, 154)
+dialog_autowrap = true
 
 [node name="HoverCellPanel" type="Panel" parent="."]
 offset_left = 580.0
@@ -244,9 +222,9 @@ label = "Atlas Coordinates"
 
 [node name="TilePos" type="Label" parent="HoverCellPanel"]
 layout_mode = 0
-offset_left = 25.0
+offset_left = 21.0
 offset_top = 91.0
-offset_right = 202.0
+offset_right = 198.0
 offset_bottom = 132.0
 text = "Atlas Coordinates"
 vertical_alignment = 1
@@ -262,10 +240,36 @@ path_to_image = "res://tiles/all_tiles.png"
 tileset = ExtResource("2_sxov8")
 modal = NodePath("../AcceptDialog")
 
+[node name="GenerationHistory" parent="." node_paths=PackedStringArray("collection") instance=ExtResource("6_l7l20")]
+visible = false
+top_level = true
+anchors_preset = 0
+anchor_right = 0.0
+anchor_bottom = 0.0
+offset_right = 1150.0
+offset_bottom = 650.0
+grow_horizontal = 1
+grow_vertical = 1
+theme = SubResource("Theme_pbcp7")
+collection = NodePath("../TileCollections")
+
+[node name="CollapsibleTilePlacer" parent="." node_paths=PackedStringArray("tilemap", "collection") instance=ExtResource("7_jppps")]
+visible = false
+offset_left = 12.0
+offset_top = 109.0
+offset_right = 676.0
+offset_bottom = 541.0
+tilemap = NodePath("../TileMapContainer/TileMap")
+collection = NodePath("../TileCollections")
+
+[connection signal="collapsible_clicked" from="TileMapContainer/TileMap" to="." method="_on_tile_map_collapsible_clicked"]
 [connection signal="node_hovered" from="TileMapContainer/TileMap" to="." method="_on_tile_map_node_hovered"]
+[connection signal="tab_changed" from="TabContainer" to="." method="_on_tab_container_tab_changed"]
 [connection signal="pressed" from="TabContainer/Image/Button" to="." method="_on_button_pressed"]
-[connection signal="pressed" from="TabContainer/Generate/Button" to="." method="_on_button_pressed_gen"]
-[connection signal="generation_collapsed" from="TileGenerator" to="." method="_on_tile_generator_generation_collapsed"]
+[connection signal="pressed" from="TabContainer/Generate/SizeButton" to="." method="_on_size_button_pressed"]
+[connection signal="pressed" from="TabContainer/Generate/GenerateButton" to="." method="_on_button_pressed_gen"]
+[connection signal="pressed" from="TabContainer/Generate/HistoryButton" to="." method="_on_history_button_pressed"]
 [connection signal="generation_error" from="TileGenerator" to="." method="_on_tile_generator_generation_error"]
 [connection signal="generation_finished" from="TileGenerator" to="." method="_on_tile_generator_generation_finished"]
 [connection signal="generation_runtime_error" from="TileGenerator" to="." method="_on_tile_generator_generation_runtime_error"]
+[connection signal="panel_quitted" from="CollapsibleTilePlacer" to="." method="_on_collapsible_tile_placer_panel_quitted"]
