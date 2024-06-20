@@ -1,0 +1,59 @@
+[package]
+name = "grid-forge"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[profile.release]
+debug = true
+
+[features]
+default = ['vis', 'gen', 'godot']
+vis = ["dep:image"]
+gen = ["dep:rand"]
+godot = ["dep:godot"]
+
+[dependencies]
+num-traits = "*"
+grid = { version = "0.13.*" }
+image = { version = "0.25.*", optional = true, default-features = false }
+rand = { version = "0.8.*", optional = true }
+godot = { git = "https://github.com/godot-rust/gdext", branch = "master", optional = true }
+
+[dev-dependencies]
+criterion = { version = "0.4", features = ["html_reports"] }
+rand_chacha = "0.3.*"
+image = { version = "0.25.*", features = ["png"]}
+gif = { version ="*" }
+
+[[example]]
+name = "vis"
+path = "examples/vis.rs"
+
+[[example]]
+name = "gen_walker"
+path = "examples/gen_walker.rs"
+
+[[example]]
+name = "gen_collapse_singular"
+path = "examples/collapse/gen_collapse_singular.rs"
+
+[[example]]
+name = "gen_collapse_overlap"
+path = "examples/collapse/gen_collapse_overlap.rs"
+
+[[bench]]
+name = "gen_collapse_singular"
+harness = false
+
+[[bench]]
+name = "gen_collapse_overlap"
+harness = false
+
+[[bench]]
+name = "gen_walker"
+harness = false
+
+[[bench]]
+name = "vis_io"
+harness = false

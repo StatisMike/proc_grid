@@ -13,13 +13,13 @@ use godot::obj::Gd;
 use godot::register::{godot_api, GodotClass};
 
 use grid_forge::godot::*;
-use grid_forge::map::GridMap2D;
-use grid_forge::tile::identifiable::builders::IdentTileTraitBuilder;
-use grid_forge::tile::identifiable::collection::IdentTileCollection;
-use grid_forge::tile::identifiable::BasicIdentTileData;
+use grid_forge::identifiable::builders::IdentTileTraitBuilder;
+use grid_forge::identifiable::collection::IdentTileCollection;
+use grid_forge::identifiable::BasicIdentTileData;
 use grid_forge::vis::collection::VisCollection;
 use grid_forge::vis::ops::{check_grid_vis_size, load_gridmap_identifiable_manual};
 use grid_forge::vis::{read_tile, DefaultVisPixel, PixelWithDefault};
+use grid_forge::GridMap2D;
 
 use image::Rgb;
 

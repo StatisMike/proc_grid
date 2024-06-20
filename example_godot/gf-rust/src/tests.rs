@@ -4,13 +4,13 @@ use gd_rehearse::itest::gditest;
 
 use godot::builtin::Rect2i;
 use godot::classes::{TileMap, TileSet};
-use godot::tools::load;
 use godot::obj::{Gd, NewAlloc};
+use godot::tools::load;
 
 use grid_forge::godot::{load_gridmap_from_tilemap_manual, write_gridmap_to_tilemap};
-use grid_forge::map::GridSize;
-use grid_forge::tile::identifiable::builders::IdentTileTraitBuilder;
-use grid_forge::tile::identifiable::{BasicIdentTileData, IdentifiableTileData};
+use grid_forge::identifiable::builders::IdentTileTraitBuilder;
+use grid_forge::identifiable::{BasicIdentTileData, IdentifiableTileData};
+use grid_forge::GridSize;
 
 use crate::tile_collections::TileCollections;
 

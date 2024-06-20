@@ -2,7 +2,7 @@
 resolver="2"
 
 members = [
-  "grid_forge",
+  "grid-forge",
 
   # Integration example
   "example_godot/gf-rust",

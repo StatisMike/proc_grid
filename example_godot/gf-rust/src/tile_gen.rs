@@ -1,4 +1,4 @@
-//! Implements `grid_forge` collapse procedural generation algorithm, allowing its usage within Godot example app, 
+//! Implements `grid_forge` collapse procedural generation algorithm, allowing its usage within Godot example app,
 //! alongside some additional utility functions specific for this scenario.
 
 use std::sync::mpsc::{self, Receiver};
@@ -11,23 +11,22 @@ use godot::engine::{AcceptDialog, INode, Node, TileMap, Timer};
 use godot::log::{godot_error, godot_warn};
 use godot::obj::{Base, Gd, NewAlloc, WithBaseField};
 use godot::register::{godot_api, GodotClass};
-use grid_forge::tile::{GridPosition, GridTile};
+use grid_forge::{GridMap2D, GridPosition, GridSize, GridTile};
 use singular::Analyzer;
 
 use grid_forge::gen::collapse::*;
-use grid_forge::map::*;
-use grid_forge::tile::identifiable::builders::IdentTileTraitBuilder;
-use grid_forge::tile::identifiable::BasicIdentTileData;
+use grid_forge::identifiable::builders::IdentTileTraitBuilder;
+use grid_forge::identifiable::BasicIdentTileData;
 
 use rand::thread_rng;
 
 use crate::tile_collections::{SingleTile, TileCollections};
 
 /// Class handling the generation of the tilemap.
-/// 
+///
 /// The class is responsible for the generation of the [`GridMap2D`], and trasferring its results to the Godot's [`TileMap`]
 /// afterwards.
-/// 
+///
 /// The generation itself is done in a separate thread, so the main thread will not be blocked.
 #[derive(GodotClass)]
 #[class(base=Node, init)]
@@ -72,7 +71,6 @@ pub struct TileGenerator {
 
 #[godot_api]
 impl INode for TileGenerator {
-
     /// Process retrieves the signals from spawned thread when the generation is running, emitting them back to the
     /// Godot's *MainNode* on the main thread.
     fn process(&mut self, _delta: f64) {
@@ -83,7 +81,6 @@ impl INode for TileGenerator {
         if let Some(receiver) = &self.channel {
             if let Ok(result) = receiver.try_recv() {
                 match result {
-
                     // Runtime error occured - only passing the error message to Godot, generator will retry.
                     GenerationResult::RuntimeErr(mssg) => {
                         self.base_mut().emit_signal(
