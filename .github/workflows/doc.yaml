@@ -17,6 +17,9 @@ jobs:
       - name: Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Build
+        run: cargo build
+
       - name: Build Documentation
         run: |
           cargo install cargo-makedocs
