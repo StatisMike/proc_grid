@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["IdentTileCloneBuilder","IdentTileFunBuilder","IdentTileTraitBuilder","TileBuilderError"],"trait":["ConstructableViaIdentifierTile","IdentTileBuilder"]};

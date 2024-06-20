@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["AdjacencyRules","BorderAnalyzer","CollapseHistoryItem","CollapseHistorySubscriber","CollapsibleTile","CollapsibleTileGrid","FrequencyHints","IdentityAnalyzer","Resolver"],"trait":["Analyzer","Subscriber"]};

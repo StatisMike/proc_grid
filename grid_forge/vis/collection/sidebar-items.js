@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["VisCollectionOutcome"],"struct":["VisCollection"],"type":["VisCollectionResult"]};

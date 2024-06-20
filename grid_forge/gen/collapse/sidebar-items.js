@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["PositionQueueDirection","PositionQueueStartingPoint"],"mod":["overlap","singular"],"struct":["CollapseError","CollapsedGrid","CollapsedTileData","DebugSubscriber","EntrophyQueue","PositionQueue"],"trait":["CollapseQueue","CollapsibleGrid","CollapsibleTileData"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["GodotGridMapTileInfo","GodotTileMapTileInfo"],"fn":["load_gridmap_from_tilemap_auto","load_gridmap_from_tilemap_manual","write_gridmap_to_tilemap"],"struct":["GodotAtlasTileInfo","GodotMeshItemData","GodotScenesCollectionInfo","GodotTileError","GodotTileMapCollection"]};

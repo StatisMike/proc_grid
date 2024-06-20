@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["GridWalker2D","GridWalker2DBuilder"]};

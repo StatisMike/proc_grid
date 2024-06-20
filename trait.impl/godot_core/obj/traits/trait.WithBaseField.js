@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"gf_rust":[["impl WithBaseField for <a class=\"struct\" href=\"gf_rust/tile_gen/struct.GenerationHistoryState.html\" title=\"struct gf_rust::tile_gen::GenerationHistoryState\">GenerationHistoryState</a>"],["impl WithBaseField for <a class=\"struct\" href=\"gf_rust/tile_gen/struct.TileGenerator.html\" title=\"struct gf_rust::tile_gen::TileGenerator\">TileGenerator</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

@@ -1,0 +1,126 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Generic abstraction for grid maps."><title>grid_forge - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="grid_forge" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0 (129f3b996 2024-06-10)" data-channel="1.79.0" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../static.files/storage-e32f0c247825364d.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../grid_forge/index.html">grid_forge</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section><ul class="block"><li><a href="#modules">Modules</a></li><li><a href="#structs">Structs</a></li><li><a href="#enums">Enums</a></li><li><a href="#traits">Traits</a></li></ul></section></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../grid_forge/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Crate <a class="mod" href="#">grid_forge</a><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><span class="out-of-band"><a class="src" href="../src/grid_forge/lib.rs.html#1-238">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Generic abstraction for grid maps.</p>
+<p>I’ve found it pretty frustrating that every engine of framework have their own way of handling grid maps. This made any attempts at generic
+solutions for common problems not easily applicable.</p>
+<p><code>grid-forge</code> tries to solve this problem, providing a generic abstraction for grid maps - currently only 2D rectangular grids are supported,
+3D grids are planned as well, and possibly support for other shapes in the future.</p>
+<h3 id="basic-functionality"><a class="doc-anchor" href="#basic-functionality">§</a>Basic functionality</h3>
+<p>Data hold for each tile in the grid is very flexible, and can be anything that is needed. Just implement a <a href="trait.TileData.html" title="trait grid_forge::TileData"><code>TileData</code></a> marker trait and
+you are good to go.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>grid_forge::TileData;
+
+<span class="kw">enum </span>TileColor {
+    Blue,
+    Green,
+}
+
+<span class="kw">struct </span>TwoColoredTile {
+    color: TileColor,
+}
+
+<span class="kw">impl </span>TileData <span class="kw">for </span>TwoColoredTile {}</code></pre></div>
+<p>Such data can then be placed inside of the <code>GridMap2D</code>, and used hovewer you want. Outside of the grid, the data is always contained
+within one of the <code>TileContainer</code> implementors:</p>
+<ul>
+<li><a href="struct.GridTile.html" title="struct grid_forge::GridTile"><code>GridTile</code></a> - container owning the data for a tile.</li>
+<li><a href="struct.GridTileRef.html" title="struct grid_forge::GridTileRef"><code>GridTileRef</code></a> - reference to the data for a tile.</li>
+<li><a href="struct.GridTileRefMut.html" title="struct grid_forge::GridTileRefMut"><code>GridTileRefMut&lt;T&gt;</code></a> - mutable reference to the data for a tile.</li>
+</ul>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>grid_forge::{GridMap2D, GridSize, GridTile};
+<span class="kw">use </span>rand::{Rng, thread_rng};
+<span class="kw">let </span>size = GridSize::new_xy(<span class="number">100</span>, <span class="number">100</span>);
+<span class="kw">let </span><span class="kw-2">mut </span>map = GridMap2D::&lt;TwoColoredTile&gt;::new(size);
+<span class="kw">let </span><span class="kw-2">mut </span>rng = thread_rng();
+<span class="kw">for </span>pos <span class="kw">in </span>map.size().get_all_possible_positions() {
+    <span class="kw">let </span>color = <span class="kw">if </span>rng.gen_bool(<span class="number">0.5</span>) {
+        TileColor::Blue
+    } <span class="kw">else </span>{
+        TileColor::Green
+    };
+    <span class="kw">let </span>tile = GridTile::new(pos, TwoColoredTile { color });
+    map.insert_tile(tile);
+}</code></pre></div>
+<p>It can be then retrieved from the GridMap in such a container, holding alongside your data the position of the tile.
+Its tends to be useful when you would want to pass the data further through the function - information about its position is often
+crucial.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code>
+<span class="kw">let </span>pos = GridPosition::new_xy(<span class="number">10</span>, <span class="number">10</span>);
+<span class="kw">let </span>tile: GridTileRef&lt;TwoColoredTile&gt; = map.get_tile_at_position(<span class="kw-2">&amp;</span>pos).unwrap();
+<span class="macro">assert_eq!</span>(tile.grid_position(), pos);
+
+<span class="kw">let </span><span class="kw-2">mut </span>tile: GridTileRefMut&lt;TwoColoredTile&gt; = map.get_mut_tile_at_position(<span class="kw-2">&amp;</span>pos).unwrap();
+<span class="macro">assert_eq!</span>(tile.grid_position(), pos);
+tile.as_mut().color = TileColor::Blue;
+
+<span class="kw">let </span>tile: GridTileRef&lt;TwoColoredTile&gt; = map.get_tile_at_position(<span class="kw-2">&amp;</span>pos).unwrap();
+<span class="macro">assert_eq!</span>(tile.as_ref().color, TileColor::Blue);</code></pre></div>
+<h4 id="identifiable-tile-data"><a class="doc-anchor" href="#identifiable-tile-data">§</a>Identifiable tile data</h4>
+<p>There are often times when you want to use a finite set of tiles, which share some common baseline properties - and often holding all
+of these properties inside of the grid is not desirable. For this reason, there is an <a href="identifiable/trait.IdentifiableTileData.html" title="trait grid_forge::identifiable::IdentifiableTileData"><code>IdentifiableTileData</code></a>
+trait - holding an unique identifier for each <em>tile type</em>.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>grid_forge::identifiable::IdentifiableTileData;
+
+<span class="kw">struct </span>TwoColoredTile {
+    tile_type_id: u64,
+    color: TileColor,
+}
+<span class="kw">impl </span>IdentifiableTileData <span class="kw">for </span>TwoColoredTile {
+    <span class="kw">fn </span>tile_type_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u64 {
+        <span class="self">self</span>.tile_type_id
+    }
+}</code></pre></div>
+<p>This allows for storing additional data specific to each tile type in some other container (e.g. one implementing provided
+<a href="identifiable/collection/trait.IdentTileCollection.html" title="trait grid_forge::identifiable::collection::IdentTileCollection"><code>IdentTileCollection</code></a> trait) and also easily creating new tile instance of
+specific type.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>grid_forge::identifiable::builders::ConstructableViaIdentifierTile;
+<span class="kw">impl </span>ConstructableViaIdentifierTile <span class="kw">for </span>TwoColoredTile {
+    <span class="kw">fn </span>tile_new(tile_type_id: u64) -&gt; <span class="self">Self </span>{
+        <span class="kw">if </span>tile_type_id == <span class="number">0 </span>{
+            <span class="self">Self </span>{ tile_type_id, color: TileColor::Blue }
+        } <span class="kw">else </span>{
+            <span class="self">Self </span>{ tile_type_id, color: TileColor::Green }
+        }
+    }
+}</code></pre></div>
+<p><code>IdentifiableTileData</code> is used by some built-in tile types used by different more specialized functionalities.</p>
+<h4 id="visual-representation-of-tiles"><a class="doc-anchor" href="#visual-representation-of-tiles">§</a>Visual representation of tiles</h4>
+<p>There are some basic visualization methods provided within the <code>grid-forge</code>, lying under the <code>#[vis]</code> feature flag. These are mostly
+useful for loading and saving 2D grid maps from/to image files, and use <a href="../image/index.html" title="mod image"><code>image</code></a> crate under the hood.</p>
+<p><a href="vis/trait.VisTileData.html" title="trait grid_forge::vis::VisTileData"><code>VisTileData</code></a> make it easy to generate visual representation of the tile data <em>dynamically</em>, eg. by using
+some other characteristics of the tile.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>grid_forge::vis::{DefaultVisPixel, VisTileData};
+
+<span class="kw">struct </span>TwoColoredTile {
+    color: TileColor,
+}
+
+<span class="comment">// Each tile will be represented by 10x10 RGB pixels.
+</span><span class="kw">impl </span>VisTileData&lt;DefaultVisPixel, <span class="number">10</span>, <span class="number">10</span>&gt; <span class="kw">for </span>TwoColoredTile {
+    <span class="kw">fn </span>vis_pixels(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; [[DefaultVisPixel; <span class="number">10</span>]; <span class="number">10</span>] {
+      <span class="kw">let </span>pixel = <span class="kw">match </span><span class="self">self</span>.color {
+          TileColor::Blue =&gt; DefaultVisPixel::from([<span class="number">0</span>, <span class="number">0</span>, <span class="number">255</span>]),
+          TileColor::Green =&gt; DefaultVisPixel::from([<span class="number">0</span>, <span class="number">255</span>, <span class="number">0</span>]),
+      };
+      [[pixel; <span class="number">10</span>]; <span class="number">10</span>]
+    }
+}</code></pre></div>
+<p>There are also options associated with <a href="vis/collection/struct.VisCollection.html" title="struct grid_forge::vis::collection::VisCollection"><code>VisCollection</code></a> struct, which holds visual
+representation of each <code>IdentifiableTileData</code> tile type - making it kind of naive and basic resource system.</p>
+<h4 id="procedural-generation"><a class="doc-anchor" href="#procedural-generation">§</a>Procedural generation</h4>
+<p>There is a whole procedural generation module, at the moment containing two kind of generators:</p>
+<ul>
+<li>basic <em>Random Walk algorithm</em> - see <code>gen_walker</code> example.</li>
+<li>collapsible tile generation (Model Synthesis/Wave function collapse) - see <code>gen_collapse_overlap</code> and <code>gen_collapse_singular</code> examples.</li>
+</ul>
+<h4 id="godot-integration"><a class="doc-anchor" href="#godot-integration">§</a>Godot integration</h4>
+<p><code>godot</code> module contains a collection of structs allowing for easy roundtrips between Godot’s and <code>grid-forge</code> data structures, using
+<code>IdentifiableTileData</code> trait to synchronize the data between the two sources. For Rust-Godot communication it uses GDExtension <a href="godot/index.html" title="mod grid_forge::godot"><code>godot-rust</code></a> crate.
+See <code>example_godot</code> crate for an example of simple Godot App using the <code>grid-forge</code> for loading the map from image file and procedural generation, rendering it in Godot’s <code>TileMap</code> class.</p>
+</div></details><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="mod" href="gen/index.html" title="mod grid_forge::gen">gen</a></div><div class="desc docblock-short">Generative algorithms for procedural generation of gridmaps.</div></li><li><div class="item-name"><a class="mod" href="godot/index.html" title="mod grid_forge::godot">godot</a></div></li><li><div class="item-name"><a class="mod" href="identifiable/index.html" title="mod grid_forge::identifiable">identifiable</a></div><div class="desc docblock-short">This module provide a way to identify a tile by its <code>tile_type_id</code>.</div></li><li><div class="item-name"><a class="mod" href="vis/index.html" title="mod grid_forge::vis">vis</a></div><div class="desc docblock-short">Allows operating on image representations of <a href="struct.GridMap2D.html" title="struct grid_forge::GridMap2D"><code>GridMap2D</code></a></div></li></ul><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="struct" href="struct.BuilderError.html" title="struct grid_forge::BuilderError">BuilderError</a></div></li><li><div class="item-name"><a class="struct" href="struct.DirectionTable.html" title="struct grid_forge::DirectionTable">DirectionTable</a></div><div class="desc docblock-short">Stores type in relation to each direction.</div></li><li><div class="item-name"><a class="struct" href="struct.GridMap2D.html" title="struct grid_forge::GridMap2D">GridMap2D</a></div><div class="desc docblock-short">Basic two-dimensional GridMap.</div></li><li><div class="item-name"><a class="struct" href="struct.GridPosition.html" title="struct grid_forge::GridPosition">GridPosition</a></div><div class="desc docblock-short">Position of the <a href="trait.TileData.html" title="trait grid_forge::TileData"><code>TileData</code></a> within a <a href="struct.GridMap2D.html" title="struct grid_forge::GridMap2D"><code>GridMap2D</code></a>.</div></li><li><div class="item-name"><a class="struct" href="struct.GridSize.html" title="struct grid_forge::GridSize">GridSize</a></div></li><li><div class="item-name"><a class="struct" href="struct.GridTile.html" title="struct grid_forge::GridTile">GridTile</a></div></li><li><div class="item-name"><a class="struct" href="struct.GridTileRef.html" title="struct grid_forge::GridTileRef">GridTileRef</a></div><div class="desc docblock-short">Reference to the <a href="trait.TileData.html" title="trait grid_forge::TileData"><code>TileData</code></a> contained within <a href="struct.GridMap2D.html" title="struct grid_forge::GridMap2D"><code>GridMap2D</code></a>. Underlying tile data
+can be accessed through <a href="https://doc.rust-lang.org/1.79.0/core/convert/trait.AsRef.html" title="trait core::convert::AsRef"><code>AsRef</code></a> implementation.</div></li><li><div class="item-name"><a class="struct" href="struct.GridTileRefMut.html" title="struct grid_forge::GridTileRefMut">GridTileRefMut</a></div><div class="desc docblock-short">Mutable reference to the <a href="trait.TileData.html" title="trait grid_forge::TileData"><code>TileData</code></a> contained within <a href="struct.GridMap2D.html" title="struct grid_forge::GridMap2D"><code>GridMap2D</code></a>. Underlying tile data
+can be accessed through <a href="https://doc.rust-lang.org/1.79.0/core/convert/trait.AsRef.html" title="trait core::convert::AsRef"><code>AsRef</code></a> and <a href="https://doc.rust-lang.org/1.79.0/core/convert/trait.AsMut.html" title="trait core::convert::AsMut"><code>AsMut</code></a> implementations.</div></li></ul><h2 id="enums" class="section-header">Enums<a href="#enums" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="enum" href="enum.GridDir.html" title="enum grid_forge::GridDir">GridDir</a></div></li></ul><h2 id="traits" class="section-header">Traits<a href="#traits" class="anchor">§</a></h2><ul class="item-table"><li><div class="item-name"><a class="trait" href="trait.TileContainer.html" title="trait grid_forge::TileContainer">TileContainer</a></div><div class="desc docblock-short">Trait gathering the containers for <a href="trait.TileData.html" title="trait grid_forge::TileData"><code>TileData</code></a> outside of the <a href="struct.GridMap2D.html" title="struct grid_forge::GridMap2D"><code>GridMap2D</code></a>.</div></li><li><div class="item-name"><a class="trait" href="trait.TileData.html" title="trait grid_forge::TileData">TileData</a></div><div class="desc docblock-short">Marker trait for structs that can be contained withing <a href="struct.GridMap2D.html" title="struct grid_forge::GridMap2D"><code>GridMap2D</code></a> and <a href="trait.TileContainer.html" title="trait grid_forge::TileContainer"><code>TileContainer</code></a></div></li></ul></section></div></main></body></html>

@@ -1,0 +1,1 @@
+window.ALL_CRATES = ["gf_rust","grid","grid_forge","image","num_traits","rand"];
