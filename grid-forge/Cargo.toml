@@ -3,6 +3,9 @@ name = "grid-forge"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+bench = false
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [profile.release]
 debug = true
@@ -24,7 +27,7 @@ godot = { git = "https://github.com/godot-rust/gdext", branch = "master", option
 criterion = { version = "0.4", features = ["html_reports"] }
 rand_chacha = "0.3.*"
 image = { version = "0.25.*", features = ["png"]}
-gif = { version ="*" }
+gif = { version ="^0.13.*" }
 
 [[example]]
 name = "vis"

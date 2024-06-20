@@ -208,14 +208,14 @@ fn generate_10x10_pattern_3x3_position(c: &mut Criterion) {
     });
 }
 
-criterion_group!(
-    analyze,
-    analyze_10x10_pattern_2x2,
-    analyze_10x10_pattern_3x3
-);
+criterion_group! {
+    name =analyze;
+    config = Criterion::default().measurement_time(Duration::from_secs(10));
+    targets = analyze_10x10_pattern_2x2, analyze_10x10_pattern_3x3
+}
 criterion_group! {
   name = generate;
-  config = Criterion::default().measurement_time(Duration::from_secs(10));
+  config = Criterion::default().measurement_time(Duration::from_secs(15));
   targets = generate_10x10_pattern_2x2_entrophy, generate_10x10_pattern_3x3_entrophy, generate_10x10_pattern_2x2_position, generate_10x10_pattern_3x3_position
 }
 criterion_main!(analyze, generate);

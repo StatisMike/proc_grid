@@ -163,7 +163,7 @@ fn gen_border_position_10x10(c: &mut Criterion) {
     let builder = IdentTileTraitBuilder::<BasicIdentTileData>::default();
     let mut collection = VisCollection::<DefaultVisPixel, 4, 4>::default();
 
-    let mut analyzer = IdentityAnalyzer::default();
+    let mut analyzer = BorderAnalyzer::default();
     let mut frequency_hints = FrequencyHints::default();
 
     for path in &[MAP_10X10, MAP_20X20] {
@@ -180,11 +180,8 @@ fn gen_border_position_10x10(c: &mut Criterion) {
 
     c.bench_function("gen_border_position_10x10", |b| {
         b.iter(|| {
-
             // Seed for reproductability
-            let mut rng: ChaChaRng = RngHelper::init_str("singular_border", 20)
-            .with_pos(6561)
-            .into();
+            let mut rng: ChaChaRng = RngHelper::init_str("singular_border", 15).into();
 
             let mut resolver = Resolver::default();
             resolver
@@ -243,4 +240,4 @@ criterion_group! {
   config = Criterion::default().measurement_time(Duration::from_secs(10));
   targets = gen_identity_position_10x10, gen_border_position_10x10, gen_identity_entrophy_10x10, gen_border_entrophy_10x10
 }
-criterion_main!(generate);
+criterion_main!(analyze, generate);
