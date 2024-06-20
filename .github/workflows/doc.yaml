@@ -23,7 +23,7 @@ jobs:
       - name: Build Documentation
         run: |
           cargo install cargo-makedocs
-          cargo makedocs -e gd-rehearse -i gf_rust
+          cargo makedocs -e gd-rehearse -e godot -i gf_rust
         
       - name: Setup index
         run: cp ./doc_index.html ./target/doc/index.html
